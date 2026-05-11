@@ -1,40 +1,39 @@
 package main
 
 import (
+	"html/template"
 	"log"
 	"net/http"
+
 	"travel-proxy-service/internal/handlers"
 	"travel-proxy-service/internal/middleware"
 	"travel-proxy-service/internal/proxy"
 )
 
 func main() {
-	// Initialize the Proxy Client with a dummy API URL
-	// Using JSONPlaceholder as a mock travel API for demonstration
-	proxyClient := proxy.NewProxyClient("https://jsonplaceholder.typicode.com")
-
-	// Initialize Handlers
-	travelHandler := &handlers.TravelHandler{
-		ProxyClient: proxyClient,
+	tmpl, err := template.ParseGlob("templates/*.html")
+	if err != nil {
+		log.Fatalf("failed to parse templates: %v", err)
 	}
 
-	// Create a new ServeMux
-	mux := http.NewServeMux()
+	proxyClient := proxy.NewProxyClient("https://jsonplaceholder.typicode.com")
 
-	// Register Routes
+	travelHandler := &handlers.TravelHandler{
+		ProxyClient: proxyClient,
+		Templates:   tmpl,
+	}
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", travelHandler.HomeHandler)
 	mux.HandleFunc("/status", handlers.HealthCheckHandler)
 	mux.HandleFunc("/travel-data", travelHandler.GetTravelDataHandler)
 
-	// Apply Logging Middleware
 	wrappedMux := middleware.LoggingMiddleware(mux)
 
-	// Define Server Address
 	addr := ":8080"
 	log.Printf("Starting server on %s...", addr)
 
-	// Start the Server
-	err := http.ListenAndServe(addr, wrappedMux)
-	if err != nil {
+	if err := http.ListenAndServe(addr, wrappedMux); err != nil {
 		log.Fatalf("Server failed to start: %v", err)
 	}
 }
