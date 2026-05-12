@@ -16,7 +16,7 @@ func main() {
 		log.Fatalf("failed to parse templates: %v", err)
 	}
 
-	proxyClient := proxy.NewProxyClient("https://jsonplaceholder.typicode.com")
+	proxyClient := proxy.NewProxyClient("")
 
 	travelHandler := &handlers.TravelHandler{
 		ProxyClient: proxyClient,
@@ -25,15 +25,12 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", travelHandler.HomeHandler)
+	mux.HandleFunc("/flights", travelHandler.FlightsHandler)
 	mux.HandleFunc("/status", handlers.HealthCheckHandler)
 	mux.HandleFunc("/travel-data", travelHandler.GetTravelDataHandler)
 
-	wrappedMux := middleware.LoggingMiddleware(mux)
-
-	addr := ":8080"
-	log.Printf("Starting server on %s...", addr)
-
-	if err := http.ListenAndServe(addr, wrappedMux); err != nil {
-		log.Fatalf("Server failed to start: %v", err)
+	log.Println("Starting server on :8080...")
+	if err := http.ListenAndServe(":8080", middleware.LoggingMiddleware(mux)); err != nil {
+		log.Fatalf("Server failed: %v", err)
 	}
 }

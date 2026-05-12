@@ -13,20 +13,48 @@ const (
 	rapidAPIBase = "https://booking-com15.p.rapidapi.com"
 )
 
-// TravelData is the flat struct passed to the HTML template.
-type TravelData struct {
-	HotelID    int
-	HotelName  string
-	Location   string
-	Price      float64
-	Currency   string
-	Rating     float64
-	RatingWord string
-	PhotoURL   string
-	Stars      int
+// HotelData is the flat struct passed to templates and JSON API.
+type HotelData struct {
+	HotelID    int     `json:"hotel_id"`
+	HotelName  string  `json:"hotel_name"`
+	Price      float64 `json:"price"`
+	Currency   string  `json:"currency"`
+	Rating     float64 `json:"rating"`
+	RatingWord string  `json:"rating_word"`
+	PhotoURL   string  `json:"photo_url"`
+	Stars      int     `json:"stars"`
 }
 
-// --- internal structs for parsing the booking-com15 response ---
+// FlightData is the flat struct for flight offers.
+type FlightData struct {
+	FromCity        string  `json:"from_city"`
+	ToCity          string  `json:"to_city"`
+	FromCode        string  `json:"from_code"`
+	ToCode          string  `json:"to_code"`
+	DepartTime      string  `json:"depart_time"`
+	ArriveTime      string  `json:"arrive_time"`
+	DurationHours   int     `json:"duration_hours"`
+	DurationMinutes int     `json:"duration_minutes"`
+	Airline         string  `json:"airline"`
+	AirlineLogo     string  `json:"airline_logo"`
+	Price           float64 `json:"price"`
+	Currency        string  `json:"currency"`
+}
+
+// --- internal destination structs ---
+
+type destResult struct {
+	DestID     string `json:"dest_id"`
+	SearchType string `json:"search_type"`
+	Name       string `json:"name"`
+}
+
+type destAPIResponse struct {
+	Status bool         `json:"status"`
+	Data   []destResult `json:"data"`
+}
+
+// --- internal hotel structs ---
 
 type grossPrice struct {
 	Value    float64 `json:"value"`
@@ -56,9 +84,54 @@ type hotelsData struct {
 	Hotels []hotelItem `json:"hotels"`
 }
 
-type apiResponse struct {
+type hotelsAPIResponse struct {
 	Status bool       `json:"status"`
 	Data   hotelsData `json:"data"`
+}
+
+// --- internal flight structs ---
+
+type flightAirport struct {
+	Code     string `json:"code"`
+	CityName string `json:"cityName"`
+}
+
+type flightPrice struct {
+	CurrencyCode string `json:"currencyCode"`
+	Units        int    `json:"units"`
+	Nanos        int    `json:"nanos"`
+}
+
+type flightPriceBreakdown struct {
+	Total flightPrice `json:"total"`
+}
+
+type carrierData struct {
+	Name string `json:"name"`
+	Logo string `json:"logo"`
+}
+
+type flightSegment struct {
+	DepartureAirport flightAirport `json:"departureAirport"`
+	ArrivalAirport   flightAirport `json:"arrivalAirport"`
+	DepartureTime    string        `json:"departureTime"`
+	ArrivalTime      string        `json:"arrivalTime"`
+	TotalTime        int           `json:"totalTime"`
+	CarriersData     []carrierData `json:"carriersData"`
+}
+
+type flightOffer struct {
+	Segments       []flightSegment      `json:"segments"`
+	PriceBreakdown flightPriceBreakdown `json:"priceBreakdown"`
+}
+
+type flightOffersData struct {
+	FlightOffers []flightOffer `json:"flightOffers"`
+}
+
+type flightAPIResponse struct {
+	Status bool             `json:"status"`
+	Data   flightOffersData `json:"data"`
 }
 
 // ---
@@ -73,49 +146,68 @@ func NewProxyClient(_ string) *ProxyClient {
 	}
 }
 
-func (pc *ProxyClient) FetchTravelData() ([]TravelData, error) {
-	req, err := http.NewRequest("GET", rapidAPIBase+"/api/v1/hotels/searchHotels", nil)
+func (pc *ProxyClient) doGet(endpoint string, params map[string]string) (*http.Response, error) {
+	req, err := http.NewRequest("GET", rapidAPIBase+endpoint, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to build request: %w", err)
+		return nil, err
 	}
-
 	q := req.URL.Query()
-	q.Add("dest_id", "-2601889")
-	q.Add("search_type", "CITY")
-	q.Add("arrival_date", "2026-06-01")
-	q.Add("departure_date", "2026-06-05")
-	q.Add("adults", "2")
-	q.Add("room_qty", "1")
-	q.Add("currency_code", "USD")
-	q.Add("languagecode", "en-us")
+	for k, v := range params {
+		q.Add(k, v)
+	}
 	req.URL.RawQuery = q.Encode()
-
 	req.Header.Set("X-RapidAPI-Key", rapidAPIKey)
 	req.Header.Set("X-RapidAPI-Host", rapidAPIHost)
+	return pc.HTTPClient.Do(req)
+}
 
-	resp, err := pc.HTTPClient.Do(req)
+func (pc *ProxyClient) SearchDestination(query string) (destID, searchType string, err error) {
+	resp, err := pc.doGet("/api/v1/hotels/searchDestination", map[string]string{"query": query})
 	if err != nil {
-		return nil, fmt.Errorf("upstream request failed: %w", err)
+		return "", "", fmt.Errorf("destination search failed: %w", err)
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("upstream API returned status %d", resp.StatusCode)
-	}
-
-	var payload apiResponse
+	var payload destAPIResponse
 	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
-		return nil, fmt.Errorf("failed to decode API response: %w", err)
+		return "", "", fmt.Errorf("failed to decode destination response: %w", err)
+	}
+	if len(payload.Data) == 0 {
+		return "", "", fmt.Errorf("no results found for %q", query)
+	}
+	d := payload.Data[0]
+	return d.DestID, d.SearchType, nil
+}
+
+func (pc *ProxyClient) FetchHotels(destID, searchType, checkin, checkout string) ([]HotelData, error) {
+	resp, err := pc.doGet("/api/v1/hotels/searchHotels", map[string]string{
+		"dest_id":        destID,
+		"search_type":    searchType,
+		"arrival_date":   checkin,
+		"departure_date": checkout,
+		"adults":         "2",
+		"room_qty":       "1",
+		"currency_code":  "USD",
+		"languagecode":   "en-us",
+	})
+	if err != nil {
+		return nil, fmt.Errorf("hotel search failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	var payload hotelsAPIResponse
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		return nil, fmt.Errorf("failed to decode hotel response: %w", err)
 	}
 
-	hotels := make([]TravelData, 0, len(payload.Data.Hotels))
+	hotels := make([]HotelData, 0, len(payload.Data.Hotels))
 	for _, item := range payload.Data.Hotels {
 		p := item.Property
 		photoURL := ""
 		if len(p.PhotoURLs) > 0 {
 			photoURL = p.PhotoURLs[0]
 		}
-		hotels = append(hotels, TravelData{
+		hotels = append(hotels, HotelData{
 			HotelID:    item.HotelID,
 			HotelName:  p.Name,
 			Price:      p.PriceBreakdown.GrossPrice.Value,
@@ -126,6 +218,64 @@ func (pc *ProxyClient) FetchTravelData() ([]TravelData, error) {
 			Stars:      p.AccuratePropertyClass,
 		})
 	}
-
 	return hotels, nil
+}
+
+// FetchTravelData is kept for the JSON API endpoint (/travel-data).
+func (pc *ProxyClient) FetchTravelData() ([]HotelData, error) {
+	return pc.FetchHotels("-2601889", "CITY", "2026-06-01", "2026-06-05")
+}
+
+func (pc *ProxyClient) FetchFlights(fromID, toID, date string) ([]FlightData, error) {
+	resp, err := pc.doGet("/api/v1/flights/searchFlights", map[string]string{
+		"fromId":        fromID,
+		"toId":          toID,
+		"departDate":    date,
+		"adults":        "1",
+		"currency_code": "USD",
+		"sort":          "BEST",
+		"cabinClass":    "ECONOMY",
+	})
+	if err != nil {
+		return nil, fmt.Errorf("flight search failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	var payload flightAPIResponse
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		return nil, fmt.Errorf("failed to decode flight response: %w", err)
+	}
+
+	flights := make([]FlightData, 0, len(payload.Data.FlightOffers))
+	for _, offer := range payload.Data.FlightOffers {
+		if len(offer.Segments) == 0 {
+			continue
+		}
+		seg := offer.Segments[0]
+		price := float64(offer.PriceBreakdown.Total.Units) +
+			float64(offer.PriceBreakdown.Total.Nanos)/1e9
+
+		airline, airlineLogo := "", ""
+		if len(seg.CarriersData) > 0 {
+			airline = seg.CarriersData[0].Name
+			airlineLogo = seg.CarriersData[0].Logo
+		}
+
+		totalMins := seg.TotalTime / 60
+		flights = append(flights, FlightData{
+			FromCity:        seg.DepartureAirport.CityName,
+			ToCity:          seg.ArrivalAirport.CityName,
+			FromCode:        seg.DepartureAirport.Code,
+			ToCode:          seg.ArrivalAirport.Code,
+			DepartTime:      seg.DepartureTime,
+			ArriveTime:      seg.ArrivalTime,
+			DurationHours:   totalMins / 60,
+			DurationMinutes: totalMins % 60,
+			Airline:         airline,
+			AirlineLogo:     airlineLogo,
+			Price:           price,
+			Currency:        offer.PriceBreakdown.Total.CurrencyCode,
+		})
+	}
+	return flights, nil
 }

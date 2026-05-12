@@ -3,86 +3,85 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TravelMirror - Find Your Perfect Stay</title>
+  <title>TravelMirror</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-50 min-h-screen flex flex-col">
 
   <!-- Header -->
-  <header class="bg-blue-700 text-white py-6 shadow-lg">
+  <header class="bg-blue-700 text-white py-5 shadow-lg">
     <div class="max-w-7xl mx-auto px-6 flex items-center justify-between">
       <div>
         <h1 class="text-3xl font-bold tracking-tight">TravelMirror</h1>
-        <p class="text-blue-200 text-sm mt-1">Discover hotels around the world</p>
+        <p class="text-blue-200 text-sm mt-0.5">Flights, Hotels & more</p>
       </div>
-      <nav class="hidden md:flex gap-6 text-sm font-medium text-blue-100">
-        <a href="#" class="hover:text-white transition-colors">Deals</a>
-        <a href="#" class="hover:text-white transition-colors">My Trips</a>
-        <a href="/status" class="hover:text-white transition-colors">API Status</a>
+      <nav class="hidden md:flex gap-2 text-sm font-medium">
+        <a href="/" class="px-4 py-2 rounded-lg transition-colors {{if eq .Tab "hotels"}}bg-white text-blue-700 font-semibold{{else}}text-blue-100 hover:bg-blue-600{{end}}">Hotels</a>
+        <a href="/flights" class="px-4 py-2 rounded-lg transition-colors {{if eq .Tab "flights"}}bg-white text-blue-700 font-semibold{{else}}text-blue-100 hover:bg-blue-600{{end}}">Flights</a>
+        <a href="/status" class="px-4 py-2 rounded-lg text-blue-100 hover:bg-blue-600 transition-colors">API Status</a>
       </nav>
     </div>
   </header>
 
   <!-- Search Bar -->
   <div class="bg-white border-b shadow-sm py-5">
-    <div class="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row gap-3">
-      <input
-        type="text"
-        placeholder="Where do you want to go?"
-        class="flex-1 border border-gray-300 rounded-lg px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-      />
-      <input
-        type="date"
-        class="border border-gray-300 rounded-lg px-4 py-3 text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-      />
-      <input
-        type="date"
-        class="border border-gray-300 rounded-lg px-4 py-3 text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-      />
-      <button class="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold px-8 py-3 rounded-lg transition-colors">
-        Search
-      </button>
+    <div class="max-w-7xl mx-auto px-6">
+
+      {{if eq .Tab "hotels"}}
+      <form method="GET" action="/" class="flex flex-col sm:flex-row gap-3">
+        <input name="q" value="{{.City}}" type="text" placeholder="Where do you want to go?"
+          class="flex-1 border border-gray-300 rounded-lg px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        <input name="checkin" value="{{.Checkin}}" type="date"
+          class="border border-gray-300 rounded-lg px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        <input name="checkout" value="{{.Checkout}}" type="date"
+          class="border border-gray-300 rounded-lg px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-lg transition-colors">Search</button>
+      </form>
+      {{end}}
+
+      {{if eq .Tab "flights"}}
+      <form method="GET" action="/flights" class="flex flex-col sm:flex-row gap-3">
+        <input name="from" value="{{.FromID}}" type="text" placeholder="From (e.g. LHR.AIRPORT)"
+          class="flex-1 border border-gray-300 rounded-lg px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        <input name="to" value="{{.ToID}}" type="text" placeholder="To (e.g. CDG.AIRPORT)"
+          class="flex-1 border border-gray-300 rounded-lg px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        <input name="date" value="{{.Date}}" type="date"
+          class="border border-gray-300 rounded-lg px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-lg transition-colors">Search</button>
+      </form>
+      {{end}}
+
     </div>
   </div>
 
   <!-- Main Content -->
   <main class="max-w-7xl mx-auto px-6 py-10 flex-1 w-full">
+
+    {{if .Error}}
+    <div class="bg-red-50 border border-red-200 text-red-700 rounded-xl px-6 py-4 mb-8 text-sm">
+      {{.Error}}
+    </div>
+    {{end}}
+
+    <!-- HOTELS -->
+    {{if eq .Tab "hotels"}}
     <div class="flex items-center justify-between mb-6">
-      <h2 class="text-2xl font-semibold text-gray-800">Hotels in London <span class="text-sm font-normal text-gray-400">Jun 1-5 2026</span></h2>
+      <h2 class="text-2xl font-semibold text-gray-800 capitalize">Hotels in {{.City}}</h2>
       <span class="text-sm text-gray-400">{{len .Hotels}} properties found</span>
     </div>
-
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       {{range .Hotels}}
       <div class="bg-white rounded-2xl shadow hover:shadow-xl transition-shadow duration-300 overflow-hidden flex flex-col">
-
-        <!-- Hotel Photo -->
         <div class="h-44 relative overflow-hidden bg-gradient-to-br from-blue-400 to-indigo-600">
           {{if .PhotoURL}}
-          <img
-            src="{{.PhotoURL}}"
-            alt="{{.HotelName}}"
-            class="w-full h-full object-cover"
-            onerror="this.style.display='none'"
-          />
+          <img src="{{.PhotoURL}}" alt="{{.HotelName}}" class="w-full h-full object-cover" onerror="this.style.display='none'" />
           {{end}}
           {{if .Stars}}
-          <span class="absolute top-3 left-3 bg-white text-yellow-500 text-xs font-bold px-2 py-1 rounded-full shadow">
-            {{.Stars}}★
-          </span>
+          <span class="absolute top-3 left-3 bg-white text-yellow-500 text-xs font-bold px-2 py-1 rounded-full shadow">{{.Stars}}★</span>
           {{end}}
         </div>
-
-        <!-- Card Body -->
         <div class="p-5 flex flex-col flex-1">
-          <h3 class="text-base font-semibold text-gray-900 leading-snug mb-1 line-clamp-1">
-            {{.HotelName}}
-          </h3>
-          {{if .Location}}
-          <p class="text-xs text-gray-500 mb-4 line-clamp-1">{{.Location}}</p>
-          {{end}}
-
-          <!-- Price & Rating -->
+          <h3 class="text-base font-semibold text-gray-900 leading-snug mb-3 line-clamp-2">{{.HotelName}}</h3>
           <div class="mt-auto flex items-end justify-between">
             <div>
               <span class="text-2xl font-bold text-blue-600">${{printf "%.0f" .Price}}</span>
@@ -98,17 +97,64 @@
             </div>
             {{end}}
           </div>
-
-          <button class="mt-4 w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-semibold py-2.5 rounded-xl transition-colors">
-            Book Now
-          </button>
+          <button class="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2.5 rounded-xl transition-colors">Book Now</button>
         </div>
       </div>
       {{end}}
     </div>
+    {{end}}
+
+    <!-- FLIGHTS -->
+    {{if eq .Tab "flights"}}
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="text-2xl font-semibold text-gray-800">{{.FromID}} → {{.ToID}}</h2>
+      <span class="text-sm text-gray-400">{{len .Flights}} flights found</span>
+    </div>
+    <div class="flex flex-col gap-4">
+      {{range .Flights}}
+      <div class="bg-white rounded-2xl shadow hover:shadow-lg transition-shadow p-6 flex flex-col sm:flex-row items-center gap-6">
+        <!-- Airline -->
+        <div class="flex items-center gap-3 w-32 shrink-0">
+          {{if .AirlineLogo}}
+          <img src="{{.AirlineLogo}}" alt="{{.Airline}}" class="h-8 w-8 object-contain" onerror="this.style.display='none'" />
+          {{end}}
+          <span class="text-sm font-medium text-gray-700 line-clamp-2">{{.Airline}}</span>
+        </div>
+        <!-- Route & Times -->
+        <div class="flex-1 flex items-center justify-center gap-4">
+          <div class="text-center">
+            <p class="text-xl font-bold text-gray-900">{{.FromCode}}</p>
+            <p class="text-sm text-gray-500">{{.FromCity}}</p>
+            <p class="text-xs text-gray-400 mt-1">{{.DepartTime}}</p>
+          </div>
+          <div class="flex flex-col items-center gap-1 px-4">
+            <span class="text-xs text-gray-400">{{.DurationHours}}h {{.DurationMinutes}}m</span>
+            <div class="flex items-center gap-1">
+              <div class="w-16 h-px bg-gray-300"></div>
+              <span class="text-gray-400">✈</span>
+              <div class="w-16 h-px bg-gray-300"></div>
+            </div>
+            <span class="text-xs text-blue-500 font-medium">Direct</span>
+          </div>
+          <div class="text-center">
+            <p class="text-xl font-bold text-gray-900">{{.ToCode}}</p>
+            <p class="text-sm text-gray-500">{{.ToCity}}</p>
+            <p class="text-xs text-gray-400 mt-1">{{.ArriveTime}}</p>
+          </div>
+        </div>
+        <!-- Price -->
+        <div class="flex flex-col items-end gap-2 shrink-0">
+          <span class="text-2xl font-bold text-blue-600">${{printf "%.0f" .Price}}</span>
+          <span class="text-xs text-gray-400">per person</span>
+          <button class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2 rounded-xl transition-colors">Select</button>
+        </div>
+      </div>
+      {{end}}
+    </div>
+    {{end}}
+
   </main>
 
-  <!-- Footer -->
   <footer class="bg-gray-800 text-gray-400 text-center text-sm py-5 mt-10">
     <p>TravelMirror &copy; 2026 &mdash; Powered by <span class="text-blue-400">travel-proxy-service</span></p>
   </footer>
