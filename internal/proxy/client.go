@@ -41,17 +41,19 @@ type FlightData struct {
 	Currency        string  `json:"currency"`
 }
 
-// --- internal destination structs ---
-
-type destResult struct {
+// DestSuggestion is returned by the /suggest endpoint.
+type DestSuggestion struct {
 	DestID     string `json:"dest_id"`
 	SearchType string `json:"search_type"`
+	DestType   string `json:"dest_type"`
 	Name       string `json:"name"`
+	Label      string `json:"label"`
+	ImageURL   string `json:"image_url"`
 }
 
 type destAPIResponse struct {
-	Status bool         `json:"status"`
-	Data   []destResult `json:"data"`
+	Status bool             `json:"status"`
+	Data   []DestSuggestion `json:"data"`
 }
 
 // --- internal hotel structs ---
@@ -161,22 +163,29 @@ func (pc *ProxyClient) doGet(endpoint string, params map[string]string) (*http.R
 	return pc.HTTPClient.Do(req)
 }
 
-func (pc *ProxyClient) SearchDestination(query string) (destID, searchType string, err error) {
+func (pc *ProxyClient) SearchDestinations(query string) ([]DestSuggestion, error) {
 	resp, err := pc.doGet("/api/v1/hotels/searchDestination", map[string]string{"query": query})
 	if err != nil {
-		return "", "", fmt.Errorf("destination search failed: %w", err)
+		return nil, fmt.Errorf("destination search failed: %w", err)
 	}
 	defer resp.Body.Close()
 
 	var payload destAPIResponse
 	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
-		return "", "", fmt.Errorf("failed to decode destination response: %w", err)
+		return nil, fmt.Errorf("failed to decode destination response: %w", err)
 	}
-	if len(payload.Data) == 0 {
+	return payload.Data, nil
+}
+
+func (pc *ProxyClient) SearchDestination(query string) (destID, searchType string, err error) {
+	results, err := pc.SearchDestinations(query)
+	if err != nil {
+		return "", "", err
+	}
+	if len(results) == 0 {
 		return "", "", fmt.Errorf("no results found for %q", query)
 	}
-	d := payload.Data[0]
-	return d.DestID, d.SearchType, nil
+	return results[0].DestID, results[0].SearchType, nil
 }
 
 func (pc *ProxyClient) FetchHotels(destID, searchType, checkin, checkout string) ([]HotelData, error) {

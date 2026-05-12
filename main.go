@@ -26,8 +26,9 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", travelHandler.HomeHandler)
 	mux.HandleFunc("/flights", travelHandler.FlightsHandler)
-	mux.HandleFunc("/status", handlers.HealthCheckHandler)
+	mux.HandleFunc("/suggest", travelHandler.SuggestHandler)
 	mux.HandleFunc("/travel-data", travelHandler.GetTravelDataHandler)
+	mux.HandleFunc("/status", handlers.HealthCheckHandler)
 
 	log.Println("Starting server on :8080...")
 	if err := http.ListenAndServe(":8080", middleware.LoggingMiddleware(mux)); err != nil {

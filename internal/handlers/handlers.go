@@ -112,6 +112,22 @@ func (h *TravelHandler) FlightsHandler(w http.ResponseWriter, r *http.Request) {
 	h.render(w, pd)
 }
 
+func (h *TravelHandler) SuggestHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Content-Type", "application/json")
+	q := r.URL.Query().Get("q")
+	if len(q) < 2 {
+		json.NewEncoder(w).Encode([]interface{}{})
+		return
+	}
+	results, err := h.ProxyClient.SearchDestinations(q)
+	if err != nil {
+		json.NewEncoder(w).Encode([]interface{}{})
+		return
+	}
+	json.NewEncoder(w).Encode(results)
+}
+
 func (h *TravelHandler) GetTravelDataHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Content-Type", "application/json")
