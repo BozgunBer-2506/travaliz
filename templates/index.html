@@ -48,7 +48,7 @@
   <!-- Main Content -->
   <main class="max-w-7xl mx-auto px-6 py-10 flex-1 w-full">
     <div class="flex items-center justify-between mb-6">
-      <h2 class="text-2xl font-semibold text-gray-800">Available Hotels</h2>
+      <h2 class="text-2xl font-semibold text-gray-800">Hotels in London <span class="text-sm font-normal text-gray-400">Jun 1-5 2026</span></h2>
       <span class="text-sm text-gray-400">{{len .Hotels}} properties found</span>
     </div>
 
@@ -56,25 +56,31 @@
       {{range .Hotels}}
       <div class="bg-white rounded-2xl shadow hover:shadow-xl transition-shadow duration-300 overflow-hidden flex flex-col">
 
-        <!-- Placeholder Image -->
-        <div class="bg-gradient-to-br from-blue-400 to-indigo-600 h-44 flex items-center justify-center relative">
-          <svg class="w-16 h-16 text-white opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-              d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 00-1-1h-2a1 1 0 00-1 1v5m4 0H9" />
-          </svg>
-          <span class="absolute top-3 right-3 bg-white text-blue-700 text-xs font-bold px-2 py-1 rounded-full shadow">
-            Featured
+        <!-- Hotel Photo -->
+        <div class="h-44 relative overflow-hidden bg-gradient-to-br from-blue-400 to-indigo-600">
+          {{if .PhotoURL}}
+          <img
+            src="{{.PhotoURL}}"
+            alt="{{.HotelName}}"
+            class="w-full h-full object-cover"
+            onerror="this.style.display='none'"
+          />
+          {{end}}
+          {{if .Stars}}
+          <span class="absolute top-3 left-3 bg-white text-yellow-500 text-xs font-bold px-2 py-1 rounded-full shadow">
+            {{.Stars}}★
           </span>
+          {{end}}
         </div>
 
         <!-- Card Body -->
         <div class="p-5 flex flex-col flex-1">
-          <h3 class="text-base font-semibold text-gray-900 capitalize leading-snug mb-1 line-clamp-1">
-            {{.Title}}
+          <h3 class="text-base font-semibold text-gray-900 leading-snug mb-1 line-clamp-1">
+            {{.HotelName}}
           </h3>
-          <p class="text-xs text-gray-500 leading-relaxed mb-4 line-clamp-3">
-            {{.Body}}
-          </p>
+          {{if .Location}}
+          <p class="text-xs text-gray-500 mb-4 line-clamp-1">{{.Location}}</p>
+          {{end}}
 
           <!-- Price & Rating -->
           <div class="mt-auto flex items-end justify-between">
@@ -82,10 +88,15 @@
               <span class="text-2xl font-bold text-blue-600">${{printf "%.0f" .Price}}</span>
               <span class="text-xs text-gray-400 ml-1">/night</span>
             </div>
-            <div class="flex items-center gap-1 bg-yellow-50 border border-yellow-200 rounded-lg px-2 py-1">
-              <span class="text-yellow-400 text-sm">★</span>
-              <span class="text-sm font-semibold text-gray-700">{{printf "%.1f" .Rating}}</span>
+            {{if .Rating}}
+            <div class="flex flex-col items-end gap-0.5">
+              <div class="flex items-center gap-1 bg-yellow-50 border border-yellow-200 rounded-lg px-2 py-1">
+                <span class="text-yellow-400 text-sm">★</span>
+                <span class="text-sm font-semibold text-gray-700">{{printf "%.1f" .Rating}}</span>
+              </div>
+              <span class="text-xs text-gray-400">{{.RatingWord}}</span>
             </div>
+            {{end}}
           </div>
 
           <button class="mt-4 w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-semibold py-2.5 rounded-xl transition-colors">

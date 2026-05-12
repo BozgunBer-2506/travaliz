@@ -3,62 +3,129 @@ package proxy
 import (
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"net/http"
 	"time"
 )
 
+const (
+	rapidAPIKey  = "8c145b23a1msh5288f08d5058e73p18692ejsn1e8fb15260c9"
+	rapidAPIHost = "booking-com15.p.rapidapi.com"
+	rapidAPIBase = "https://booking-com15.p.rapidapi.com"
+)
+
+// TravelData is the flat struct passed to the HTML template.
 type TravelData struct {
-	ID     int     `json:"id"`
-	Title  string  `json:"title"`
-	Body   string  `json:"body"`
-	UserID int     `json:"userId"`
-	Price  float64 `json:"price"`
-	Rating float64 `json:"rating"`
+	HotelID    int
+	HotelName  string
+	Location   string
+	Price      float64
+	Currency   string
+	Rating     float64
+	RatingWord string
+	PhotoURL   string
+	Stars      int
 }
 
+// --- internal structs for parsing the booking-com15 response ---
+
+type grossPrice struct {
+	Value    float64 `json:"value"`
+	Currency string  `json:"currency"`
+}
+
+type priceBreakdown struct {
+	GrossPrice grossPrice `json:"grossPrice"`
+}
+
+type hotelProperty struct {
+	ID                    int            `json:"id"`
+	Name                  string         `json:"name"`
+	ReviewScore           float64        `json:"reviewScore"`
+	ReviewScoreWord       string         `json:"reviewScoreWord"`
+	PhotoURLs             []string       `json:"photoUrls"`
+	PriceBreakdown        priceBreakdown `json:"priceBreakdown"`
+	AccuratePropertyClass int            `json:"accuratePropertyClass"`
+}
+
+type hotelItem struct {
+	HotelID  int           `json:"hotel_id"`
+	Property hotelProperty `json:"property"`
+}
+
+type hotelsData struct {
+	Hotels []hotelItem `json:"hotels"`
+}
+
+type apiResponse struct {
+	Status bool       `json:"status"`
+	Data   hotelsData `json:"data"`
+}
+
+// ---
+
 type ProxyClient struct {
-	BaseURL    string
 	HTTPClient *http.Client
 }
 
-func NewProxyClient(baseURL string) *ProxyClient {
+func NewProxyClient(_ string) *ProxyClient {
 	return &ProxyClient{
-		BaseURL: baseURL,
-		HTTPClient: &http.Client{
-			Timeout: 10 * time.Second,
-		},
+		HTTPClient: &http.Client{Timeout: 10 * time.Second},
 	}
 }
 
-func simulatePrice() float64 {
-	return 50 + rand.Float64()*250
-}
-
-func simulateRating() float64 {
-	return 3.0 + rand.Float64()*2.0
-}
-
 func (pc *ProxyClient) FetchTravelData() ([]TravelData, error) {
-	resp, err := pc.HTTPClient.Get(pc.BaseURL + "/posts")
+	req, err := http.NewRequest("GET", rapidAPIBase+"/api/v1/hotels/searchHotels", nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch data from external API: %w", err)
+		return nil, fmt.Errorf("failed to build request: %w", err)
+	}
+
+	q := req.URL.Query()
+	q.Add("dest_id", "-2601889")
+	q.Add("search_type", "CITY")
+	q.Add("arrival_date", "2026-06-01")
+	q.Add("departure_date", "2026-06-05")
+	q.Add("adults", "2")
+	q.Add("room_qty", "1")
+	q.Add("currency_code", "USD")
+	q.Add("languagecode", "en-us")
+	req.URL.RawQuery = q.Encode()
+
+	req.Header.Set("X-RapidAPI-Key", rapidAPIKey)
+	req.Header.Set("X-RapidAPI-Host", rapidAPIHost)
+
+	resp, err := pc.HTTPClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("upstream request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("external API returned non-OK status: %d", resp.StatusCode)
+		return nil, fmt.Errorf("upstream API returned status %d", resp.StatusCode)
 	}
 
-	var data []TravelData
-	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
-		return nil, fmt.Errorf("failed to decode external API response: %w", err)
+	var payload apiResponse
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		return nil, fmt.Errorf("failed to decode API response: %w", err)
 	}
 
-	for i := range data {
-		data[i].Price = simulatePrice()
-		data[i].Rating = simulateRating()
+	hotels := make([]TravelData, 0, len(payload.Data.Hotels))
+	for _, item := range payload.Data.Hotels {
+		p := item.Property
+		photoURL := ""
+		if len(p.PhotoURLs) > 0 {
+			photoURL = p.PhotoURLs[0]
+		}
+		hotels = append(hotels, TravelData{
+			HotelID:    item.HotelID,
+			HotelName:  p.Name,
+			Price:      p.PriceBreakdown.GrossPrice.Value,
+			Currency:   p.PriceBreakdown.GrossPrice.Currency,
+			Rating:     p.ReviewScore,
+			RatingWord: p.ReviewScoreWord,
+			PhotoURL:   photoURL,
+			Stars:      p.AccuratePropertyClass,
+		})
 	}
 
-	return data, nil
+	return hotels, nil
 }
