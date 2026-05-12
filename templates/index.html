@@ -16,12 +16,11 @@
       display: flex; align-items: center; gap: 10px;
       padding: 10px 14px; cursor: pointer; font-size: 0.875rem; color: #374151;
     }
-    .autocomplete-item:hover { background: #eff6ff; }
-    .autocomplete-item img { width: 32px; height: 32px; object-fit: cover; border-radius: 4px; flex-shrink: 0; }
+    .autocomplete-item:hover, .autocomplete-item.active { background: #eff6ff; }
     .autocomplete-item .dest-label { font-weight: 500; }
     .autocomplete-item .dest-sub { font-size: 0.75rem; color: #9ca3af; }
     .toast {
-      position: fixed; bottom: 24px; right: 24px; z-index: 999;
+      position: fixed; bottom: 24px; right: 24px; z-index: 9999;
       background: #1d4ed8; color: white; padding: 14px 20px;
       border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,.2);
       font-size: 0.9rem; font-weight: 500; max-width: 360px;
@@ -30,250 +29,332 @@
     }
     .toast.show { transform: translateY(0); opacity: 1; }
     .toast.error { background: #dc2626; }
+    .spinner {
+      display: inline-block; width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,.4); border-top-color: white;
+      border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body class="bg-gray-50 min-h-screen flex flex-col">
 
-  <!-- Toast -->
-  <div id="toast" class="toast"></div>
+<!-- Toast -->
+<div id="toast" class="toast"></div>
 
-  <!-- Header -->
-  <header class="bg-blue-700 text-white py-5 shadow-lg">
-    <div class="max-w-7xl mx-auto px-6 flex items-center justify-between">
-      <a href="/" class="block">
-        <h1 class="text-3xl font-bold tracking-tight">TravelMirror</h1>
-        <p class="text-blue-200 text-sm mt-0.5">Hotels & Flights worldwide</p>
+<!-- Booking Confirmation Modal -->
+<div id="booking-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4" onclick="if(event.target===this)closeBookingModal()">
+  <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden">
+    <div id="modal-flight-header" class="hidden bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-5 text-center">
+      <div class="text-4xl mb-1">&#9992;</div>
+      <p id="modal-route" class="text-lg font-bold tracking-wide"></p>
+    </div>
+    <div class="p-6">
+      <div class="flex items-start justify-between mb-4">
+        <div class="flex-1 mr-3">
+          <p id="modal-type-label" class="text-xs text-gray-400 uppercase tracking-wide mb-0.5"></p>
+          <h3 id="modal-name" class="text-base font-semibold text-gray-900 leading-snug"></h3>
+        </div>
+        <button onclick="closeBookingModal()" class="text-gray-300 hover:text-gray-500 text-2xl leading-none">&times;</button>
+      </div>
+      <div id="modal-details" class="space-y-1.5 text-sm text-gray-600 mb-4 bg-gray-50 rounded-xl p-3"></div>
+      <div class="bg-blue-50 rounded-xl p-3 mb-5 flex items-center justify-between border border-blue-100">
+        <div>
+          <p class="text-xs text-gray-400 mb-0.5">Booking Reference</p>
+          <p id="modal-ref" class="text-xl font-bold text-blue-600 tracking-widest font-mono"></p>
+        </div>
+        <span class="text-2xl">&#127915;</span>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <button onclick="closeBookingModal()" class="border border-gray-200 text-gray-500 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors">
+          Cancel
+        </button>
+        <button id="modal-confirm-btn" class="bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors">
+          Confirm Booking
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Header -->
+<header class="bg-blue-700 text-white py-5 shadow-lg">
+  <div class="max-w-7xl mx-auto px-6 flex items-center justify-between">
+    <a href="/" class="block">
+      <h1 class="text-3xl font-bold tracking-tight">TravelMirror</h1>
+      <p class="text-blue-200 text-sm mt-0.5">Hotels &amp; Flights worldwide</p>
+    </a>
+    <nav class="flex items-center gap-2 text-sm font-medium">
+      <a href="/" class="px-4 py-2 rounded-lg transition-colors {{if eq .Tab "hotels"}}bg-white text-blue-700 font-semibold{{else}}text-blue-100 hover:bg-blue-600{{end}}">
+        Hotels
       </a>
-      <nav class="flex items-center gap-2 text-sm font-medium">
-        <a href="/" class="px-4 py-2 rounded-lg transition-colors {{if eq .Tab "hotels"}}bg-white text-blue-700 font-semibold{{else}}text-blue-100 hover:bg-blue-600{{end}}">
-          Hotels
-        </a>
-        <a href="/flights" class="px-4 py-2 rounded-lg transition-colors {{if eq .Tab "flights"}}bg-white text-blue-700 font-semibold{{else}}text-blue-100 hover:bg-blue-600{{end}}">
-          Flights
-        </a>
-        <button onclick="toggleBookings()" class="relative px-4 py-2 rounded-lg text-blue-100 hover:bg-blue-600 transition-colors">
-          Bookings
-          <span id="booking-badge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center"></span>
-        </button>
-      </nav>
-    </div>
-  </header>
-
-  <!-- Search Bar -->
-  <div class="bg-white border-b shadow-sm py-5">
-    <div class="max-w-7xl mx-auto px-6">
-
-      {{if eq .Tab "hotels"}}
-      <form method="GET" action="/" class="flex flex-col sm:flex-row gap-3" id="hotel-form">
-        <div class="relative flex-1">
-          <input id="city-input" name="q" value="{{.City}}" type="text"
-            autocomplete="off" placeholder="Where do you want to go?"
-            class="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-        </div>
-        <input name="checkin" id="checkin" value="{{.Checkin}}" type="date"
-          class="border border-gray-300 rounded-lg px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-        <input name="checkout" id="checkout" value="{{.Checkout}}" type="date"
-          class="border border-gray-300 rounded-lg px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-        <button type="submit"
-          class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-lg transition-colors whitespace-nowrap">
-          Search Hotels
-        </button>
-      </form>
-      {{end}}
-
-      {{if eq .Tab "flights"}}
-      <form method="GET" action="/flights" class="flex flex-col sm:flex-row gap-3">
-        <div class="relative flex-1">
-          <input id="from-input" name="from" value="{{.FromID}}" type="text"
-            autocomplete="off" placeholder="From (e.g. London, Paris...)"
-            class="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-        </div>
-        <div class="relative flex-1">
-          <input id="to-input" name="to" value="{{.ToID}}" type="text"
-            autocomplete="off" placeholder="To (e.g. Berlin, Rome...)"
-            class="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-        </div>
-        <input name="date" value="{{.Date}}" type="date"
-          class="border border-gray-300 rounded-lg px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-        <button type="submit"
-          class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-lg transition-colors whitespace-nowrap">
-          Search Flights
-        </button>
-      </form>
-      {{end}}
-
-    </div>
-  </div>
-
-  <!-- Bookings Drawer -->
-  <div id="bookings-drawer" class="hidden fixed inset-y-0 right-0 w-80 bg-white shadow-2xl z-50 flex flex-col">
-    <div class="flex items-center justify-between px-5 py-4 border-b">
-      <h2 class="text-lg font-semibold text-gray-800">Your Bookings</h2>
-      <button onclick="toggleBookings()" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
-    </div>
-    <div id="bookings-list" class="flex-1 overflow-y-auto px-5 py-4 space-y-3 text-sm text-gray-600">
-      <p class="text-gray-400 text-center mt-8" id="no-bookings-msg">No bookings yet.</p>
-    </div>
-    <div class="px-5 py-4 border-t">
-      <button onclick="clearBookings()" class="w-full text-sm text-red-500 hover:text-red-700 transition-colors">
-        Clear all bookings
+      <a href="/flights" class="px-4 py-2 rounded-lg transition-colors {{if eq .Tab "flights"}}bg-white text-blue-700 font-semibold{{else}}text-blue-100 hover:bg-blue-600{{end}}">
+        Flights
+      </a>
+      <button onclick="toggleBookings()" class="relative px-4 py-2 rounded-lg text-blue-100 hover:bg-blue-600 transition-colors">
+        Bookings
+        <span id="booking-badge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center"></span>
       </button>
-    </div>
+    </nav>
   </div>
-  <div id="bookings-overlay" class="hidden fixed inset-0 bg-black bg-opacity-30 z-40" onclick="toggleBookings()"></div>
+</header>
 
-  <!-- Main Content -->
-  <main class="max-w-7xl mx-auto px-6 py-10 flex-1 w-full">
+<!-- Search Bar -->
+<div class="bg-white border-b shadow-sm py-5">
+  <div class="max-w-7xl mx-auto px-6">
 
-    {{if .Error}}
-    <div class="bg-red-50 border border-red-200 text-red-700 rounded-xl px-6 py-4 mb-8 text-sm flex items-center gap-3">
-      <span class="text-lg">⚠</span> {{.Error}}
-    </div>
-    {{end}}
-
-    <!-- HOTELS -->
     {{if eq .Tab "hotels"}}
-    <div class="flex items-center justify-between mb-6">
-      <h2 class="text-2xl font-semibold text-gray-800 capitalize">Hotels in {{.City}}</h2>
-      <span class="text-sm text-gray-400">{{len .Hotels}} properties found</span>
-    </div>
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      {{range .Hotels}}
-      <div class="bg-white rounded-2xl shadow hover:shadow-xl transition-shadow duration-300 overflow-hidden flex flex-col">
-        <div class="h-44 relative overflow-hidden bg-gradient-to-br from-blue-400 to-indigo-600">
-          {{if .PhotoURL}}
-          <img src="{{.PhotoURL}}" alt="{{.HotelName}}" class="w-full h-full object-cover"
-            onerror="this.style.display='none'" loading="lazy" />
-          {{end}}
-          {{if .Stars}}
-          <span class="absolute top-3 left-3 bg-white text-yellow-500 text-xs font-bold px-2 py-1 rounded-full shadow">
-            {{.Stars}}★
-          </span>
-          {{end}}
-        </div>
-        <div class="p-5 flex flex-col flex-1">
-          <h3 class="text-base font-semibold text-gray-900 leading-snug mb-3 line-clamp-2">{{.HotelName}}</h3>
-          <div class="mt-auto flex items-end justify-between">
-            <div>
-              <span class="text-2xl font-bold text-blue-600">${{printf "%.0f" .Price}}</span>
-              <span class="text-xs text-gray-400 ml-1">/night</span>
-            </div>
-            {{if .Rating}}
-            <div class="flex flex-col items-end gap-0.5">
-              <div class="flex items-center gap-1 bg-yellow-50 border border-yellow-200 rounded-lg px-2 py-1">
-                <span class="text-yellow-400">★</span>
-                <span class="text-sm font-semibold text-gray-700">{{printf "%.1f" .Rating}}</span>
-              </div>
-              <span class="text-xs text-gray-400">{{.RatingWord}}</span>
-            </div>
-            {{end}}
-          </div>
-          <button
-            class="mt-4 w-full bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-sm font-semibold py-2.5 rounded-xl transition-all book-btn"
-            data-id="{{.HotelID}}"
-            data-name="{{.HotelName}}"
-            data-price="{{printf "%.0f" .Price}}"
-            data-photo="{{.PhotoURL}}">
-            Book Now
-          </button>
-        </div>
+    <form method="GET" action="/" class="flex flex-col sm:flex-row gap-3" id="hotel-form" onsubmit="setLoading(this)">
+      <div class="relative flex-1">
+        <input id="city-display" type="text" autocomplete="off" placeholder="Where do you want to go?"
+          value="{{.City}}"
+          class="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        <input id="city-input" name="q" type="hidden" value="{{.City}}" />
+        <input id="city-entity" name="entityId" type="hidden" value="{{.CityEntityID}}" />
       </div>
-      {{end}}
-    </div>
+      <input name="checkin" id="checkin" value="{{.Checkin}}" type="date"
+        class="border border-gray-300 rounded-lg px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      <input name="checkout" id="checkout" value="{{.Checkout}}" type="date"
+        class="border border-gray-300 rounded-lg px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      <button type="submit"
+        class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-lg transition-colors whitespace-nowrap">
+        Search Hotels
+      </button>
+    </form>
     {{end}}
 
-    <!-- FLIGHTS -->
     {{if eq .Tab "flights"}}
-    <div class="flex items-center justify-between mb-6">
-      <h2 class="text-2xl font-semibold text-gray-800">
-        {{.FromID}} <span class="text-blue-500">→</span> {{.ToID}}
-      </h2>
-      <span class="text-sm text-gray-400">{{len .Flights}} flights found</span>
-    </div>
-    <div class="flex flex-col gap-4">
-      {{range .Flights}}
-      <div class="bg-white rounded-2xl shadow hover:shadow-lg transition-shadow p-6 flex flex-col sm:flex-row items-center gap-6">
-        <div class="flex items-center gap-3 w-36 shrink-0">
-          {{if .AirlineLogo}}
-          <img src="{{.AirlineLogo}}" alt="{{.Airline}}" class="h-8 w-8 object-contain rounded"
-            onerror="this.style.display='none'" />
-          {{end}}
-          <span class="text-sm font-medium text-gray-700 leading-tight">{{.Airline}}</span>
-        </div>
-        <div class="flex-1 flex items-center justify-center gap-4">
-          <div class="text-center">
-            <p class="text-2xl font-bold text-gray-900">{{.FromCode}}</p>
-            <p class="text-sm text-gray-500">{{.FromCity}}</p>
-            <p class="text-xs text-gray-400 mt-0.5">{{.DepartTime}}</p>
-          </div>
-          <div class="flex flex-col items-center gap-1 px-2">
-            <span class="text-xs text-gray-400">{{.DurationHours}}h {{.DurationMinutes}}m</span>
-            <div class="flex items-center gap-1">
-              <div class="w-12 sm:w-20 h-px bg-gray-300"></div>
-              <span class="text-gray-400 text-sm">✈</span>
-              <div class="w-12 sm:w-20 h-px bg-gray-300"></div>
-            </div>
-            <span class="text-xs text-blue-500 font-medium">Economy</span>
-          </div>
-          <div class="text-center">
-            <p class="text-2xl font-bold text-gray-900">{{.ToCode}}</p>
-            <p class="text-sm text-gray-500">{{.ToCity}}</p>
-            <p class="text-xs text-gray-400 mt-0.5">{{.ArriveTime}}</p>
-          </div>
-        </div>
-        <div class="flex flex-col items-end gap-2 shrink-0">
-          <span class="text-2xl font-bold text-blue-600">${{printf "%.0f" .Price}}</span>
-          <span class="text-xs text-gray-400">per person</span>
-          <button
-            class="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-sm font-semibold px-6 py-2 rounded-xl transition-all flight-book-btn"
-            data-from="{{.FromCode}}" data-to="{{.ToCode}}"
-            data-airline="{{.Airline}}" data-price="{{printf "%.0f" .Price}}"
-            data-depart="{{.DepartTime}}">
-            Select
-          </button>
-        </div>
+    <form method="GET" action="/flights" class="flex flex-col sm:flex-row gap-3" onsubmit="setLoading(this)">
+      <div class="relative flex-1">
+        <input id="from-display" type="text" autocomplete="off" placeholder="From (city or airport)"
+          value="{{.FromSkyID}}"
+          class="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        <input name="fromSky" id="from-sky" type="hidden" value="{{.FromSkyID}}" />
+        <input name="fromEntity" id="from-entity" type="hidden" value="{{.FromEntityID}}" />
       </div>
-      {{end}}
-    </div>
+      <div class="relative flex-1">
+        <input id="to-display" type="text" autocomplete="off" placeholder="To (city or airport)"
+          value="{{.ToSkyID}}"
+          class="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        <input name="toSky" id="to-sky" type="hidden" value="{{.ToSkyID}}" />
+        <input name="toEntity" id="to-entity" type="hidden" value="{{.ToEntityID}}" />
+      </div>
+      <input name="date" value="{{.Date}}" type="date"
+        class="border border-gray-300 rounded-lg px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      <button type="submit"
+        class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-lg transition-colors whitespace-nowrap">
+        Search Flights
+      </button>
+    </form>
     {{end}}
 
-  </main>
+  </div>
+</div>
 
-  <footer class="bg-gray-800 text-gray-400 text-center text-sm py-5 mt-10">
-    <p>TravelMirror &copy; 2026 &mdash; Powered by <span class="text-blue-400">Booking.com API</span></p>
-  </footer>
+<!-- Bookings Drawer -->
+<div id="bookings-drawer" class="hidden fixed inset-y-0 right-0 w-80 bg-white shadow-2xl z-50 flex flex-col">
+  <div class="flex items-center justify-between px-5 py-4 border-b">
+    <h2 class="text-lg font-semibold text-gray-800">Your Bookings</h2>
+    <button onclick="toggleBookings()" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+  </div>
+  <div id="bookings-list" class="flex-1 overflow-y-auto px-5 py-4 space-y-3 text-sm text-gray-600">
+    <p class="text-gray-400 text-center mt-8" id="no-bookings-msg">No bookings yet.</p>
+  </div>
+  <div class="px-5 py-4 border-t">
+    <button onclick="clearBookings()" class="w-full text-sm text-red-500 hover:text-red-700 transition-colors">
+      Clear all bookings
+    </button>
+  </div>
+</div>
+<div id="bookings-overlay" class="hidden fixed inset-0 bg-black bg-opacity-30 z-40" onclick="toggleBookings()"></div>
+
+<!-- Main Content -->
+<main class="max-w-7xl mx-auto px-6 py-10 flex-1 w-full">
+
+  {{if .Error}}
+  <div class="bg-red-50 border border-red-200 text-red-700 rounded-xl px-6 py-4 mb-8 text-sm flex items-center gap-3">
+    <span class="text-lg">&#9888;</span> {{.Error}}
+  </div>
+  {{end}}
+
+  <!-- HOTELS -->
+  {{if eq .Tab "hotels"}}
+  {{if .City}}
+  <div class="flex items-center justify-between mb-6">
+    <h2 class="text-2xl font-semibold text-gray-800">Hotels in {{.City}}</h2>
+    <span class="text-sm text-gray-400">{{len .Hotels}} properties found</span>
+  </div>
+  {{if .Hotels}}
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    {{range .Hotels}}
+    <div class="bg-white rounded-2xl shadow hover:shadow-xl transition-shadow duration-300 overflow-hidden flex flex-col">
+      <div class="h-44 relative overflow-hidden bg-gradient-to-br from-blue-400 to-indigo-600">
+        {{if .PhotoURL}}
+        <img src="{{.PhotoURL}}" alt="{{.HotelName}}" class="w-full h-full object-cover"
+          onerror="this.style.display='none'" loading="lazy" />
+        {{end}}
+        {{if .Stars}}
+        <span class="absolute top-3 left-3 bg-white text-yellow-500 text-xs font-bold px-2 py-1 rounded-full shadow">
+          {{.Stars}}&#9733;
+        </span>
+        {{end}}
+      </div>
+      <div class="p-5 flex flex-col flex-1">
+        <h3 class="text-base font-semibold text-gray-900 leading-snug mb-3 line-clamp-2">{{.HotelName}}</h3>
+        <div class="mt-auto flex items-end justify-between">
+          <div>
+            <span class="text-2xl font-bold text-blue-600">${{printf "%.0f" .Price}}</span>
+            <span class="text-xs text-gray-400 ml-1">/night</span>
+          </div>
+          {{if .Rating}}
+          <div class="flex flex-col items-end gap-0.5">
+            <div class="flex items-center gap-1 bg-yellow-50 border border-yellow-200 rounded-lg px-2 py-1">
+              <span class="text-yellow-400">&#9733;</span>
+              <span class="text-sm font-semibold text-gray-700">{{printf "%.1f" .Rating}}</span>
+            </div>
+          </div>
+          {{end}}
+        </div>
+        <button
+          class="mt-4 w-full bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-sm font-semibold py-2.5 rounded-xl transition-all book-btn"
+          data-id="{{.HotelID}}"
+          data-name="{{.HotelName}}"
+          data-price="{{printf "%.0f" .Price}}"
+          data-photo="{{.PhotoURL}}">
+          Book Now
+        </button>
+      </div>
+    </div>
+    {{end}}
+  </div>
+  {{else}}
+  <!-- Hotel search not available on free tier - show Skyscanner deep link -->
+  <div class="text-center py-16">
+    <div class="text-5xl mb-4">&#127970;</div>
+    <p class="text-xl font-semibold text-gray-700 mb-2">Search Hotels for "{{.City}}"</p>
+    <p class="text-sm text-gray-400 mb-6">View real-time prices and availability on Skyscanner</p>
+    <a href="https://www.skyscanner.net/hotels/{{.City | urlquery}}" target="_blank"
+      class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-xl transition-colors text-sm">
+      &#127970; Search Hotels on Skyscanner
+    </a>
+    <p class="text-xs text-gray-300 mt-4">Opens Skyscanner in a new tab</p>
+  </div>
+  {{end}}
+  {{else}}
+  <!-- Landing state - no city selected yet -->
+  <div class="text-center py-20 text-gray-400">
+    <div class="text-6xl mb-4">&#127968;</div>
+    <p class="text-xl font-medium text-gray-600">Where do you want to go?</p>
+    <p class="text-sm mt-2">Search a city above to find hotels</p>
+  </div>
+  {{end}}
+  {{end}}
+
+  <!-- FLIGHTS -->
+  {{if eq .Tab "flights"}}
+  <div class="flex items-center justify-between mb-6">
+    <h2 class="text-2xl font-semibold text-gray-800">
+      {{if .FromCity}}{{.FromCity}}{{else}}{{.FromSkyID}}{{end}}
+      <span class="text-blue-500 mx-2">&#8594;</span>
+      {{if .ToCity}}{{.ToCity}}{{else}}{{.ToSkyID}}{{end}}
+    </h2>
+    <span class="text-sm text-gray-400">{{len .Flights}} flights found</span>
+  </div>
+  {{if .Flights}}
+  <div class="flex flex-col gap-4">
+    {{range .Flights}}
+    <div class="bg-white rounded-2xl shadow hover:shadow-lg transition-shadow p-6 flex flex-col sm:flex-row items-center gap-6">
+      <div class="flex items-center gap-3 w-40 shrink-0">
+        {{if .AirlineLogo}}
+        <img src="{{.AirlineLogo}}" alt="{{.Airline}}" class="h-8 w-8 object-contain rounded"
+          onerror="this.style.display='none'" />
+        {{end}}
+        <div>
+          <span class="text-sm font-medium text-gray-700 leading-tight block">{{.Airline}}</span>
+          {{if eq .Stops 0}}
+          <span class="text-xs text-green-600 font-medium">Direct</span>
+          {{else}}
+          <span class="text-xs text-orange-500 font-medium">{{.Stops}} stop{{if gt .Stops 1}}s{{end}}</span>
+          {{end}}
+        </div>
+      </div>
+      <div class="flex-1 flex items-center justify-center gap-4">
+        <div class="text-center">
+          <p class="text-2xl font-bold text-gray-900">{{.FromCode}}</p>
+          <p class="text-base font-semibold text-gray-700 mt-0.5">{{.DepartTime}}</p>
+        </div>
+        <div class="flex flex-col items-center gap-1 px-2">
+          <span class="text-xs text-gray-400">{{.DurationHours}}h {{.DurationMinutes}}m</span>
+          <div class="flex items-center gap-1">
+            <div class="w-12 sm:w-24 h-px bg-gray-300"></div>
+            <span class="text-gray-400 text-sm">&#9992;</span>
+            <div class="w-12 sm:w-24 h-px bg-gray-300"></div>
+          </div>
+        </div>
+        <div class="text-center">
+          <p class="text-2xl font-bold text-gray-900">{{.ToCode}}</p>
+          <p class="text-base font-semibold text-gray-700 mt-0.5">{{.ArriveTime}}</p>
+        </div>
+      </div>
+      <div class="flex flex-col items-end gap-2 shrink-0">
+        <span class="text-2xl font-bold text-blue-600">${{printf "%.0f" .Price}}</span>
+        <span class="text-xs text-gray-400">per person</span>
+        <button
+          class="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-sm font-semibold px-6 py-2 rounded-xl transition-all flight-book-btn"
+          data-from="{{.FromCode}}" data-to="{{.ToCode}}"
+          data-airline="{{.Airline}}" data-price="{{printf "%.0f" .Price}}"
+          data-depart="{{.DepartTime}}" data-arrive="{{.ArriveTime}}"
+          data-duration="{{.DurationHours}}h {{.DurationMinutes}}m"
+          data-stops="{{.Stops}}">
+          Select
+        </button>
+      </div>
+    </div>
+    {{end}}
+  </div>
+  {{else if not .Error}}
+  <div class="text-center py-20 text-gray-400">
+    <div class="text-5xl mb-4">&#9992;</div>
+    <p class="text-lg font-medium">No flights found for this route</p>
+    <p class="text-sm mt-1">Try different airports or a different date.</p>
+  </div>
+  {{end}}
+  {{end}}
+
+</main>
+
+<footer class="bg-gray-800 text-gray-400 text-center text-sm py-5 mt-10">
+  <p>TravelMirror &copy; 2026 - Powered by <span class="text-blue-400">Skyscanner API</span></p>
+</footer>
 
 <script>
-// ── Utilities ──────────────────────────────────────────────────────────────
+// ── Utilities ────────────────────────────────────────────────────────────────
 function debounce(fn, ms) {
   let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
 }
-
 function showToast(msg, isError = false) {
   const el = document.getElementById('toast');
   el.textContent = msg;
   el.className = 'toast' + (isError ? ' error' : '');
   el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 3500);
+  setTimeout(() => el.classList.remove('show'), 4000);
+}
+function setLoading(form) {
+  const btn = form.querySelector('button[type=submit]');
+  if (!btn) return;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Searching...';
 }
 
-// ── Bookings ────────────────────────────────────────────────────────────────
-function getBookings() {
-  return JSON.parse(localStorage.getItem('tm_bookings') || '[]');
-}
-function saveBookings(b) {
-  localStorage.setItem('tm_bookings', JSON.stringify(b));
-}
+// ── Bookings ─────────────────────────────────────────────────────────────────
+function getBookings() { return JSON.parse(localStorage.getItem('tm_bookings') || '[]'); }
+function saveBookings(b) { localStorage.setItem('tm_bookings', JSON.stringify(b)); }
 function updateBadge() {
   const b = getBookings();
   const badge = document.getElementById('booking-badge');
   if (!badge) return;
-  if (b.length > 0) {
-    badge.textContent = b.length;
-    badge.classList.remove('hidden');
-  } else {
-    badge.classList.add('hidden');
-  }
+  badge.textContent = b.length;
+  badge.classList.toggle('hidden', b.length === 0);
 }
 function renderBookings() {
   const list = document.getElementById('bookings-list');
@@ -281,10 +362,7 @@ function renderBookings() {
   const b = getBookings();
   if (!list) return;
   list.querySelectorAll('.booking-item').forEach(el => el.remove());
-  if (b.length === 0) {
-    noMsg.classList.remove('hidden');
-    return;
-  }
+  if (b.length === 0) { noMsg.classList.remove('hidden'); return; }
   noMsg.classList.add('hidden');
   b.forEach(item => {
     const div = document.createElement('div');
@@ -292,10 +370,10 @@ function renderBookings() {
     div.innerHTML = `
       <p class="font-semibold text-gray-800 text-sm">${item.name}</p>
       <p class="text-xs text-gray-500 mt-0.5">${item.type === 'flight'
-        ? `${item.from} → ${item.to} &bull; ${item.airline}`
-        : `$${item.price}/night`}
-      </p>
-      <p class="text-xs text-blue-500 mt-1">Booked ${new Date(item.at).toLocaleString()}</p>`;
+        ? `${item.from} &rarr; ${item.to} &bull; ${item.airline}`
+        : `$${item.price}/night`}</p>
+      ${item.ref ? `<p class="text-xs font-mono text-blue-500 mt-0.5">Ref: ${item.ref}</p>` : ''}
+      <p class="text-xs text-gray-400 mt-1">${new Date(item.at).toLocaleString()}</p>`;
     list.appendChild(div);
   });
 }
@@ -307,9 +385,7 @@ function addBooking(entry) {
   renderBookings();
 }
 function clearBookings() {
-  saveBookings([]);
-  updateBadge();
-  renderBookings();
+  saveBookings([]); updateBadge(); renderBookings();
   showToast('All bookings cleared.');
 }
 function toggleBookings() {
@@ -321,116 +397,200 @@ function toggleBookings() {
   if (!isOpen) renderBookings();
 }
 
-// ── Book Now (hotels) ───────────────────────────────────────────────────────
-document.querySelectorAll('.book-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    addBooking({
-      type: 'hotel',
-      name: btn.dataset.name,
-      price: btn.dataset.price,
-    });
-    showToast('Rezervasyon yapıldı: ' + btn.dataset.name);
+// ── Booking Modal ─────────────────────────────────────────────────────────────
+let pendingBooking = null;
+function openBookingModal(booking) {
+  pendingBooking = booking;
+  const ref = 'TM' + Math.random().toString(36).substring(2, 8).toUpperCase();
+  pendingBooking.ref = ref;
+  document.getElementById('modal-ref').textContent = ref;
+
+  const flightHeader = document.getElementById('modal-flight-header');
+  document.getElementById('modal-type-label').textContent = booking.type === 'flight' ? 'Flight' : 'Hotel';
+  document.getElementById('modal-name').textContent = booking.type === 'flight' ? booking.airline : booking.name;
+
+  if (booking.type === 'flight') {
+    flightHeader.classList.remove('hidden');
+    document.getElementById('modal-route').textContent = `${booking.from} → ${booking.to}`;
+    document.getElementById('modal-details').innerHTML = `
+      <div class="flex justify-between"><span class="text-gray-400">Route</span><span class="font-medium">${booking.from} → ${booking.to}</span></div>
+      <div class="flex justify-between"><span class="text-gray-400">Departs</span><span class="font-medium">${booking.depart}</span></div>
+      <div class="flex justify-between"><span class="text-gray-400">Arrives</span><span class="font-medium">${booking.arrive}</span></div>
+      <div class="flex justify-between"><span class="text-gray-400">Duration</span><span class="font-medium">${booking.duration}</span></div>
+      <div class="flex justify-between"><span class="text-gray-400">Stops</span><span class="font-medium">${booking.stops == 0 ? 'Direct' : booking.stops + ' stop(s)'}</span></div>
+      <div class="flex justify-between"><span class="text-gray-400">Price</span><span class="font-semibold text-blue-600">$${booking.price} per person</span></div>`;
+  } else {
+    flightHeader.classList.add('hidden');
+    document.getElementById('modal-details').innerHTML = `
+      <div class="flex justify-between"><span class="text-gray-400">Hotel</span><span class="font-medium">${booking.name}</span></div>
+      <div class="flex justify-between"><span class="text-gray-400">Check-in</span><span class="font-medium">${booking.checkin || '-'}</span></div>
+      <div class="flex justify-between"><span class="text-gray-400">Check-out</span><span class="font-medium">${booking.checkout || '-'}</span></div>
+      <div class="flex justify-between"><span class="text-gray-400">Price</span><span class="font-semibold text-blue-600">$${booking.price}/night</span></div>`;
+  }
+  document.getElementById('booking-modal').classList.remove('hidden');
+}
+function closeBookingModal() {
+  document.getElementById('booking-modal').classList.add('hidden');
+  pendingBooking = null;
+}
+document.getElementById('modal-confirm-btn').addEventListener('click', () => {
+  if (!pendingBooking) return;
+  const booking = { ...pendingBooking };
+  const btn = booking._btn;
+  delete booking._btn;
+  addBooking(booking);
+  closeBookingModal();
+  showToast('Booking confirmed! Ref: ' + booking.ref);
+  if (btn) {
     btn.textContent = 'Booked ✓';
     btn.disabled = true;
-    btn.classList.replace('bg-blue-600', 'bg-green-500');
-    btn.classList.replace('hover:bg-blue-700', 'hover:bg-green-500');
+    btn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+    btn.classList.add('bg-green-500', 'hover:bg-green-500');
+  }
+});
+
+// ── Book Now (hotels) ─────────────────────────────────────────────────────────
+document.querySelectorAll('.book-btn').forEach(btn => {
+  const bookedIDs = getBookings().filter(b => b.type === 'hotel').map(b => String(b.hotelId));
+  if (bookedIDs.includes(btn.dataset.id)) {
+    btn.textContent = 'Booked ✓'; btn.disabled = true;
+    btn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+    btn.classList.add('bg-green-500', 'hover:bg-green-500');
+    return;
+  }
+  btn.addEventListener('click', () => {
+    openBookingModal({
+      type: 'hotel', hotelId: btn.dataset.id,
+      name: btn.dataset.name, price: btn.dataset.price,
+      checkin: document.getElementById('checkin')?.value || '',
+      checkout: document.getElementById('checkout')?.value || '',
+      _btn: btn,
+    });
   });
 });
 
-// ── Select (flights) ────────────────────────────────────────────────────────
+// ── Select (flights) ──────────────────────────────────────────────────────────
 document.querySelectorAll('.flight-book-btn').forEach(btn => {
   btn.addEventListener('click', () => {
-    addBooking({
+    openBookingModal({
       type: 'flight',
       name: `${btn.dataset.from} → ${btn.dataset.to}`,
-      from: btn.dataset.from,
-      to: btn.dataset.to,
-      airline: btn.dataset.airline,
-      price: btn.dataset.price,
+      from: btn.dataset.from, to: btn.dataset.to,
+      airline: btn.dataset.airline, price: btn.dataset.price,
+      depart: btn.dataset.depart, arrive: btn.dataset.arrive,
+      duration: btn.dataset.duration, stops: btn.dataset.stops,
+      _btn: btn,
     });
-    showToast(`Flight booked: ${btn.dataset.from} → ${btn.dataset.to}`);
-    btn.textContent = 'Selected ✓';
-    btn.disabled = true;
-    btn.classList.replace('bg-blue-600', 'bg-green-500');
   });
 });
 
-// ── Autocomplete ────────────────────────────────────────────────────────────
-function makeAutocomplete(inputEl, getDisplayValue) {
+// ── Autocomplete ──────────────────────────────────────────────────────────────
+function makeAutocomplete(displayEl, endpointUrl, onSelect, renderItemFn) {
   let active = -1;
-
   function removeDropdown() {
-    const d = inputEl.parentElement.querySelector('.autocomplete-dropdown');
-    if (d) d.remove();
+    displayEl.parentElement.querySelector('.autocomplete-dropdown')?.remove();
     active = -1;
   }
-
   function buildDropdown(items) {
     removeDropdown();
-    if (!items.length) return;
+    if (!items?.length) return;
     const ul = document.createElement('ul');
     ul.className = 'autocomplete-dropdown';
-
-    items.forEach((item, idx) => {
+    items.forEach(item => {
       const li = document.createElement('li');
       li.className = 'autocomplete-item';
-      li.innerHTML = `
-        ${item.image_url ? `<img src="${item.image_url}" alt="" onerror="this.style.display='none'">` : ''}
-        <div>
-          <div class="dest-label">${item.name}</div>
-          ${item.label ? `<div class="dest-sub">${item.label}</div>` : ''}
-        </div>`;
-      li.addEventListener('mousedown', e => {
-        e.preventDefault();
-        inputEl.value = getDisplayValue(item);
-        removeDropdown();
-      });
+      li.innerHTML = renderItemFn(item);
+      li.addEventListener('mousedown', e => { e.preventDefault(); onSelect(item); removeDropdown(); });
       ul.appendChild(li);
     });
-
-    inputEl.parentElement.style.position = 'relative';
-    inputEl.parentElement.appendChild(ul);
+    displayEl.parentElement.style.position = 'relative';
+    displayEl.parentElement.appendChild(ul);
   }
-
-  const fetch = debounce(async (q) => {
+  const fetchSuggestions = debounce(async q => {
     if (q.length < 2) { removeDropdown(); return; }
     try {
-      const res = await window.fetch(`/suggest?q=${encodeURIComponent(q)}`);
-      const data = await res.json();
-      buildDropdown(data || []);
+      const res = await fetch(`${endpointUrl}?q=${encodeURIComponent(q)}`);
+      buildDropdown(await res.json());
     } catch { removeDropdown(); }
   }, 280);
 
-  inputEl.addEventListener('input', () => fetch(inputEl.value));
-  inputEl.addEventListener('blur', () => setTimeout(removeDropdown, 150));
-  inputEl.addEventListener('keydown', e => {
-    const items = inputEl.parentElement.querySelectorAll('.autocomplete-item');
-    if (e.key === 'ArrowDown') { active = Math.min(active + 1, items.length - 1); items[active]?.classList.add('bg-blue-50'); }
-    if (e.key === 'ArrowUp')   { active = Math.max(active - 1, 0); items[active]?.classList.add('bg-blue-50'); }
+  displayEl.addEventListener('input', () => fetchSuggestions(displayEl.value));
+  displayEl.addEventListener('blur', () => setTimeout(removeDropdown, 150));
+  displayEl.addEventListener('keydown', e => {
+    const items = displayEl.parentElement.querySelectorAll('.autocomplete-item');
+    if (e.key === 'ArrowDown') { items[active]?.classList.remove('active'); active = Math.min(active+1, items.length-1); items[active]?.classList.add('active'); }
+    if (e.key === 'ArrowUp')   { items[active]?.classList.remove('active'); active = Math.max(active-1, 0); items[active]?.classList.add('active'); }
     if (e.key === 'Enter' && active >= 0) { e.preventDefault(); items[active]?.dispatchEvent(new MouseEvent('mousedown')); }
     if (e.key === 'Escape') removeDropdown();
   });
 }
 
-// Hotel city input
-const cityInput = document.getElementById('city-input');
-if (cityInput) makeAutocomplete(cityInput, item => item.name);
-
-// Flight from/to inputs - use airport codes when type is airport
-const AIRPORT_SUFFIX = '.AIRPORT';
-function flightValue(item) {
-  if (item.dest_type === 'airport') {
-    // dest_id for airports may be an IATA code if it's short, else use name
-    return item.dest_id.length <= 4 ? item.dest_id + AIRPORT_SUFFIX : item.name;
-  }
-  return item.dest_id + '.' + (item.search_type || 'CITY').toUpperCase();
+// Hotel city autocomplete
+const cityDisplay = document.getElementById('city-display');
+if (cityDisplay) {
+  makeAutocomplete(cityDisplay, '/suggest',
+    item => {
+      cityDisplay.value = item.name;
+      document.getElementById('city-input').value = item.name;
+      document.getElementById('city-entity').value = item.entityId;
+    },
+    item => `<div style="width:32px;height:32px;background:#dbeafe;border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1rem">&#127968;</div>
+      <div><div class="dest-label">${item.name}</div><div class="dest-sub">${item.hierarchy || ''}</div></div>`
+  );
+  cityDisplay.addEventListener('input', () => {
+    document.getElementById('city-input').value = cityDisplay.value;
+    document.getElementById('city-entity').value = '';
+  });
 }
-const fromInput = document.getElementById('from-input');
-const toInput   = document.getElementById('to-input');
-if (fromInput) makeAutocomplete(fromInput, flightValue);
-if (toInput)   makeAutocomplete(toInput,   flightValue);
 
-// ── Init ─────────────────────────────────────────────────────────────────────
+// Flight airport autocomplete
+const fromDisplay = document.getElementById('from-display');
+const toDisplay = document.getElementById('to-display');
+
+function renderAirport(item) {
+  return `<div style="width:32px;height:32px;background:#dbeafe;border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:700;color:#1d4ed8">${item.skyId||'?'}</div>
+    <div><div class="dest-label">${item.name}</div><div class="dest-sub">${item.cityName||''}${item.countryName?', '+item.countryName:''}</div></div>`;
+}
+
+function syncSkyInput(displayEl, skyInputId, entityInputId) {
+  // When user types directly (no autocomplete), sync the sky hidden input
+  displayEl.addEventListener('input', () => {
+    const raw = displayEl.value.trim().toUpperCase();
+    // Extract IATA code: if user typed "LHR" or "London Heathrow (LHR)" extract the code
+    const match = raw.match(/\b([A-Z]{3})\b/);
+    if (match) {
+      document.getElementById(skyInputId).value = match[1];
+    } else {
+      document.getElementById(skyInputId).value = raw;
+    }
+    document.getElementById(entityInputId).value = ''; // clear - backend will look up
+  });
+}
+
+if (fromDisplay) {
+  syncSkyInput(fromDisplay, 'from-sky', 'from-entity');
+  makeAutocomplete(fromDisplay, '/suggest-flight',
+    item => {
+      fromDisplay.value = `${item.name} (${item.skyId})`;
+      document.getElementById('from-sky').value = item.skyId;
+      document.getElementById('from-entity').value = item.entityId;
+    },
+    renderAirport
+  );
+}
+if (toDisplay) {
+  syncSkyInput(toDisplay, 'to-sky', 'to-entity');
+  makeAutocomplete(toDisplay, '/suggest-flight',
+    item => {
+      toDisplay.value = `${item.name} (${item.skyId})`;
+      document.getElementById('to-sky').value = item.skyId;
+      document.getElementById('to-entity').value = item.entityId;
+    },
+    renderAirport
+  );
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
 updateBadge();
 </script>
 </body>

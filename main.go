@@ -27,6 +27,7 @@ func main() {
 	mux.HandleFunc("/", travelHandler.HomeHandler)
 	mux.HandleFunc("/flights", travelHandler.FlightsHandler)
 	mux.HandleFunc("/suggest", travelHandler.SuggestHandler)
+	mux.HandleFunc("/suggest-flight", travelHandler.SuggestFlightHandler)
 	mux.HandleFunc("/travel-data", travelHandler.GetTravelDataHandler)
 	mux.HandleFunc("/status", handlers.HealthCheckHandler)
 
