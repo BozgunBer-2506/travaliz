@@ -1,2 +1,46 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+travel-proxy-service
+
+# Build output
+/dist/
+/bin/
+/out/
+
+# Test & coverage
+*.test
+*.out
+coverage.html
+coverage.txt
+
+# Database
 *.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# Temp / IDE
 tmp/
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Go workspace
+go.work
+go.work.sum
+
+# Vendor (if not vendoring)
+vendor/

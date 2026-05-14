@@ -1,0 +1,16 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      PORT: "8080"
+      DB_PATH: /data/bookings.db
+      AMADEUS_CLIENT_ID: ${AMADEUS_CLIENT_ID:-}
+      AMADEUS_CLIENT_SECRET: ${AMADEUS_CLIENT_SECRET:-}
+    volumes:
+      - db_data:/data
+    restart: unless-stopped
+
+volumes:
+  db_data:
