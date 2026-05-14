@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"os"
 
 	"travel-proxy-service/internal/handlers"
 	"travel-proxy-service/internal/middleware"
@@ -35,8 +36,12 @@ func main() {
 	mux.HandleFunc("/travel-data", travelHandler.GetTravelDataHandler)
 	mux.HandleFunc("/status", handlers.HealthCheckHandler)
 
-	log.Println("Starting server on :8080...")
-	if err := http.ListenAndServe(":8080", middleware.LoggingMiddleware(mux)); err != nil {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	log.Printf("Starting server on :%s...", port)
+	if err := http.ListenAndServe(":"+port, middleware.LoggingMiddleware(mux)); err != nil {
 		log.Fatalf("Server failed: %v", err)
 	}
 }
