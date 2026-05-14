@@ -1,73 +1,71 @@
-# TravelMirror - travel-proxy-service
+# TravelMirror
 
-A Go web application that proxies a REST API and renders the data as a hotel booking UI using Go templates and Tailwind CSS.
+A full-stack travel booking platform built with Go. Search hotels, flights, and car rentals with a modern premium UI.
+
+## Features
+
+- **Hotels** - Search by destination with live autocomplete (Hotels.com API)
+- **Flights** - One-way, round-trip, and multi-city search (Google Flights API)
+- **Cars** - Car rental search with deep-link to Rentalcars.com
+- **Real bookings** - 3-step booking form (passenger details, payment, confirmation) backed by SQLite
+- **Booking history** - Local drawer showing all confirmed bookings with reference numbers
+
+## Tech Stack
+
+- **Backend:** Go 1.22, `net/http`, `html/template`
+- **Database:** SQLite via `modernc.org/sqlite` (pure Go, no CGO)
+- **APIs:** Google Flights (`google-flights2.p.rapidapi.com`), Hotels.com Provider (`hotels-com-provider.p.rapidapi.com`)
+- **Frontend:** Tailwind CSS (CDN), Inter font, vanilla JS
 
 ## Project Structure
 
 ```
 travel-proxy-service/
-├── go.mod
 ├── main.go
+├── go.mod
+├── bookings.db              # SQLite database (auto-created)
 ├── templates/
-│   └── index.html          # Tailwind CSS hotel card UI
+│   └── index.html           # Full UI - hero, search forms, results, booking modal
 └── internal/
     ├── handlers/
-    │   └── handlers.go     # HTTP route handlers + template rendering
+    │   ├── handlers.go      # Hotel, flight, car, autocomplete handlers
+    │   └── booking_handler.go  # POST /book - validates and stores bookings
+    ├── db/
+    │   └── db.go            # SQLite open, migrate, CreateBooking, GetBookingByRef
     ├── middleware/
-    │   └── logging.go      # Request logging middleware
+    │   └── logging.go       # Request logging
     └── proxy/
-        └── client.go       # Upstream HTTP client + price/rating simulation
+        └── client.go        # RapidAPI HTTP client for flights, hotels, airports
 ```
 
-## Requirements
-
-- Go 1.20 or later
-
-## Build
-
-```bash
-go build -o travel-proxy-service .
-```
-
-## Run
+## Run Locally
 
 ```bash
 go run .
 ```
 
-The server starts on port **8080**. Open `http://localhost:8080` in your browser.
+Server starts on port **8080** (or `$PORT` env var). Open `http://localhost:8080`.
+
+```bash
+# Custom port or DB path
+PORT=3000 DB_PATH=/tmp/bookings.db go run .
+```
 
 ## Endpoints
 
-| Method | Path           | Description                                        |
-|--------|----------------|----------------------------------------------------|
-| GET    | `/`            | Hotel listing UI (HTML, rendered from template)    |
-| GET    | `/status`      | Health check - returns `{"status":"OK"}`           |
-| GET    | `/travel-data` | Raw JSON from upstream API (enriched with price/rating) |
+| Method | Path              | Description                              |
+|--------|-------------------|------------------------------------------|
+| GET    | `/`               | Hotel search + landing page              |
+| GET    | `/flights`        | Flight search (one-way, round, multi)    |
+| GET    | `/cars`           | Car rental search + landing page         |
+| GET    | `/suggest`        | Hotel destination autocomplete (JSON)    |
+| GET    | `/suggest-flight` | Airport autocomplete (JSON)              |
+| POST   | `/book`           | Create booking, returns `TM-XXXXXX` ref  |
+| GET    | `/status`         | Health check `{"status":"OK"}`           |
 
-## Upstream Target
+## Environment Variables
 
-Proxied to `https://jsonplaceholder.typicode.com/posts`.
-
-Fields are mapped as:
-- `title` - Hotel Name
-- `body` - Description
-- `price` - Simulated nightly rate ($50-$300)
-- `rating` - Simulated guest rating (3.0-5.0)
-
-## Example Requests
-
-```bash
-# Open hotel UI
-open http://localhost:8080
-
-# Health check
-curl http://localhost:8080/status
-
-# Raw JSON
-curl http://localhost:8080/travel-data
-```
-
-## Environment
-
-Tested on Go 1.22, Linux (WSL2).
+| Variable  | Default        | Description                  |
+|-----------|----------------|------------------------------|
+| `PORT`    | `8080`         | HTTP listen port             |
+| `DB_PATH` | `bookings.db`  | SQLite database file path    |

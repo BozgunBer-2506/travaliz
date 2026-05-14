@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 
+	"travel-proxy-service/internal/db"
 	"travel-proxy-service/internal/handlers"
 	"travel-proxy-service/internal/middleware"
 	"travel-proxy-service/internal/proxy"
@@ -21,16 +22,28 @@ func main() {
 		log.Fatalf("failed to parse templates: %v", err)
 	}
 
+	dbPath := os.Getenv("DB_PATH")
+	if dbPath == "" {
+		dbPath = "bookings.db"
+	}
+	database, err := db.Open(dbPath)
+	if err != nil {
+		log.Fatalf("failed to open database: %v", err)
+	}
+
 	proxyClient := proxy.NewProxyClient("")
 
 	travelHandler := &handlers.TravelHandler{
 		ProxyClient: proxyClient,
 		Templates:   tmpl,
+		DB:          database,
 	}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", travelHandler.HomeHandler)
 	mux.HandleFunc("/flights", travelHandler.FlightsHandler)
+	mux.HandleFunc("/cars", travelHandler.CarsHandler)
+	mux.HandleFunc("/book", travelHandler.BookHandler)
 	mux.HandleFunc("/suggest", travelHandler.SuggestHandler)
 	mux.HandleFunc("/suggest-flight", travelHandler.SuggestFlightHandler)
 	mux.HandleFunc("/travel-data", travelHandler.GetTravelDataHandler)
