@@ -349,25 +349,37 @@
       <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:rgba(255,255,255,0.2)">
         <span class="text-white text-lg">✈</span>
       </div>
-      <div>
-        <h1 class="text-xl font-black text-white tracking-tight">TravelMirror</h1>
-      </div>
+      <h1 class="text-xl font-black text-white tracking-tight">TravelMirror</h1>
     </a>
-    <nav class="flex items-center gap-1">
-      <a href="/" class="px-4 py-2 rounded-full text-sm font-semibold transition-all {{if eq .Tab "hotels"}}bg-white text-indigo-700 shadow-lg{{else}}text-white/75 hover:text-white hover:bg-white/10{{end}}">
-        Hotels
-      </a>
-      <a href="/flights" class="px-4 py-2 rounded-full text-sm font-semibold transition-all {{if eq .Tab "flights"}}bg-white text-indigo-700 shadow-lg{{else}}text-white/75 hover:text-white hover:bg-white/10{{end}}">
-        Flights
-      </a>
-      <a href="/cars" class="px-4 py-2 rounded-full text-sm font-semibold transition-all {{if eq .Tab "cars"}}bg-white text-indigo-700 shadow-lg{{else}}text-white/75 hover:text-white hover:bg-white/10{{end}}">
-        Rent a Car
-      </a>
+
+    <!-- Desktop nav -->
+    <nav class="hidden md:flex items-center gap-1">
+      <a href="/" class="px-4 py-2 rounded-full text-sm font-semibold transition-all {{if eq .Tab "hotels"}}bg-white text-indigo-700 shadow-lg{{else}}text-white/75 hover:text-white hover:bg-white/10{{end}}">Hotels</a>
+      <a href="/flights" class="px-4 py-2 rounded-full text-sm font-semibold transition-all {{if eq .Tab "flights"}}bg-white text-indigo-700 shadow-lg{{else}}text-white/75 hover:text-white hover:bg-white/10{{end}}">Flights</a>
+      <a href="/cars" class="px-4 py-2 rounded-full text-sm font-semibold transition-all {{if eq .Tab "cars"}}bg-white text-indigo-700 shadow-lg{{else}}text-white/75 hover:text-white hover:bg-white/10{{end}}">Rent a Car</a>
       <button onclick="toggleBookings()" class="relative ml-2 px-4 py-2 rounded-full text-sm font-semibold text-white/75 hover:text-white hover:bg-white/10 transition-all">
         Bookings
         <span id="booking-badge" class="hidden absolute -top-1 -right-1 bg-rose-500 text-white text-xs font-bold w-5 h-5 rounded-full items-center justify-center"></span>
       </button>
     </nav>
+
+    <!-- Hamburger button -->
+    <button id="hamburger-btn" onclick="toggleMobileMenu()" class="md:hidden flex flex-col justify-center gap-1.5 w-9 h-9 p-1.5 rounded-lg hover:bg-white/10 transition-colors">
+      <span class="block h-0.5 bg-white rounded-full transition-all"></span>
+      <span class="block h-0.5 bg-white rounded-full transition-all"></span>
+      <span class="block h-0.5 bg-white rounded-full transition-all"></span>
+    </button>
+  </div>
+
+  <!-- Mobile menu -->
+  <div id="mobile-menu" class="hidden md:hidden mt-3 pb-2 border-t border-white/20 pt-3 flex flex-col gap-1">
+    <a href="/" class="px-4 py-2.5 rounded-xl text-sm font-semibold transition-all {{if eq .Tab "hotels"}}bg-white text-indigo-700{{else}}text-white/75 hover:text-white hover:bg-white/10{{end}}">Hotels</a>
+    <a href="/flights" class="px-4 py-2.5 rounded-xl text-sm font-semibold transition-all {{if eq .Tab "flights"}}bg-white text-indigo-700{{else}}text-white/75 hover:text-white hover:bg-white/10{{end}}">Flights</a>
+    <a href="/cars" class="px-4 py-2.5 rounded-xl text-sm font-semibold transition-all {{if eq .Tab "cars"}}bg-white text-indigo-700{{else}}text-white/75 hover:text-white hover:bg-white/10{{end}}">Rent a Car</a>
+    <button onclick="toggleBookings();toggleMobileMenu()" class="relative text-left px-4 py-2.5 rounded-xl text-sm font-semibold text-white/75 hover:text-white hover:bg-white/10 transition-all">
+      Bookings
+      <span id="booking-badge-mobile" class="hidden absolute top-1.5 left-24 bg-rose-500 text-white text-xs font-bold w-5 h-5 rounded-full items-center justify-center"></span>
+    </button>
   </div>
 </header>
 
@@ -1648,6 +1660,11 @@ function clearBookings() {
   saveBookings([]); updateBadge(); renderBookings();
   showToast('All bookings cleared.');
 }
+function toggleMobileMenu() {
+  const menu = document.getElementById('mobile-menu');
+  menu.classList.toggle('hidden');
+}
+
 function toggleBookings() {
   const drawer = document.getElementById('bookings-drawer');
   const overlay = document.getElementById('bookings-overlay');
