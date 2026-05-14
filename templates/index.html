@@ -547,7 +547,7 @@
         </div>
 
         <!-- OW / RT fields -->
-        <div id="ow-rt-form" class="{{if eq .TripType "multi"}}hidden{{end}} flex flex-col lg:flex-row gap-3 items-end">
+        <div id="ow-rt-form" class="{{if eq .TripType "multi"}}hidden{{end}} flex flex-col lg:flex-row gap-3 lg:items-end">
           <div class="field-wrapper flex-1">
             <span class="field-label">From</span>
             <input id="from-display" type="text" autocomplete="off" placeholder="London Heathrow (LHR)"
@@ -1221,12 +1221,12 @@
   {{else}}
   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
     <div>
-      <h2 class="text-2xl font-extrabold text-gray-900">
+      <h2 class="text-lg sm:text-2xl font-extrabold text-gray-900">
         <span class="text-indigo-600">{{if .FromCity}}{{.FromCity}}{{else}}{{.FromSkyID}}{{end}}</span>
-        <span class="text-gray-300 mx-3">→</span>
+        <span class="text-gray-300 mx-2">→</span>
         <span class="text-indigo-600">{{if .ToCity}}{{.ToCity}}{{else}}{{.ToSkyID}}{{end}}</span>
         {{if eq .TripType "round"}}
-        <span class="text-gray-300 mx-3">→</span>
+        <span class="text-gray-300 mx-2">→</span>
         <span class="text-indigo-600">{{if .FromCity}}{{.FromCity}}{{else}}{{.FromSkyID}}{{end}}</span>
         {{end}}
       </h2>
@@ -1452,7 +1452,7 @@
   <!-- Route -->
   <div class="flex-1 flex items-center justify-center gap-3">
     <div class="text-center">
-      <p class="text-3xl font-extrabold text-gray-900 tracking-tight">{{.FromCode}}</p>
+      <p class="text-xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">{{.FromCode}}</p>
       <p class="text-sm font-semibold text-indigo-500 mt-0.5">{{.DepartTime}}</p>
     </div>
     <div class="flex items-center gap-2 flex-1 mx-2">
@@ -1464,7 +1464,7 @@
       <div class="w-2 h-2 rounded-full bg-purple-400 shrink-0"></div>
     </div>
     <div class="text-center">
-      <p class="text-3xl font-extrabold text-gray-900 tracking-tight">{{.ToCode}}</p>
+      <p class="text-xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">{{.ToCode}}</p>
       <p class="text-sm font-semibold text-purple-500 mt-0.5">{{.ArriveTime}}</p>
     </div>
   </div>
@@ -1472,7 +1472,7 @@
   <!-- Price + CTA -->
   <div class="flex flex-row sm:flex-col items-center sm:items-end gap-3 sm:gap-2 shrink-0">
     <div class="text-right">
-      <span class="text-3xl font-extrabold text-gray-900">${{printf "%.0f" .Price}}</span>
+      <span class="text-xl sm:text-3xl font-extrabold text-gray-900">${{printf "%.0f" .Price}}</span>
       <p class="text-xs text-gray-400">per person</p>
     </div>
     <button class="flight-book-btn text-white text-sm font-bold px-7 py-2.5 rounded-xl transition-all"
@@ -1489,15 +1489,146 @@
 {{end}}
 
 <!-- Footer -->
-<footer class="border-t border-gray-100 py-8 mt-10">
-  <div class="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-    <div class="flex items-center gap-2">
-      <span class="text-lg">✈</span>
-      <span class="font-black text-gray-800">TravelMirror</span>
+<footer class="border-t border-gray-100 py-12 mt-10">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-8 mb-8">
+
+      <!-- Brand -->
+      <div>
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-lg">✈</span>
+          <span class="font-black text-gray-800">TravelMirror</span>
+        </div>
+        <p class="text-xs text-gray-400 leading-relaxed">Search flights, hotels, and car rentals powered by live Amadeus API data.</p>
+      </div>
+
+      <!-- Legal & Contact -->
+      <div>
+        <p class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">Company</p>
+        <ul class="space-y-2">
+          <li><button onclick="openPrivacyPolicy()" class="text-sm text-gray-500 hover:text-indigo-600 transition-colors">Privacy Policy</button></li>
+          <li><button onclick="openContact()" class="text-sm text-gray-500 hover:text-indigo-600 transition-colors">Contact</button></li>
+        </ul>
+      </div>
+
+      <!-- IT & Web -->
+      <div>
+        <p class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">IT & Web</p>
+        <a href="https://thebozgun.com" target="_blank" rel="noopener noreferrer" class="text-sm text-gray-500 hover:text-indigo-600 transition-colors">thebozgun.com</a>
+        <p class="text-xs text-gray-400 mt-1">Web development & IT solutions</p>
+      </div>
+
     </div>
-    <p class="text-xs text-gray-400">© 2026 TravelMirror · All rights reserved</p>
+    <div class="border-t border-gray-100 pt-6">
+      <p class="text-xs text-gray-400 text-center">© 2026 TravelMirror · All rights reserved</p>
+    </div>
   </div>
 </footer>
+
+<!-- Privacy Policy Modal -->
+<div id="privacy-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onclick="closePrivacyPolicy()">
+  <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto" onclick="event.stopPropagation()">
+    <div class="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between rounded-t-2xl">
+      <h2 class="text-lg font-bold text-gray-800">Privacy Policy</h2>
+      <button onclick="closePrivacyPolicy()" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors text-gray-500">✕</button>
+    </div>
+    <div class="px-6 py-5 text-sm text-gray-600 space-y-6 leading-relaxed">
+      <p class="text-xs text-gray-400">Last updated: May 2026</p>
+
+      <section>
+        <h3 class="font-semibold text-gray-800 mb-2">1. Who We Are</h3>
+        <p>TravelMirror is a travel search demo application that aggregates flight, hotel, and car rental data via the Amadeus Self-Service API. It is built and maintained by <a href="https://thebozgun.com" target="_blank" class="text-indigo-600 hover:underline">thebozgun.com</a>. Questions can be directed to <a href="mailto:contact@thebozgun.com" class="text-indigo-600 hover:underline">contact@thebozgun.com</a>.</p>
+      </section>
+
+      <section>
+        <h3 class="font-semibold text-gray-800 mb-2">2. Information We Collect</h3>
+        <p class="mb-2">We collect the minimum data necessary to operate the service:</p>
+        <ul class="list-disc list-inside space-y-1 text-gray-500">
+          <li><strong class="text-gray-700">Search queries:</strong> destination, dates, and passenger counts entered during a search.</li>
+          <li><strong class="text-gray-700">Booking data:</strong> name, email, phone, and last 4 digits of card number submitted during a demo booking. Full card details are never stored.</li>
+          <li><strong class="text-gray-700">Usage data:</strong> pages visited and session information stored in a secure HTTP-only cookie.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h3 class="font-semibold text-gray-800 mb-2">3. How We Use Your Information</h3>
+        <ul class="list-disc list-inside space-y-1 text-gray-500">
+          <li>To display relevant flight, hotel, and car rental results.</li>
+          <li>To generate and display a demo booking reference number.</li>
+          <li>To improve the application and fix bugs.</li>
+        </ul>
+        <p class="mt-2">We do not sell your personal data to third parties.</p>
+      </section>
+
+      <section>
+        <h3 class="font-semibold text-gray-800 mb-2">4. Third-Party Services</h3>
+        <ul class="list-disc list-inside space-y-1 text-gray-500">
+          <li><strong class="text-gray-700">Amadeus API:</strong> travel data is fetched from the Amadeus Self-Service API. Their privacy policy applies to data transmitted during API calls.</li>
+          <li><strong class="text-gray-700">Vercel:</strong> the application is hosted on Vercel. Server logs and request metadata may be retained per Vercel's data processing terms.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h3 class="font-semibold text-gray-800 mb-2">5. Demo Nature of This Service</h3>
+        <p>TravelMirror is a <strong class="text-gray-700">demonstration project</strong>. Bookings made through this platform are not real reservations. No payments are processed. Booking data is stored temporarily in an ephemeral SQLite database and is not retained between server restarts.</p>
+      </section>
+
+      <section>
+        <h3 class="font-semibold text-gray-800 mb-2">6. Cookies</h3>
+        <p>We use a single session cookie to maintain application state. This cookie contains no personally identifiable information. We do not use advertising or tracking cookies.</p>
+      </section>
+
+      <section>
+        <h3 class="font-semibold text-gray-800 mb-2">7. Data Retention</h3>
+        <p>Search queries and booking data are stored only for the duration of the server session. No long-term data retention is in place for this demo application.</p>
+      </section>
+
+      <section>
+        <h3 class="font-semibold text-gray-800 mb-2">8. Your Rights</h3>
+        <p>Depending on your location, you may have the right to access, correct, or request deletion of your data. To exercise any of these rights, contact us at <a href="mailto:contact@thebozgun.com" class="text-indigo-600 hover:underline">contact@thebozgun.com</a>.</p>
+      </section>
+
+      <section>
+        <h3 class="font-semibold text-gray-800 mb-2">9. Changes to This Policy</h3>
+        <p>We may update this Privacy Policy from time to time. The "Last updated" date at the top of this page will reflect any changes. Continued use of the platform constitutes acceptance of the updated policy.</p>
+      </section>
+
+      <section>
+        <h3 class="font-semibold text-gray-800 mb-2">10. Contact</h3>
+        <p>For privacy-related questions: <a href="mailto:contact@thebozgun.com" class="text-indigo-600 hover:underline">contact@thebozgun.com</a></p>
+      </section>
+    </div>
+  </div>
+</div>
+
+<!-- Contact Modal -->
+<div id="contact-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onclick="closeContact()">
+  <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full" onclick="event.stopPropagation()">
+    <div class="border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+      <h2 class="text-lg font-bold text-gray-800">Contact</h2>
+      <button onclick="closeContact()" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors text-gray-500">✕</button>
+    </div>
+    <div class="px-6 py-5">
+      <p class="text-sm text-gray-500 mb-5">Have a question or feedback? Send us a message.</p>
+      <form id="contact-form" onsubmit="submitContact(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 mb-1">Name</label>
+          <input type="text" id="contact-name" required placeholder="Your name" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 transition" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 mb-1">Email</label>
+          <input type="email" id="contact-email" required placeholder="your@email.com" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 transition" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 mb-1">Message</label>
+          <textarea id="contact-message" required rows="4" placeholder="Your message..." class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 transition resize-none"></textarea>
+        </div>
+        <button type="submit" class="w-full py-2.5 rounded-xl text-sm font-semibold text-white transition-all" style="background:linear-gradient(135deg,#4f46e5,#6366f1)">Send Message</button>
+        <p id="contact-success" class="hidden text-center text-sm text-green-600 font-medium">Message sent! We'll get back to you soon.</p>
+      </form>
+    </div>
+  </div>
+</div>
 
 <script>
 // ── Hotel Detail Modal ────────────────────────────────────────────────────────
@@ -1660,6 +1791,22 @@ function clearBookings() {
   saveBookings([]); updateBadge(); renderBookings();
   showToast('All bookings cleared.');
 }
+function openPrivacyPolicy() { document.getElementById('privacy-modal').classList.remove('hidden'); }
+function closePrivacyPolicy() { document.getElementById('privacy-modal').classList.add('hidden'); }
+function openContact() { document.getElementById('contact-modal').classList.remove('hidden'); }
+function closeContact() { document.getElementById('contact-modal').classList.add('hidden'); }
+function submitContact(e) {
+  e.preventDefault();
+  document.getElementById('contact-form').classList.add('hidden');
+  document.getElementById('contact-success').classList.remove('hidden');
+  setTimeout(() => {
+    closeContact();
+    document.getElementById('contact-form').classList.remove('hidden');
+    document.getElementById('contact-success').classList.add('hidden');
+    e.target.reset();
+  }, 2500);
+}
+
 function toggleMobileMenu() {
   const menu = document.getElementById('mobile-menu');
   menu.classList.toggle('hidden');
