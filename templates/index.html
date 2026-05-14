@@ -1285,8 +1285,8 @@
 
 {{define "car-cards"}}
 <div class="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden card-hover cursor-pointer car-card" data-type="economy" data-trans="auto" data-seats="5" data-price="29" onclick="openCarBooking(this)" data-car="Toyota Yaris 2024" data-provider="Hertz" data-pickup="{{$.PickupCity}}" data-pickupdate="{{$.PickupDate}}" data-dropoff="{{$.DropoffDate}}">
-  <div class="relative h-44 overflow-hidden bg-slate-100">
-    <img src="https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=600&q=80" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="Toyota Yaris" loading="lazy" />
+  <div class="relative h-44 overflow-hidden bg-gray-50 flex items-center justify-center">
+    <img src="https://www.motortrend.com/uploads/2023/06/2023-Toyota-Yaris-sedan-front-three-quarter.jpg" class="w-full h-full object-cover transition-transform duration-500" alt="Toyota Yaris" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?w=600&q=80'" />
     <span class="absolute top-3 left-3 text-xs font-bold px-2.5 py-1 rounded-full text-indigo-700 border border-indigo-200" style="background:rgba(238,242,255,.95)">Economy</span>
     <span class="absolute top-3 right-3 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">Free cancel</span>
   </div>
@@ -1297,19 +1297,17 @@
     </div>
     <div class="flex gap-4 text-xs text-gray-500 mb-4 flex-wrap">
       <span class="flex items-center gap-1"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v2h20v-2c0-3.3-6.7-5-10-5z"/></svg>5 seats</span>
-      <span>4 doors</span>
-      <span>Automatic</span>
-      <span>A/C</span>
+      <span>4 doors</span><span>Automatic</span><span>A/C</span>
     </div>
     <div class="flex items-center justify-between pt-3 border-t border-gray-100">
-      <span class="text-xs font-bold text-gray-400">HERTZ</span>
+      <img src="https://logo.clearbit.com/hertz.com" alt="Hertz" class="h-5 object-contain" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'text-xs font-bold text-gray-400',textContent:'HERTZ'}))" />
       <button class="text-xs font-bold text-white px-5 py-2 rounded-xl" style="background:linear-gradient(135deg,#4f46e5,#7c3aed)">Reserve</button>
     </div>
   </div>
 </div>
 <div class="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden card-hover cursor-pointer car-card" data-type="compact" data-trans="auto" data-seats="5" data-price="38" onclick="openCarBooking(this)" data-car="Volkswagen Golf 2024" data-provider="Avis" data-pickup="{{$.PickupCity}}" data-pickupdate="{{$.PickupDate}}" data-dropoff="{{$.DropoffDate}}">
-  <div class="relative h-44 overflow-hidden bg-slate-100">
-    <img src="https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?w=600&q=80" class="w-full h-full object-cover transition-transform duration-500" alt="Volkswagen Golf" loading="lazy" />
+  <div class="relative h-44 overflow-hidden bg-gray-50">
+    <img src="https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?w=600&q=80" class="w-full h-full object-cover transition-transform duration-500" alt="Volkswagen Golf" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?w=600&q=80'" />
     <span class="absolute top-3 left-3 text-xs font-bold px-2.5 py-1 rounded-full text-sky-700 border border-sky-200" style="background:rgba(240,249,255,.95)">Compact</span>
     <span class="absolute top-3 right-3 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">Free cancel</span>
   </div>
@@ -1320,19 +1318,17 @@
     </div>
     <div class="flex gap-4 text-xs text-gray-500 mb-4 flex-wrap">
       <span class="flex items-center gap-1"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v2h20v-2c0-3.3-6.7-5-10-5z"/></svg>5 seats</span>
-      <span>4 doors</span>
-      <span>Automatic</span>
-      <span>A/C</span>
+      <span>4 doors</span><span>Automatic</span><span>A/C</span>
     </div>
     <div class="flex items-center justify-between pt-3 border-t border-gray-100">
-      <span class="text-xs font-bold text-gray-400">AVIS</span>
+      <img src="https://logo.clearbit.com/avis.com" alt="Avis" class="h-5 object-contain" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'text-xs font-bold text-gray-400',textContent:'AVIS'}))" />
       <button class="text-xs font-bold text-white px-5 py-2 rounded-xl" style="background:linear-gradient(135deg,#4f46e5,#7c3aed)">Reserve</button>
     </div>
   </div>
 </div>
 <div class="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden card-hover cursor-pointer car-card" data-type="suv" data-trans="auto" data-seats="7" data-price="62" onclick="openCarBooking(this)" data-car="Toyota RAV4 2024" data-provider="Sixt" data-pickup="{{$.PickupCity}}" data-pickupdate="{{$.PickupDate}}" data-dropoff="{{$.DropoffDate}}">
-  <div class="relative h-44 overflow-hidden bg-slate-100">
-    <img src="https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?w=600&q=80" class="w-full h-full object-cover transition-transform duration-500" alt="Toyota RAV4" loading="lazy" />
+  <div class="relative h-44 overflow-hidden bg-gray-50">
+    <img src="https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=600&q=80" class="w-full h-full object-cover transition-transform duration-500" alt="Toyota RAV4" loading="lazy" />
     <span class="absolute top-3 left-3 text-xs font-bold px-2.5 py-1 rounded-full text-amber-700 border border-amber-200" style="background:rgba(255,251,235,.95)">SUV</span>
     <span class="absolute top-3 right-3 text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full">Unlimited km</span>
   </div>
@@ -1343,19 +1339,17 @@
     </div>
     <div class="flex gap-4 text-xs text-gray-500 mb-4 flex-wrap">
       <span class="flex items-center gap-1"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v2h20v-2c0-3.3-6.7-5-10-5z"/></svg>7 seats</span>
-      <span>5 doors</span>
-      <span>Automatic</span>
-      <span>A/C</span>
+      <span>5 doors</span><span>Automatic</span><span>A/C</span>
     </div>
     <div class="flex items-center justify-between pt-3 border-t border-gray-100">
-      <span class="text-xs font-bold text-gray-400">SIXT</span>
+      <img src="https://logo.clearbit.com/sixt.com" alt="Sixt" class="h-5 object-contain" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'text-xs font-bold text-gray-400',textContent:'SIXT'}))" />
       <button class="text-xs font-bold text-white px-5 py-2 rounded-xl" style="background:linear-gradient(135deg,#4f46e5,#7c3aed)">Reserve</button>
     </div>
   </div>
 </div>
 <div class="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden card-hover cursor-pointer car-card" data-type="luxury" data-trans="auto" data-seats="5" data-price="145" onclick="openCarBooking(this)" data-car="Mercedes-Benz C-Class 2024" data-provider="Europcar" data-pickup="{{$.PickupCity}}" data-pickupdate="{{$.PickupDate}}" data-dropoff="{{$.DropoffDate}}">
-  <div class="relative h-44 overflow-hidden bg-slate-100">
-    <img src="https://images.unsplash.com/photo-1555215695-3004980ad54e?w=600&q=80" class="w-full h-full object-cover transition-transform duration-500" alt="Mercedes C-Class" loading="lazy" />
+  <div class="relative h-44 overflow-hidden bg-gray-50">
+    <img src="https://images.unsplash.com/photo-1616789916766-3f4bbc8f0a97?w=600&q=80" class="w-full h-full object-cover transition-transform duration-500" alt="Mercedes C-Class" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1555215695-3004980ad54e?w=600&q=80'" />
     <span class="absolute top-3 left-3 text-xs font-bold px-2.5 py-1 rounded-full text-violet-700 border border-violet-200" style="background:rgba(245,243,255,.95)">Luxury</span>
     <span class="absolute top-3 right-3 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">Free cancel</span>
   </div>
@@ -1366,42 +1360,38 @@
     </div>
     <div class="flex gap-4 text-xs text-gray-500 mb-4 flex-wrap">
       <span class="flex items-center gap-1"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v2h20v-2c0-3.3-6.7-5-10-5z"/></svg>5 seats</span>
-      <span>4 doors</span>
-      <span>Automatic</span>
-      <span>Leather A/C</span>
+      <span>4 doors</span><span>Automatic</span><span>Leather A/C</span>
     </div>
     <div class="flex items-center justify-between pt-3 border-t border-gray-100">
-      <span class="text-xs font-bold text-gray-400">EUROPCAR</span>
+      <img src="https://logo.clearbit.com/europcar.com" alt="Europcar" class="h-5 object-contain" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'text-xs font-bold text-gray-400',textContent:'EUROPCAR'}))" />
       <button class="text-xs font-bold text-white px-5 py-2 rounded-xl" style="background:linear-gradient(135deg,#4f46e5,#7c3aed)">Reserve</button>
     </div>
   </div>
 </div>
-<div class="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden card-hover cursor-pointer car-card" data-type="economy" data-trans="manual" data-seats="5" data-price="24" onclick="openCarBooking(this)" data-car="Fiat 500 2024" data-provider="Budget" data-pickup="{{$.PickupCity}}" data-pickupdate="{{$.PickupDate}}" data-dropoff="{{$.DropoffDate}}">
-  <div class="relative h-44 overflow-hidden bg-slate-100">
-    <img src="https://images.unsplash.com/photo-1568844293986-ca9c5c41f8b3?w=600&q=80" class="w-full h-full object-cover transition-transform duration-500" alt="Fiat 500" loading="lazy" />
+<div class="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden card-hover cursor-pointer car-card" data-type="economy" data-trans="manual" data-seats="4" data-price="24" onclick="openCarBooking(this)" data-car="Fiat 500 2024" data-provider="Budget" data-pickup="{{$.PickupCity}}" data-pickupdate="{{$.PickupDate}}" data-dropoff="{{$.DropoffDate}}">
+  <div class="relative h-44 overflow-hidden bg-gray-50">
+    <img src="https://images.unsplash.com/photo-1533559662493-b8832ef8f10f?w=600&q=80" class="w-full h-full object-cover transition-transform duration-500" alt="Fiat 500" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1568844293986-ca9c5c41f8b3?w=600&q=80'" />
     <span class="absolute top-3 left-3 text-xs font-bold px-2.5 py-1 rounded-full text-indigo-700 border border-indigo-200" style="background:rgba(238,242,255,.95)">Economy</span>
     <span class="absolute top-3 right-3 text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2.5 py-1 rounded-full">-20% today</span>
   </div>
   <div class="p-5">
     <div class="flex items-start justify-between mb-3">
       <div><p class="font-extrabold text-gray-900">Fiat 500 2024</p><p class="text-xs text-gray-400 mt-0.5">or similar</p></div>
-      <div class="text-right"><p class="text-xl line-through text-gray-300 text-sm">$30</p><p class="text-2xl font-extrabold text-gray-900">$24</p><p class="text-xs text-gray-400">/ day</p></div>
+      <div class="text-right"><p class="text-sm line-through text-gray-300">$30</p><p class="text-2xl font-extrabold text-gray-900">$24</p><p class="text-xs text-gray-400">/ day</p></div>
     </div>
     <div class="flex gap-4 text-xs text-gray-500 mb-4 flex-wrap">
-      <span class="flex items-center gap-1"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v2h20v-2c0-3.3-6.7-5-10-5z"/></svg>5 seats</span>
-      <span>3 doors</span>
-      <span>Manual</span>
-      <span>A/C</span>
+      <span class="flex items-center gap-1"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v2h20v-2c0-3.3-6.7-5-10-5z"/></svg>4 seats</span>
+      <span>3 doors</span><span>Manual</span><span>A/C</span>
     </div>
     <div class="flex items-center justify-between pt-3 border-t border-gray-100">
-      <span class="text-xs font-bold text-gray-400">BUDGET</span>
+      <img src="https://logo.clearbit.com/budget.com" alt="Budget" class="h-5 object-contain" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'text-xs font-bold text-gray-400',textContent:'BUDGET'}))" />
       <button class="text-xs font-bold text-white px-5 py-2 rounded-xl" style="background:linear-gradient(135deg,#4f46e5,#7c3aed)">Reserve</button>
     </div>
   </div>
 </div>
 <div class="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden card-hover cursor-pointer car-card" data-type="suv" data-trans="auto" data-seats="5" data-price="78" onclick="openCarBooking(this)" data-car="BMW X3 2024" data-provider="Hertz" data-pickup="{{$.PickupCity}}" data-pickupdate="{{$.PickupDate}}" data-dropoff="{{$.DropoffDate}}">
-  <div class="relative h-44 overflow-hidden bg-slate-100">
-    <img src="https://images.unsplash.com/photo-1537984822441-cff330075342?w=600&q=80" class="w-full h-full object-cover transition-transform duration-500" alt="BMW X3" loading="lazy" />
+  <div class="relative h-44 overflow-hidden bg-gray-50">
+    <img src="https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=600&q=80" class="w-full h-full object-cover transition-transform duration-500" alt="BMW X3" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1537984822441-cff330075342?w=600&q=80'" />
     <span class="absolute top-3 left-3 text-xs font-bold px-2.5 py-1 rounded-full text-amber-700 border border-amber-200" style="background:rgba(255,251,235,.95)">SUV</span>
     <span class="absolute top-3 right-3 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">Free cancel</span>
   </div>
@@ -1412,12 +1402,10 @@
     </div>
     <div class="flex gap-4 text-xs text-gray-500 mb-4 flex-wrap">
       <span class="flex items-center gap-1"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v2h20v-2c0-3.3-6.7-5-10-5z"/></svg>5 seats</span>
-      <span>5 doors</span>
-      <span>Automatic</span>
-      <span>A/C</span>
+      <span>5 doors</span><span>Automatic</span><span>A/C</span>
     </div>
     <div class="flex items-center justify-between pt-3 border-t border-gray-100">
-      <span class="text-xs font-bold text-gray-400">HERTZ</span>
+      <img src="https://logo.clearbit.com/hertz.com" alt="Hertz" class="h-5 object-contain" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'text-xs font-bold text-gray-400',textContent:'HERTZ'}))" />
       <button class="text-xs font-bold text-white px-5 py-2 rounded-xl" style="background:linear-gradient(135deg,#4f46e5,#7c3aed)">Reserve</button>
     </div>
   </div>
