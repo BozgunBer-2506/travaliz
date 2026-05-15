@@ -2691,5 +2691,23 @@ updateThemeIcon(localStorage.getItem('tm-theme') || 'light');
 document.querySelectorAll('.multi-leg').forEach(el => initLegAutocomplete(el));
 </script>
 
+<!-- Footer -->
+<footer class="mt-16 border-t py-8 px-6" style="border-color:var(--border)">
+  <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:rgba(99,102,241,0.15)">
+        <span class="text-base">✈</span>
+      </div>
+      <span class="text-sm font-bold" style="color:var(--text-primary)">TravelMirror</span>
+    </div>
+    <p class="text-xs" style="color:var(--text-muted)">© 2025 TravelMirror. Demo purposes only.</p>
+    <div class="text-center sm:text-right">
+      <p class="text-xs font-semibold mb-0.5" style="color:var(--text-secondary)">IT &amp; Web</p>
+      <a href="https://thebozgun.com" target="_blank" rel="noopener noreferrer"
+        class="text-sm font-bold text-indigo-500 hover:text-indigo-400 transition-colors">thebozgun.com</a>
+      <p class="text-xs mt-0.5" style="color:var(--text-muted)">Web development &amp; IT solutions</p>
+    </div>
+  </div>
+</footer>
 </body>
 </html>
