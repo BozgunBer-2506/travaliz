@@ -1687,42 +1687,6 @@
 </div>
 {{end}}
 
-<!-- Footer -->
-<footer class="border-t border-gray-100 py-12 mt-10">
-  <div class="max-w-7xl mx-auto px-6">
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-8 mb-8">
-
-      <!-- Brand -->
-      <div>
-        <div class="flex items-center gap-2 mb-3">
-          <span class="text-lg">✈</span>
-          <span class="font-black text-gray-800">TravelMirror</span>
-        </div>
-        <p class="text-xs text-gray-400 leading-relaxed">Search flights, hotels, and car rentals powered by live Amadeus API data.</p>
-      </div>
-
-      <!-- Legal & Contact -->
-      <div>
-        <p class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">Company</p>
-        <ul class="space-y-2">
-          <li><button onclick="openPrivacyPolicy()" class="text-sm text-gray-500 hover:text-indigo-600 transition-colors">Privacy Policy</button></li>
-          <li><button onclick="openContact()" class="text-sm text-gray-500 hover:text-indigo-600 transition-colors">Contact</button></li>
-        </ul>
-      </div>
-
-      <!-- IT & Web -->
-      <div>
-        <p class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">IT & Web</p>
-        <a href="https://thebozgun.com" target="_blank" rel="noopener noreferrer" class="text-sm text-gray-500 hover:text-indigo-600 transition-colors">thebozgun.com</a>
-        <p class="text-xs text-gray-400 mt-1">Web development & IT solutions</p>
-      </div>
-
-    </div>
-    <div class="border-t border-gray-100 pt-6">
-      <p class="text-xs text-gray-400 text-center">© 2026 TravelMirror · All rights reserved</p>
-    </div>
-  </div>
-</footer>
 
 <!-- Privacy Policy Modal -->
 <div id="privacy-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onclick="closePrivacyPolicy()">
@@ -2727,25 +2691,5 @@ updateThemeIcon(localStorage.getItem('tm-theme') || 'light');
 document.querySelectorAll('.multi-leg').forEach(el => initLegAutocomplete(el));
 </script>
 
-<!-- Footer -->
-<footer class="mt-16 border-t py-8 px-6" style="border-color:var(--border)">
-  <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-    <div class="flex items-center gap-3">
-      <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:rgba(99,102,241,0.15)">
-        <span class="text-base">✈</span>
-      </div>
-      <span class="text-sm font-bold" style="color:var(--text-primary)">TravelMirror</span>
-    </div>
-    <div class="text-center">
-      <p class="text-xs" style="color:var(--text-muted)">© 2025 TravelMirror. Demo purposes only.</p>
-    </div>
-    <div class="text-center sm:text-right">
-      <p class="text-xs font-semibold mb-0.5" style="color:var(--text-secondary)">IT &amp; Web</p>
-      <a href="https://thebozgun.com" target="_blank" rel="noopener noreferrer"
-        class="text-sm font-bold text-indigo-500 hover:text-indigo-400 transition-colors">thebozgun.com</a>
-      <p class="text-xs mt-0.5" style="color:var(--text-muted)">Web development &amp; IT solutions</p>
-    </div>
-  </div>
-</footer>
 </body>
 </html>
