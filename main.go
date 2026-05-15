@@ -16,6 +16,9 @@ import (
 //go:embed templates/*.html
 var templateFiles embed.FS
 
+//go:embed images/*
+var imageFiles embed.FS
+
 func main() {
 	tmpl, err := template.ParseFS(templateFiles, "templates/*.html")
 	if err != nil {
@@ -40,6 +43,7 @@ func main() {
 	}
 
 	mux := http.NewServeMux()
+	mux.Handle("/images/", http.FileServerFS(imageFiles))
 	mux.HandleFunc("/", travelHandler.HomeHandler)
 	mux.HandleFunc("/flights", travelHandler.FlightsHandler)
 	mux.HandleFunc("/cars", travelHandler.CarsHandler)
