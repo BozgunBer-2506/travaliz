@@ -52,14 +52,9 @@ func (h *TravelHandler) ContactHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	toEmail := os.Getenv("CONTACT_TO_EMAIL")
-	if toEmail == "" {
-		toEmail = "bozgun76@gmail.com"
-	}
-
 	body := map[string]interface{}{
-		"from":    "TravelMirror Contact <onboarding@resend.dev>",
-		"to":      []string{toEmail},
+		"from":    "TravelMirror <noreply@thebozgun.com>",
+		"to":      []string{"contact@thebozgun.com"},
 		"subject": fmt.Sprintf("TravelMirror Contact: %s", req.Name),
 		"html": fmt.Sprintf(`
 			<p><strong>Name:</strong> %s</p>
