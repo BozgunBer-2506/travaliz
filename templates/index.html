@@ -198,7 +198,7 @@
   </style>
   <script>
     (function() {
-      var t = localStorage.getItem('tm-theme') || 'light';
+      var t = localStorage.getItem('tm-theme') || 'dark';
       document.documentElement.setAttribute('data-theme', t);
     })();
   </script>
@@ -2698,7 +2698,7 @@ function applyFlightFilters() {
 // Init
 updateBadge();
 updateGuestLabel();
-updateThemeIcon(localStorage.getItem('tm-theme') || 'light');
+updateThemeIcon(localStorage.getItem('tm-theme') || 'dark');
 
 // Scroll to top button
 (function() {
