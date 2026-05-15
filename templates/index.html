@@ -2692,40 +2692,26 @@ document.querySelectorAll('.multi-leg').forEach(el => initLegAutocomplete(el));
 </script>
 
 <!-- Footer -->
-<footer class="mt-16 border-t pt-10 pb-6 px-6" style="border-color:var(--border)">
-  <div class="max-w-7xl mx-auto">
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-8">
-
-      <!-- Brand -->
-      <div>
-        <div class="flex items-center gap-2 mb-3">
-          <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:rgba(99,102,241,0.15)">
-            <span class="text-base">✈</span>
-          </div>
-          <span class="font-black" style="color:var(--text-primary)">TravelMirror</span>
-        </div>
-        <p class="text-xs leading-relaxed" style="color:var(--text-muted)">Search flights, hotels, and car rentals powered by live Amadeus API data.</p>
+<footer class="mt-16 border-t py-8 px-6" style="border-color:var(--border)">
+  <div class="max-w-7xl mx-auto flex flex-col items-center gap-4 text-center">
+    <div class="flex items-center gap-2">
+      <div class="w-7 h-7 rounded-lg flex items-center justify-center" style="background:rgba(99,102,241,0.15)">
+        <span class="text-sm">✈</span>
       </div>
-
-      <!-- Company -->
-      <div>
-        <p class="text-xs font-semibold uppercase tracking-widest mb-3" style="color:var(--text-secondary)">Company</p>
-        <ul class="space-y-2">
-          <li><button onclick="openPrivacyPolicy()" class="text-sm hover:text-indigo-500 transition-colors" style="color:var(--text-secondary)">Privacy Policy</button></li>
-          <li><button onclick="openContact()" class="text-sm hover:text-indigo-500 transition-colors" style="color:var(--text-secondary)">Contact</button></li>
-        </ul>
-      </div>
-
+      <span class="font-black text-sm" style="color:var(--text-primary)">TravelMirror</span>
     </div>
-    <div class="border-t pt-6 flex flex-col items-center gap-2" style="border-color:var(--border)">
-      <p class="text-xs" style="color:var(--text-muted)">© 2026 TravelMirror · All rights reserved</p>
-      <p class="text-xs" style="color:var(--text-muted)">
-        IT &amp; Web ·
-        <a href="https://thebozgun.com" target="_blank" rel="noopener noreferrer"
-          class="text-indigo-500 hover:text-indigo-400 transition-colors font-medium">thebozgun.com</a>
-        · Web development &amp; IT solutions
-      </p>
+    <div class="flex items-center gap-5">
+      <button onclick="openPrivacyPolicy()" class="text-xs hover:text-indigo-500 transition-colors" style="color:var(--text-secondary)">Privacy Policy</button>
+      <span style="color:var(--border)">·</span>
+      <button onclick="openContact()" class="text-xs hover:text-indigo-500 transition-colors" style="color:var(--text-secondary)">Contact</button>
     </div>
+    <p class="text-xs" style="color:var(--text-muted)">© 2026 TravelMirror · All rights reserved</p>
+    <p class="text-xs" style="color:var(--text-muted)">
+      IT &amp; Web ·
+      <a href="https://thebozgun.com" target="_blank" rel="noopener noreferrer"
+        class="text-indigo-500 hover:text-indigo-400 transition-colors font-medium">thebozgun.com</a>
+      · Web development &amp; IT solutions
+    </p>
   </div>
 </footer>
 </body>
