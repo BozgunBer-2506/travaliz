@@ -1788,7 +1788,10 @@
         </div>
         <button type="submit" class="w-full py-2.5 rounded-xl text-sm font-semibold text-white transition-all" style="background:linear-gradient(135deg,#4f46e5,#6366f1)">Send Message</button>
       </form>
-      <p id="contact-success" class="hidden text-center text-sm text-green-600 font-medium mt-4">✅ Message sent! We'll get back to you soon.</p>
+      <div id="contact-success" class="hidden text-center py-4">
+        <p class="text-base font-bold mb-1" style="color:var(--text-primary)">Message sent!</p>
+        <p class="text-sm" style="color:var(--text-secondary)">We will contact you within 24 hours. Thank you!</p>
+      </div>
     </div>
   </div>
 </div>
@@ -1956,8 +1959,16 @@ function clearBookings() {
 }
 function openPrivacyPolicy() { document.getElementById('privacy-modal').classList.remove('hidden'); }
 function closePrivacyPolicy() { document.getElementById('privacy-modal').classList.add('hidden'); }
-function openContact() { document.getElementById('contact-modal').classList.remove('hidden'); }
-function closeContact() { document.getElementById('contact-modal').classList.add('hidden'); }
+function openContact() {
+  document.getElementById('contact-modal').classList.remove('hidden');
+  document.getElementById('contact-form').classList.remove('hidden');
+  document.getElementById('contact-success').classList.add('hidden');
+}
+function closeContact() {
+  document.getElementById('contact-modal').classList.add('hidden');
+  document.getElementById('contact-form').classList.remove('hidden');
+  document.getElementById('contact-success').classList.add('hidden');
+}
 function submitContact(e) {
   e.preventDefault();
   const btn = e.target.querySelector('button[type="submit"]');
