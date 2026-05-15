@@ -21,9 +21,50 @@
     }
   </script>
   <style>
+    :root {
+      --bg-base: #f8fafc;
+      --bg-card: #ffffff;
+      --bg-card2: #f1f5f9;
+      --bg-input: #ffffff;
+      --border: rgba(0,0,0,0.09);
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #94a3b8;
+    }
+    [data-theme="dark"] {
+      --bg-base: #0d0d1a;
+      --bg-card: #13132b;
+      --bg-card2: #1a1a35;
+      --bg-input: #1a1a35;
+      --border: rgba(255,255,255,0.09);
+      --text-primary: #e2e8f0;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+    }
     * { font-family: 'Inter', ui-sans-serif, system-ui; }
+    body { background: var(--bg-base) !important; color: var(--text-primary); transition: background .2s, color .2s; }
+
+    /* Dark-only Tailwind overrides */
+    [data-theme="dark"] .bg-white { background: var(--bg-card) !important; }
+    [data-theme="dark"] .bg-slate-50,
+    [data-theme="dark"] .bg-gray-50 { background: var(--bg-card2) !important; }
+    [data-theme="dark"] .bg-slate-100,
+    [data-theme="dark"] .bg-gray-100 { background: rgba(255,255,255,0.06) !important; }
+    [data-theme="dark"] .bg-gray-200 { background: rgba(255,255,255,0.08) !important; }
+    [data-theme="dark"] .text-gray-900,
+    [data-theme="dark"] .text-gray-800 { color: var(--text-primary) !important; }
+    [data-theme="dark"] .text-gray-700,
+    [data-theme="dark"] .text-gray-600 { color: #cbd5e1 !important; }
+    [data-theme="dark"] .text-gray-500,
+    [data-theme="dark"] .text-gray-400 { color: var(--text-secondary) !important; }
+    [data-theme="dark"] .text-gray-300 { color: var(--text-muted) !important; }
+    [data-theme="dark"] .border-gray-100,
+    [data-theme="dark"] .border-gray-200 { border-color: var(--border) !important; }
+    [data-theme="dark"] .border-t { border-color: var(--border) !important; }
+    [data-theme="dark"] .divide-gray-100 > * + * { border-color: var(--border) !important; }
+
     .glass {
-      background: rgba(255,255,255,0.96);
+      background: rgba(13,13,26,0.92);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
     }
@@ -32,24 +73,24 @@
     }
     .autocomplete-dropdown {
       position: absolute; left: 0; right: 0; top: calc(100% + 6px);
-      background: white; border: 1px solid #e5e7eb;
-      border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,.15);
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,.25);
       z-index: 200; max-height: 280px; overflow-y: auto;
     }
     .autocomplete-item {
       display: flex; align-items: center; gap: 12px;
-      padding: 12px 16px; cursor: pointer; font-size: 0.875rem; color: #374151;
+      padding: 12px 16px; cursor: pointer; font-size: 0.875rem; color: var(--text-secondary);
       transition: background 0.12s;
     }
     .autocomplete-item:first-child { border-radius: 16px 16px 0 0; }
     .autocomplete-item:last-child { border-radius: 0 0 16px 16px; }
-    .autocomplete-item:hover, .autocomplete-item.active { background: #f5f3ff; }
-    .autocomplete-item .dest-label { font-weight: 600; color: #111827; }
-    .autocomplete-item .dest-sub { font-size: 0.72rem; color: #9ca3af; margin-top: 1px; }
+    .autocomplete-item:hover, .autocomplete-item.active { background: rgba(99,102,241,0.15); }
+    .autocomplete-item .dest-label { font-weight: 600; color: var(--text-primary); }
+    .autocomplete-item .dest-sub { font-size: 0.72rem; color: var(--text-muted); margin-top: 1px; }
     .toast {
       position: fixed; bottom: 28px; right: 28px; z-index: 9999;
       background: #1e1b4b; color: white; padding: 14px 22px;
-      border-radius: 14px; box-shadow: 0 12px 40px rgba(0,0,0,.25);
+      border-radius: 14px; box-shadow: 0 12px 40px rgba(0,0,0,.5);
       font-size: 0.875rem; font-weight: 500; max-width: 360px;
       transform: translateY(120px); opacity: 0;
       transition: transform .35s cubic-bezier(.34,1.56,.64,1), opacity .35s ease;
@@ -64,46 +105,48 @@
     @keyframes spin { to { transform: rotate(360deg); } }
     .counter-btn {
       width:30px;height:30px;border-radius:50%;
-      border:1.5px solid #d1d5db;color:#6b7280;
+      border:1.5px solid rgba(255,255,255,0.15);color:#94a3b8;
       display:flex;align-items:center;justify-content:center;
-      font-weight:700;font-size:16px;background:white;transition:all .15s;
+      font-weight:700;font-size:16px;background:var(--bg-card2);transition:all .15s;
     }
-    .counter-btn:hover:not(:disabled) { border-color:#6366f1;color:#6366f1;background:#f5f3ff; }
+    .counter-btn:hover:not(:disabled) { border-color:#6366f1;color:#6366f1;background:rgba(99,102,241,0.1); }
     .counter-btn:disabled { opacity:.25;cursor:default; }
     .counter-btn-plus {
       width:30px;height:30px;border-radius:50%;
-      border:1.5px solid #c7d2fe;color:#4f46e5;
+      border:1.5px solid rgba(99,102,241,0.4);color:#818cf8;
       display:flex;align-items:center;justify-content:center;
-      font-weight:700;font-size:16px;background:white;transition:all .15s;
+      font-weight:700;font-size:16px;background:var(--bg-card2);transition:all .15s;
     }
-    .counter-btn-plus:hover { background:#eef2ff;border-color:#6366f1; }
+    .counter-btn-plus:hover { background:rgba(99,102,241,0.15);border-color:#6366f1; }
     .field-wrapper {
       position: relative;
-      background: white;
-      border: 1.5px solid #e5e7eb;
+      background: var(--bg-input);
+      border: 1.5px solid var(--border);
       border-radius: 12px;
       transition: border-color .2s, box-shadow .2s;
     }
     .field-wrapper:focus-within {
       border-color: #6366f1;
-      box-shadow: 0 0 0 3px rgba(99,102,241,.12);
+      box-shadow: 0 0 0 3px rgba(99,102,241,.15);
     }
     .field-label {
       position: absolute; top: 8px; left: 14px;
       font-size: 0.65rem; font-weight: 600; letter-spacing: .05em;
-      text-transform: uppercase; color: #9ca3af; pointer-events: none;
+      text-transform: uppercase; color: var(--text-muted); pointer-events: none;
     }
     .field-input {
       width: 100%; background: transparent; border: none; outline: none;
-      padding: 28px 14px 10px; font-size: 0.9375rem; font-weight: 500; color: #111827;
+      padding: 28px 14px 10px; font-size: 0.9375rem; font-weight: 500; color: var(--text-primary);
     }
-    .field-input::placeholder { color: #c4c4c4; font-weight: 400; }
+    .field-input::placeholder { color: #94a3b8; font-weight: 400; }
+    select.field-input option { background: var(--bg-input); color: var(--text-primary); }
+    [data-theme="dark"] input[type="date"].field-input { color-scheme: dark; }
     .trip-pill {
       padding: 7px 18px; border-radius: 100px; font-size: 0.8125rem; font-weight: 600;
-      cursor: pointer; transition: all .2s; color: rgba(255,255,255,.65);
+      cursor: pointer; transition: all .2s; color: rgba(255,255,255,.55);
     }
-    .trip-pill.active { background: white; color: #4338ca; box-shadow: 0 2px 12px rgba(0,0,0,.15); }
-    .trip-pill:not(.active):hover { color: white; background: rgba(255,255,255,.12); }
+    .trip-pill.active { background: white; color: #4338ca; box-shadow: 0 2px 12px rgba(0,0,0,.3); }
+    .trip-pill:not(.active):hover { color: white; background: rgba(255,255,255,.1); }
     .search-btn {
       background: linear-gradient(135deg, #4f46e5, #7c3aed);
       color: white; font-weight: 700; border-radius: 12px;
@@ -113,24 +156,52 @@
     }
     .search-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 28px rgba(79,70,229,.5); }
     .search-btn:active { transform: translateY(0); }
-    .card-hover {
-      transition: transform .2s ease, box-shadow .2s ease;
-    }
-    .card-hover:hover { transform: translateY(-3px); box-shadow: 0 20px 60px rgba(0,0,0,.1); }
+    .card-hover { transition: transform .2s ease, box-shadow .2s ease; }
+    .card-hover:hover { transform: translateY(-3px); box-shadow: 0 20px 60px rgba(0,0,0,.2); }
     .flight-card {
-      background: white; border-radius: 20px;
-      border: 1px solid #f0f0f0;
+      background: var(--bg-card); border-radius: 20px;
+      border: 1px solid var(--border);
       transition: all .2s ease;
     }
-    .flight-card:hover { border-color: #c7d2fe; box-shadow: 0 8px 40px rgba(99,102,241,.1); }
-    .flight-filter-btn.active { background: white; color: #4338ca; box-shadow: 0 1px 6px rgba(0,0,0,.1); font-weight: 700; }
-    .car-filter.active { background: white; color: #4338ca; box-shadow: 0 1px 6px rgba(0,0,0,.1); font-weight: 700; }
+    .flight-card:hover { border-color: rgba(99,102,241,0.4); box-shadow: 0 8px 40px rgba(99,102,241,.15); }
+    .flight-filter-btn.active { background: rgba(255,255,255,0.1); color: #a5b4fc; box-shadow: none; font-weight: 700; }
+    .car-filter.active { background: rgba(255,255,255,0.1); color: #a5b4fc; box-shadow: none; font-weight: 700; }
     .dot-line::before, .dot-line::after {
       content: ''; display: block; width: 8px; height: 8px;
-      border-radius: 50%; border: 2px solid #6366f1; background: white; flex-shrink: 0;
+      border-radius: 50%; border: 2px solid #6366f1; background: var(--bg-base); flex-shrink: 0;
     }
     .dot-line-inner { flex: 1; height: 1.5px; background: linear-gradient(90deg, #6366f1, #a5b4fc); margin: 0 6px; }
+
+    /* Modal & drawer overrides */
+    [data-theme="dark"] #bookings-drawer,
+    [data-theme="dark"] #hotel-detail-modal > div,
+    [data-theme="dark"] #contact-modal > div,
+    [data-theme="dark"] #privacy-modal > div {
+      background: var(--bg-card) !important;
+      color: var(--text-primary) !important;
+    }
+    [data-theme="dark"] #bookings-drawer input,
+    [data-theme="dark"] #bookings-drawer select,
+    [data-theme="dark"] #contact-modal input,
+    [data-theme="dark"] #contact-modal textarea {
+      background: var(--bg-card2) !important;
+      color: var(--text-primary) !important;
+      border-color: var(--border) !important;
+    }
+    [data-theme="dark"] .bg-indigo-50 { background: rgba(99,102,241,0.1) !important; }
+    [data-theme="dark"] .bg-emerald-50 { background: rgba(16,185,129,0.1) !important; }
+    [data-theme="dark"] .bg-amber-50 { background: rgba(245,158,11,0.1) !important; }
+    [data-theme="dark"] .bg-rose-50 { background: rgba(244,63,94,0.1) !important; }
+    [data-theme="dark"] .bg-sky-50 { background: rgba(14,165,233,0.1) !important; }
+    [data-theme="dark"] .bg-violet-50 { background: rgba(139,92,246,0.1) !important; }
+    [data-theme="dark"] .rounded-3xl.border.border-gray-100 { background: var(--bg-card) !important; border-color: var(--border) !important; }
   </style>
+  <script>
+    (function() {
+      var t = localStorage.getItem('tm-theme') || 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
 </head>
 <body class="bg-slate-50 min-h-screen flex flex-col">
 
@@ -363,12 +434,18 @@
       </button>
     </nav>
 
-    <!-- Hamburger button -->
-    <button id="hamburger-btn" onclick="toggleMobileMenu()" class="md:hidden flex flex-col justify-center gap-1.5 w-9 h-9 p-1.5 rounded-lg hover:bg-white/10 transition-colors">
-      <span class="block h-0.5 bg-white rounded-full transition-all"></span>
-      <span class="block h-0.5 bg-white rounded-full transition-all"></span>
-      <span class="block h-0.5 bg-white rounded-full transition-all"></span>
-    </button>
+    <!-- Right side actions -->
+    <div class="flex items-center gap-1">
+      <button id="theme-toggle" onclick="toggleTheme()" title="Toggle theme"
+        class="w-9 h-9 rounded-full flex items-center justify-center text-white/75 hover:text-white hover:bg-white/10 transition-colors text-lg">
+        🌙
+      </button>
+      <button id="hamburger-btn" onclick="toggleMobileMenu()" class="md:hidden flex flex-col justify-center gap-1.5 w-9 h-9 p-1.5 rounded-lg hover:bg-white/10 transition-colors">
+        <span class="block h-0.5 bg-white rounded-full transition-all"></span>
+        <span class="block h-0.5 bg-white rounded-full transition-all"></span>
+        <span class="block h-0.5 bg-white rounded-full transition-all"></span>
+      </button>
+    </div>
   </div>
 
   <!-- Mobile menu -->
@@ -1800,6 +1877,20 @@ function toggleMobileMenu() {
   menu.classList.toggle('hidden');
 }
 
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  const next = isDark ? 'light' : 'dark';
+  html.setAttribute('data-theme', next);
+  localStorage.setItem('tm-theme', next);
+  updateThemeIcon(next);
+}
+
+function updateThemeIcon(theme) {
+  const btn = document.getElementById('theme-toggle');
+  if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+}
+
 function toggleBookings() {
   const drawer = document.getElementById('bookings-drawer');
   const overlay = document.getElementById('bookings-overlay');
@@ -2430,6 +2521,7 @@ function applyFlightFilters() {
 // Init
 updateBadge();
 updateGuestLabel();
+updateThemeIcon(localStorage.getItem('tm-theme') || 'light');
 document.querySelectorAll('.multi-leg').forEach(el => initLegAutocomplete(el));
 </script>
 </body>
