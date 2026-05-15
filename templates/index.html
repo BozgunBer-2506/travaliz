@@ -2694,7 +2694,7 @@ document.querySelectorAll('.multi-leg').forEach(el => initLegAutocomplete(el));
 <!-- Footer -->
 <footer class="mt-16 border-t pt-10 pb-6 px-6" style="border-color:var(--border)">
   <div class="max-w-7xl mx-auto">
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-8 mb-8">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-8">
 
       <!-- Brand -->
       <div>
@@ -2716,17 +2716,15 @@ document.querySelectorAll('.multi-leg').forEach(el => initLegAutocomplete(el));
         </ul>
       </div>
 
-      <!-- IT & Web -->
-      <div>
-        <p class="text-xs font-semibold uppercase tracking-widest mb-3" style="color:var(--text-secondary)">IT &amp; Web</p>
-        <a href="https://thebozgun.com" target="_blank" rel="noopener noreferrer"
-          class="text-sm font-bold text-indigo-500 hover:text-indigo-400 transition-colors">thebozgun.com</a>
-        <p class="text-xs mt-1" style="color:var(--text-muted)">Web development &amp; IT solutions</p>
-      </div>
-
     </div>
-    <div class="border-t pt-6 text-center" style="border-color:var(--border)">
+    <div class="border-t pt-6 flex flex-col items-center gap-2" style="border-color:var(--border)">
       <p class="text-xs" style="color:var(--text-muted)">© 2026 TravelMirror · All rights reserved</p>
+      <p class="text-xs" style="color:var(--text-muted)">
+        IT &amp; Web ·
+        <a href="https://thebozgun.com" target="_blank" rel="noopener noreferrer"
+          class="text-indigo-500 hover:text-indigo-400 transition-colors font-medium">thebozgun.com</a>
+        · Web development &amp; IT solutions
+      </p>
     </div>
   </div>
 </footer>
