@@ -570,6 +570,12 @@
         </div>
         <span class="text-white/50 text-xs">🌙</span>
       </button>
+      <!-- Currency selector -->
+      <div class="flex items-center rounded-full overflow-hidden border border-white/30 text-xs font-bold">
+        <button onclick="setCurrency('EUR')" id="cur-EUR" class="px-2.5 py-1.5 transition-all text-white/70 hover:text-white hover:bg-white/10">€ EUR</button>
+        <button onclick="setCurrency('USD')" id="cur-USD" class="px-2.5 py-1.5 transition-all text-white/70 hover:text-white hover:bg-white/10">$ USD</button>
+        <button onclick="setCurrency('TRY')" id="cur-TRY" class="px-2.5 py-1.5 transition-all text-white/70 hover:text-white hover:bg-white/10">₺ TRY</button>
+      </div>
       <!-- Sign In -->
       <button onclick="openSignIn()" class="px-4 py-1.5 rounded-full text-sm font-semibold text-white border border-white/30 hover:bg-white/10 transition-all">
         Sign In
@@ -953,7 +959,7 @@
         <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px">{{.RatingWord}}</div>
         <div style="display:flex;align-items:center;justify-content:space-between;padding-top:12px;border-top:1px solid var(--border);margin-top:auto">
           <div>
-            <span style="font-size:21px;font-weight:800;color:var(--text-primary)">${{printf "%.0f" .Price}}</span>
+            <span class="price-display" data-usd="{{printf "%.2f" .Price}}" style="font-size:21px;font-weight:800;color:var(--text-primary)">$0</span>
             <span style="font-size:11px;color:var(--text-muted);margin-left:2px">/night</span>
           </div>
           <span style="font-size:11px;font-weight:600;color:#6366f1;border:1px solid rgba(99,102,241,0.4);padding:5px 12px;border-radius:10px">View →</span>
@@ -1773,7 +1779,7 @@
   <!-- Price + CTA -->
   <div class="flex flex-row sm:flex-col items-center sm:items-end gap-3 sm:gap-2 shrink-0">
     <div class="text-right">
-      <span class="text-xl sm:text-3xl font-extrabold text-gray-900">${{printf "%.0f" .Price}}</span>
+      <span class="price-display text-xl sm:text-3xl font-extrabold text-gray-900" data-usd="{{printf "%.2f" .Price}}">$0</span>
       <p class="text-xs text-gray-400">per person</p>
     </div>
     <button class="flight-book-btn text-white text-sm font-bold px-7 py-2.5 rounded-xl transition-all"
@@ -2114,6 +2120,42 @@ function toggleMobileMenu() {
   const menu = document.getElementById('mobile-menu');
   menu.classList.toggle('hidden');
 }
+
+// ── Currency ─────────────────────────────────────────────────────────────────
+const CURRENCY_RATES = { EUR: 0.92, USD: 1.0, TRY: 32.0 };
+const CURRENCY_SYMBOLS = { EUR: '€', USD: '$', TRY: '₺' };
+
+function setCurrency(code) {
+  localStorage.setItem('currency', code);
+  applyPrices();
+  ['EUR','USD','TRY'].forEach(c => {
+    const btn = document.getElementById('cur-' + c);
+    if (!btn) return;
+    if (c === code) {
+      btn.style.background = 'rgba(255,255,255,0.25)';
+      btn.style.color = '#ffffff';
+    } else {
+      btn.style.background = '';
+      btn.style.color = '';
+    }
+  });
+}
+
+function applyPrices() {
+  const code = localStorage.getItem('currency') || 'EUR';
+  const rate = CURRENCY_RATES[code] || 1;
+  const sym = CURRENCY_SYMBOLS[code] || '€';
+  document.querySelectorAll('.price-display').forEach(el => {
+    const usd = parseFloat(el.dataset.usd) || 0;
+    const converted = Math.round(usd * rate);
+    el.textContent = sym + converted.toLocaleString();
+  });
+  setCurrency(code);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  applyPrices();
+});
 
 function toggleTheme() {
   const html = document.documentElement;

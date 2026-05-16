@@ -226,15 +226,33 @@ type bookingDestResponse struct {
 
 type bookingHotelSearchResponse struct {
 	Result []struct {
-		HotelID       int     `json:"hotel_id"`
-		HotelName     string  `json:"hotel_name"`
-		Class         float64 `json:"class"`
-		ReviewScore   float64 `json:"review_score"`
-		ReviewWordEN  string  `json:"review_score_word"`
-		MinTotalPrice float64 `json:"min_total_price"`
-		MaxPhotoURL   string  `json:"max_photo_url"`
-		MainPhotoURL  string  `json:"main_photo_url"`
+		HotelID        int     `json:"hotel_id"`
+		HotelName      string  `json:"hotel_name"`
+		Class          float64 `json:"class"`
+		ReviewScore    float64 `json:"review_score"`
+		ReviewWordEN   string  `json:"review_score_word"`
+		MinTotalPrice  float64 `json:"min_total_price"`
+		CurrencyCode   string  `json:"currencycode"`
+		MaxPhotoURL    string  `json:"max_photo_url"`
+		MainPhotoURL   string  `json:"main_photo_url"`
 	} `json:"result"`
+}
+
+// approximate conversion rates to USD (good enough for display)
+var toUSD = map[string]float64{
+	"JPY": 1.0 / 150.0,
+	"TRY": 1.0 / 32.0,
+	"EUR": 1.0 / 0.92,
+	"GBP": 1.0 / 0.79,
+	"AED": 1.0 / 3.67,
+	"THB": 1.0 / 35.0,
+	"SGD": 1.0 / 1.35,
+	"AUD": 1.0 / 1.52,
+	"CAD": 1.0 / 1.36,
+	"CHF": 1.0 / 0.90,
+	"INR": 1.0 / 83.0,
+	"MXN": 1.0 / 17.5,
+	"BRL": 1.0 / 5.0,
 }
 
 type hcHotelSearchResponse struct {
@@ -520,6 +538,16 @@ func (pc *ProxyClient) fetchHotelsFromBooking(city, checkIn, checkOut, adults, r
 		return nil, fmt.Errorf("booking returned no hotels")
 	}
 
+	// calculate number of nights for per-night price
+	nights := 1.0
+	if t1, err1 := time.Parse("2006-01-02", checkIn); err1 == nil {
+		if t2, err2 := time.Parse("2006-01-02", checkOut); err2 == nil {
+			if d := t2.Sub(t1).Hours() / 24; d > 0 {
+				nights = d
+			}
+		}
+	}
+
 	hotels := make([]HotelData, 0, len(payload.Result))
 	for i, r := range payload.Result {
 		photo := r.MaxPhotoURL
@@ -530,10 +558,17 @@ func (pc *ProxyClient) fetchHotelsFromBooking(city, checkIn, checkOut, adults, r
 		if stars == 0 {
 			stars = 3
 		}
+		pricePerNight := r.MinTotalPrice / nights
+		// convert to USD if API returned local currency
+		if r.CurrencyCode != "" && r.CurrencyCode != "USD" {
+			if rate, ok := toUSD[r.CurrencyCode]; ok {
+				pricePerNight = pricePerNight * rate
+			}
+		}
 		hotels = append(hotels, HotelData{
 			HotelID:    i + 1,
 			HotelName:  r.HotelName,
-			Price:      r.MinTotalPrice,
+			Price:      pricePerNight,
 			Currency:   "USD",
 			Rating:     r.ReviewScore,
 			RatingWord: r.ReviewWordEN,
