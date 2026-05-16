@@ -251,7 +251,7 @@
       </div>
 
       <!-- Price summary -->
-      <div id="hd-price-summary" class="rounded-2xl p-4 mb-5 flex items-center justify-between" style="background:var(--bg-card2);border:1px solid var(--border)">
+      <div id="hd-price-summary" class="rounded-2xl p-4 mb-3 flex items-center justify-between" style="background:var(--bg-card2);border:1px solid var(--border)">
         <div>
           <p class="text-xs font-semibold uppercase tracking-wider" style="color:var(--text-muted)">Per night</p>
           <p id="hd-price-night" class="text-2xl font-extrabold" style="color:var(--text-primary)">€0</p>
@@ -260,6 +260,21 @@
           <p class="text-xs font-semibold uppercase tracking-wider" style="color:var(--text-muted)">Total stay</p>
           <p id="hd-price-total" class="text-2xl font-extrabold" style="color:#6366f1">€0</p>
           <p id="hd-nights-label" class="text-xs" style="color:var(--text-muted)"></p>
+        </div>
+      </div>
+      <!-- Trip details row -->
+      <div id="hd-trip-info" class="rounded-xl px-4 py-3 mb-5 grid grid-cols-3 gap-2" style="background:var(--bg-card2);border:1px solid var(--border)">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wider mb-1" style="color:var(--text-muted)">Check-in</p>
+          <p id="hd-checkin" class="text-sm font-bold" style="color:var(--text-primary)">-</p>
+        </div>
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wider mb-1" style="color:var(--text-muted)">Check-out</p>
+          <p id="hd-checkout" class="text-sm font-bold" style="color:var(--text-primary)">-</p>
+        </div>
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wider mb-1" style="color:var(--text-muted)">Guests</p>
+          <p id="hd-guests" class="text-sm font-bold" style="color:var(--text-primary)">-</p>
         </div>
       </div>
 
@@ -655,17 +670,17 @@
   <div class="max-w-5xl mx-auto relative z-10">
     {{if eq .Tab "hotels"}}
     <div class="text-center mb-8">
-      <h2 class="text-4xl font-extrabold text-white mb-2">Find your perfect stay</h2>
+      <h2 class="text-3xl sm:text-4xl font-extrabold text-white mb-2">Find your perfect stay</h2>
       <p class="text-indigo-200 text-base">Search hotels in thousands of destinations worldwide</p>
     </div>
     {{else if eq .Tab "cars"}}
     <div class="text-center mb-8">
-      <h2 class="text-4xl font-extrabold text-white mb-2">Car Rentals Worldwide</h2>
+      <h2 class="text-3xl sm:text-4xl font-extrabold text-white mb-2">Car Rentals Worldwide</h2>
       <p class="text-indigo-200 text-base">Compare prices from top rental brands worldwide</p>
     </div>
     {{else}}
     <div class="text-center mb-8">
-      <h2 class="text-4xl font-extrabold text-white mb-2">Search flights worldwide</h2>
+      <h2 class="text-3xl sm:text-4xl font-extrabold text-white mb-2">Search flights worldwide</h2>
       <p class="text-indigo-200 text-base">One-way, round-trip, or multi-city — we've got you covered</p>
     </div>
     {{end}}
@@ -675,9 +690,9 @@
 
       {{if eq .Tab "hotels"}}
       <form method="GET" action="/" class="flex flex-col gap-4" id="hotel-form" onsubmit="setLoading(this)">
-        <div class="flex flex-col lg:flex-row gap-3 items-end">
+        <div class="flex flex-col lg:flex-row gap-3 lg:items-end">
           <!-- Destination -->
-          <div class="field-wrapper flex-1">
+          <div class="field-wrapper flex-1 w-full">
             <span class="field-label">Destination</span>
             <input id="city-display" type="text" autocomplete="off" placeholder="Paris, New York, Tokyo..."
               value="{{.City}}" class="field-input" />
@@ -967,16 +982,25 @@
   {{if .Hotels}}
   <!-- Hotel Filters -->
   <div class="flex flex-wrap items-center gap-2 mb-6">
-    <span style="font-size:12px;font-weight:600;color:var(--text-muted)">Filter:</span>
-    <button onclick="filterHotels('stars','0')" id="hf-stars-0" class="hf-btn hf-active" style="font-size:12px;font-weight:600;padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:var(--bg-card2);color:var(--text-secondary);cursor:pointer">All Stars</button>
-    <button onclick="filterHotels('stars','3')" id="hf-stars-3" class="hf-btn" style="font-size:12px;font-weight:600;padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:var(--bg-card2);color:var(--text-secondary);cursor:pointer">3★+</button>
-    <button onclick="filterHotels('stars','4')" id="hf-stars-4" class="hf-btn" style="font-size:12px;font-weight:600;padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:var(--bg-card2);color:var(--text-secondary);cursor:pointer">4★+</button>
-    <button onclick="filterHotels('stars','5')" id="hf-stars-5" class="hf-btn" style="font-size:12px;font-weight:600;padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:var(--bg-card2);color:var(--text-secondary);cursor:pointer">5★</button>
-    <span style="width:1px;height:20px;background:var(--border);margin:0 4px"></span>
-    <button onclick="filterHotels('rating','0')" id="hf-rating-0" class="hf-btn hf-active" style="font-size:12px;font-weight:600;padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:var(--bg-card2);color:var(--text-secondary);cursor:pointer">Any Rating</button>
-    <button onclick="filterHotels('rating','7')" id="hf-rating-7" class="hf-btn" style="font-size:12px;font-weight:600;padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:var(--bg-card2);color:var(--text-secondary);cursor:pointer">7.0+</button>
-    <button onclick="filterHotels('rating','8')" id="hf-rating-8" class="hf-btn" style="font-size:12px;font-weight:600;padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:var(--bg-card2);color:var(--text-secondary);cursor:pointer">8.0+</button>
-    <button onclick="filterHotels('rating','9')" id="hf-rating-9" class="hf-btn" style="font-size:12px;font-weight:600;padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:var(--bg-card2);color:var(--text-secondary);cursor:pointer">9.0+</button>
+    <select onchange="setHotelFilter('stars',this.value)" style="font-size:13px;font-weight:600;padding:7px 12px;border-radius:10px;border:1px solid var(--border);background:var(--bg-card2);color:var(--text-primary);cursor:pointer;outline:none;appearance:none;-webkit-appearance:none;padding-right:28px;background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236366f1' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E\");background-repeat:no-repeat;background-position:right 10px center">
+      <option value="0">⭐ All Stars</option>
+      <option value="3">3★ and above</option>
+      <option value="4">4★ and above</option>
+      <option value="5">5★ only</option>
+    </select>
+    <select onchange="setHotelFilter('rating',this.value)" style="font-size:13px;font-weight:600;padding:7px 12px;border-radius:10px;border:1px solid var(--border);background:var(--bg-card2);color:var(--text-primary);cursor:pointer;outline:none;appearance:none;-webkit-appearance:none;padding-right:28px;background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236366f1' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E\");background-repeat:no-repeat;background-position:right 10px center">
+      <option value="0">🏅 Any Rating</option>
+      <option value="7">7.0+ Good</option>
+      <option value="8">8.0+ Very Good</option>
+      <option value="9">9.0+ Exceptional</option>
+    </select>
+    <select onchange="setHotelFilter('sort',this.value)" style="font-size:13px;font-weight:600;padding:7px 12px;border-radius:10px;border:1px solid var(--border);background:var(--bg-card2);color:var(--text-primary);cursor:pointer;outline:none;appearance:none;-webkit-appearance:none;padding-right:28px;background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236366f1' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E\");background-repeat:no-repeat;background-position:right 10px center">
+      <option value="default">↕ Sort</option>
+      <option value="price-asc">Price: Low → High</option>
+      <option value="price-desc">Price: High → Low</option>
+      <option value="rating-desc">Rating: Best first</option>
+      <option value="stars-desc">Stars: Luxury first</option>
+    </select>
   </div>
   <div id="hotel-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:20px">
     {{range .Hotels}}
@@ -2010,26 +2034,28 @@ const roomTypes = {
 
 let currentHotelData = null;
 
-const hotelFilters = { stars: 0, rating: 0 };
-function filterHotels(type, val) {
-  hotelFilters[type] = parseFloat(val);
-  // update button active state
-  document.querySelectorAll('.hf-btn').forEach(b => {
-    b.style.background = 'var(--bg-card2)';
-    b.style.color = 'var(--text-secondary)';
-    b.style.borderColor = 'var(--border)';
-  });
-  const activeId = 'hf-' + type + '-' + val;
-  const activeBtn = document.getElementById(activeId);
-  if (activeBtn) { activeBtn.style.background = '#6366f1'; activeBtn.style.color = '#fff'; activeBtn.style.borderColor = '#6366f1'; }
-  // show/hide cards
-  document.querySelectorAll('.hotel-card').forEach(card => {
+const hotelFilters = { stars: 0, rating: 0, sort: 'default' };
+function setHotelFilter(type, val) {
+  hotelFilters[type] = (type === 'sort') ? val : parseFloat(val);
+  applyHotelFilters();
+}
+function applyHotelFilters() {
+  const grid = document.getElementById('hotel-grid');
+  if (!grid) return;
+  const cards = [...grid.querySelectorAll('.hotel-card')];
+  cards.forEach(card => {
     const stars = parseFloat(card.dataset.stars) || 0;
     const rating = parseFloat(card.dataset.rating) || 0;
-    const showStars = hotelFilters.stars === 0 || stars >= hotelFilters.stars;
-    const showRating = hotelFilters.rating === 0 || rating >= hotelFilters.rating;
-    card.style.display = (showStars && showRating) ? '' : 'none';
+    const okStars = hotelFilters.stars === 0 || stars >= hotelFilters.stars;
+    const okRating = hotelFilters.rating === 0 || rating >= hotelFilters.rating;
+    card.style.display = (okStars && okRating) ? '' : 'none';
   });
+  const visible = cards.filter(c => c.style.display !== 'none');
+  if (hotelFilters.sort === 'price-asc')   visible.sort((a,b) => parseFloat(a.dataset.price) - parseFloat(b.dataset.price));
+  else if (hotelFilters.sort === 'price-desc') visible.sort((a,b) => parseFloat(b.dataset.price) - parseFloat(a.dataset.price));
+  else if (hotelFilters.sort === 'rating-desc') visible.sort((a,b) => parseFloat(b.dataset.rating) - parseFloat(a.dataset.rating));
+  else if (hotelFilters.sort === 'stars-desc') visible.sort((a,b) => parseFloat(b.dataset.stars) - parseFloat(a.dataset.stars));
+  visible.forEach(c => grid.appendChild(c));
 }
 
 function openHotelDetail(card) {
@@ -2057,6 +2083,17 @@ function openHotelDetail(card) {
   document.getElementById('hd-price-night').textContent = sym + nightPrice.toLocaleString();
   document.getElementById('hd-price-total').textContent = sym + totalPrice.toLocaleString();
   document.getElementById('hd-nights-label').textContent = nights > 1 ? nights + ' nights' : '1 night';
+  // Trip details
+  const checkinEl = document.getElementById('checkin');
+  const checkoutEl = document.getElementById('checkout');
+  const adultsEl = document.getElementById('h_adults-val');
+  const childrenEl = document.getElementById('h_children-val');
+  const fmtDate = v => { if (!v) return '-'; const p = v.split('-'); return p.length === 3 ? p[2]+'.'+p[1]+'.'+p[0] : v; };
+  document.getElementById('hd-checkin').textContent = fmtDate(checkinEl?.value);
+  document.getElementById('hd-checkout').textContent = fmtDate(checkoutEl?.value);
+  const adults = parseInt(adultsEl?.textContent) || 2;
+  const children = parseInt(childrenEl?.textContent) || 0;
+  document.getElementById('hd-guests').textContent = adults + (children > 0 ? ' Adults, '+children+' Child' : ' Adults');
   document.getElementById('hd-desc').textContent = descMap[stars] || descMap[3];
 
   // Badges
@@ -2191,7 +2228,8 @@ function renderBookings() {
   list.querySelectorAll('.booking-item').forEach(el => el.remove());
   if (b.length === 0) { noMsg && noMsg.classList.remove('hidden'); return; }
   noMsg && noMsg.classList.add('hidden');
-  b.forEach(item => {
+  b.forEach((item, idx) => {
+    const panelId = 'bk-panel-' + idx;
     const div = document.createElement('div');
     div.className = 'booking-item';
     div.style.cssText = 'border-radius:14px;border:1px solid var(--border);background:var(--bg-card);margin-bottom:8px;overflow:hidden';
@@ -2199,39 +2237,62 @@ function renderBookings() {
     const sub = item.type === 'flight'
       ? `${item.from || ''} → ${item.to || ''}`
       : item.type === 'car' ? (item.pickup || 'Car rental')
-      : `${item.price ? '$'+item.price : ''}/night`;
+      : `${item.checkin || ''} → ${item.checkout || ''}`;
     const itemJson = JSON.stringify(item).replace(/"/g,'&quot;');
+
+    // Detail rows for expanded panel
+    let detailRows = '';
+    if (item.type === 'hotel') {
+      detailRows = `
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:12px 14px;border-bottom:1px solid var(--border)">
+          <div><p style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);margin-bottom:3px">Check-in</p><p style="font-size:13px;font-weight:700;color:var(--text-primary)">${item.checkin||'-'}</p></div>
+          <div><p style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);margin-bottom:3px">Check-out</p><p style="font-size:13px;font-weight:700;color:var(--text-primary)">${item.checkout||'-'}</p></div>
+          <div><p style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);margin-bottom:3px">Price/night</p><p style="font-size:13px;font-weight:700;color:#6366f1">$${item.price||0}</p></div>
+        </div>`;
+    } else if (item.type === 'flight') {
+      detailRows = `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 14px;border-bottom:1px solid var(--border)">
+          <div><p style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);margin-bottom:3px">From</p><p style="font-size:13px;font-weight:700;color:var(--text-primary)">${item.from||'-'}</p></div>
+          <div><p style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);margin-bottom:3px">To</p><p style="font-size:13px;font-weight:700;color:var(--text-primary)">${item.to||'-'}</p></div>
+          <div><p style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);margin-bottom:3px">Airline</p><p style="font-size:13px;font-weight:700;color:var(--text-primary)">${item.airline||'-'}</p></div>
+          <div><p style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);margin-bottom:3px">Price</p><p style="font-size:13px;font-weight:700;color:#6366f1">$${item.price||0}</p></div>
+        </div>`;
+    }
+
     div.innerHTML = `
-      <div onclick="this.parentElement.querySelector('.bk-actions').classList.toggle('hidden')"
-        style="display:flex;align-items:center;gap:12px;padding:13px 15px;cursor:pointer">
-        <span style="font-size:24px;flex-shrink:0">${icon}</span>
+      <div onclick="(function(el){const p=document.getElementById('${panelId}');if(p){const open=p.style.display!=='none';p.style.display=open?'none':'block';el.querySelector('.bk-chevron').style.transform=open?'':'rotate(90deg)'}})(this)"
+        style="display:flex;align-items:center;gap:12px;padding:13px 15px;cursor:pointer;user-select:none">
+        <span style="font-size:22px;flex-shrink:0">${icon}</span>
         <div style="flex:1;min-width:0">
           <p style="font-weight:700;font-size:13px;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.name || 'Booking'}</p>
-          <p style="font-size:11px;color:var(--text-muted);margin-top:1px">${sub}</p>
+          <p style="font-size:11px;color:var(--text-muted);margin-top:2px">${sub || new Date(item.at).toLocaleDateString()}</p>
         </div>
-        <div style="text-align:right;flex-shrink:0">
-          ${item.ref ? `<p style="font-size:10px;font-weight:700;color:#6366f1">Ref: ${item.ref}</p>` : ''}
+        <div style="text-align:right;flex-shrink:0;margin-right:6px">
+          ${item.ref ? `<p style="font-size:10px;font-weight:700;color:#6366f1;font-family:monospace">${item.ref}</p>` : ''}
           <p style="font-size:10px;color:var(--text-muted);margin-top:2px">${new Date(item.at).toLocaleDateString()}</p>
         </div>
-        <span style="color:var(--text-muted);font-size:12px;margin-left:4px">›</span>
+        <span class="bk-chevron" style="color:var(--text-muted);font-size:14px;transition:transform .2s">›</span>
       </div>
-      <div class="bk-actions hidden" style="border-top:1px solid var(--border);padding:10px 12px;display:flex;align-items:center;gap:8px">
-        <button onclick="shareToWhatsApp(${itemJson})"
-          style="font-size:11px;font-weight:600;padding:5px 12px;border-radius:8px;background:transparent;color:var(--text-secondary);border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;gap:4px">
-          💬 WhatsApp
-        </button>
-        <button onclick="addToCalendar(${itemJson})"
-          style="font-size:11px;font-weight:600;padding:5px 12px;border-radius:8px;background:transparent;color:var(--text-secondary);border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;gap:4px">
-          📅 Calendar
-        </button>
-        <button onclick="shareBooking(${itemJson})"
-          style="font-size:11px;font-weight:600;padding:5px 12px;border-radius:8px;background:transparent;color:var(--text-secondary);border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;gap:4px">
-          ↗ Share
-        </button>
-        <button onclick="cancelBooking(${item.id})"
-          style="margin-left:auto;font-size:11px;font-weight:600;padding:5px 12px;border-radius:8px;background:transparent;color:var(--text-muted);border:1px solid var(--border);cursor:pointer">
-          Remove
-        </button>
+      <div id="${panelId}" style="display:none">
+        ${detailRows}
+        <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;flex-wrap:wrap">
+          <button onclick="shareToWhatsApp(${itemJson})"
+            style="font-size:11px;font-weight:600;padding:5px 12px;border-radius:8px;background:transparent;color:var(--text-secondary);border:1px solid var(--border);cursor:pointer">
+            💬 WhatsApp
+          </button>
+          <button onclick="addToCalendar(${itemJson})"
+            style="font-size:11px;font-weight:600;padding:5px 12px;border-radius:8px;background:transparent;color:var(--text-secondary);border:1px solid var(--border);cursor:pointer">
+            📅 Calendar
+          </button>
+          <button onclick="shareBooking(${itemJson})"
+            style="font-size:11px;font-weight:600;padding:5px 12px;border-radius:8px;background:transparent;color:var(--text-secondary);border:1px solid var(--border);cursor:pointer">
+            ↗ Share
+          </button>
+          <button onclick="cancelBooking(${item.id})"
+            style="margin-left:auto;font-size:11px;font-weight:600;padding:5px 12px;border-radius:8px;background:transparent;color:#f87171;border:1px solid rgba(248,113,113,.3);cursor:pointer">
+            Remove
+          </button>
+        </div>
       </div>`;
     list.appendChild(div);
   });
