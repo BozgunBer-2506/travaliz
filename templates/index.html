@@ -836,11 +836,12 @@
               <div class="flex items-center justify-between py-3" style="border-bottom:1px solid var(--border)">
                 <div><p class="text-sm font-semibold" style="color:var(--text-primary)">Children</p><p class="text-xs" style="color:var(--text-muted)">Age 0–17</p></div>
                 <div class="flex items-center gap-4">
-                  <button type="button" onclick="changeCount('h_children',-1,0,6)" class="counter-btn">−</button>
+                  <button type="button" onclick="event.stopPropagation();addRemoveChild('h',-1)" class="counter-btn">−</button>
                   <span id="h_children-val" class="text-sm font-bold w-4 text-center" style="color:var(--text-primary)">{{or .Children "0"}}</span>
-                  <button type="button" onclick="changeCount('h_children',1,0,6)" class="counter-btn-plus">+</button>
+                  <button type="button" onclick="event.stopPropagation();addRemoveChild('h',1)" class="counter-btn-plus">+</button>
                 </div>
               </div>
+              <div id="h-child-ages" class="space-y-2 pb-2"></div>
               <div class="flex items-center justify-between py-3">
                 <div><p class="text-sm font-semibold" style="color:var(--text-primary)">Rooms</p></div>
                 <div class="flex items-center gap-4">
@@ -917,11 +918,12 @@
               <div class="flex items-center justify-between py-3">
                 <div><p class="text-sm font-semibold" style="color:var(--text-primary)">Children</p><p class="text-xs" style="color:var(--text-muted)">Age 2–11</p></div>
                 <div class="flex items-center gap-4">
-                  <button type="button" onclick="changeCount('f_children',-1,0,6)" class="counter-btn">−</button>
+                  <button type="button" onclick="event.stopPropagation();addRemoveChild('f',-1)" class="counter-btn">−</button>
                   <span id="f_children-val" class="text-sm font-bold w-4 text-center" style="color:var(--text-primary)">{{or .Children "0"}}</span>
-                  <button type="button" onclick="changeCount('f_children',1,0,6)" class="counter-btn-plus">+</button>
+                  <button type="button" onclick="event.stopPropagation();addRemoveChild('f',1)" class="counter-btn-plus">+</button>
                 </div>
               </div>
+              <div id="f-child-ages" class="space-y-2 pb-2"></div>
               <button type="button" onclick="toggleDropdown('flight-guests-drop')" class="w-full mt-3 py-2.5 rounded-xl text-sm font-bold text-white" style="background:linear-gradient(135deg,#4f46e5,#7c3aed)">Done</button>
             </div>
             <input type="hidden" name="adults" id="f_adults-in" value="{{or .Adults "1"}}" />
@@ -3004,6 +3006,36 @@ function changeCount(key, delta, min, max) {
   if (max !== undefined && val > max) val = max;
   valEl.textContent = val;
   if (inEl) inEl.value = val;
+  updateGuestLabel();
+}
+
+function addRemoveChild(prefix, delta) {
+  const valEl = document.getElementById(prefix + '_children-val');
+  const inEl  = document.getElementById(prefix + '_children-in');
+  const container = document.getElementById(prefix + '-child-ages');
+  let val = parseInt(valEl.textContent) + delta;
+  if (val < 0) val = 0;
+  if (val > 6) val = 6;
+  valEl.textContent = val;
+  if (inEl) inEl.value = val;
+  if (!container) { updateGuestLabel(); return; }
+  // sync age rows to match count
+  const existing = container.querySelectorAll('.child-age-row');
+  if (delta > 0) {
+    const idx = existing.length + 1;
+    const row = document.createElement('div');
+    row.className = 'child-age-row flex items-center justify-between gap-3 pt-2';
+    row.style.borderTop = '1px solid var(--border)';
+    row.innerHTML = `
+      <span style="font-size:13px;color:var(--text-secondary)">Child ${idx} age</span>
+      <select name="childAge${idx}" onclick="event.stopPropagation()"
+        style="font-size:13px;font-weight:600;padding:5px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg-card2);color:var(--text-primary);cursor:pointer;outline:none">
+        ${[...Array(18)].map((_,i)=>`<option value="${i}">${i === 0 ? 'Under 1' : i + ' year' + (i>1?'s':'')}</option>`).join('')}
+      </select>`;
+    container.appendChild(row);
+  } else if (delta < 0 && existing.length > 0) {
+    existing[existing.length - 1].remove();
+  }
   updateGuestLabel();
 }
 
