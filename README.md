@@ -1,4 +1,4 @@
-# TravelMirror
+# travaliz.com
 
 A full-stack travel booking platform built with Go. Search hotels, flights, and car rentals with a modern premium UI.
 
@@ -53,19 +53,19 @@ PORT=3000 DB_PATH=/tmp/bookings.db go run .
 
 ## Endpoints
 
-| Method | Path              | Description                              |
-|--------|-------------------|------------------------------------------|
-| GET    | `/`               | Hotel search + landing page              |
-| GET    | `/flights`        | Flight search (one-way, round, multi)    |
-| GET    | `/cars`           | Car rental search + landing page         |
-| GET    | `/suggest`        | Hotel destination autocomplete (JSON)    |
-| GET    | `/suggest-flight` | Airport autocomplete (JSON)              |
-| POST   | `/book`           | Create booking, returns `TM-XXXXXX` ref  |
-| GET    | `/status`         | Health check `{"status":"OK"}`           |
+| Method | Path              | Description                             |
+| ------ | ----------------- | --------------------------------------- |
+| GET    | `/`               | Hotel search + landing page             |
+| GET    | `/flights`        | Flight search (one-way, round, multi)   |
+| GET    | `/cars`           | Car rental search + landing page        |
+| GET    | `/suggest`        | Hotel destination autocomplete (JSON)   |
+| GET    | `/suggest-flight` | Airport autocomplete (JSON)             |
+| POST   | `/book`           | Create booking, returns `TM-XXXXXX` ref |
+| GET    | `/status`         | Health check `{"status":"OK"}`          |
 
 ## Environment Variables
 
-| Variable  | Default        | Description                  |
-|-----------|----------------|------------------------------|
-| `PORT`    | `8080`         | HTTP listen port             |
-| `DB_PATH` | `bookings.db`  | SQLite database file path    |
+| Variable  | Default       | Description               |
+| --------- | ------------- | ------------------------- |
+| `PORT`    | `8080`        | HTTP listen port          |
+| `DB_PATH` | `bookings.db` | SQLite database file path |

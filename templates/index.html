@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TravelMirror — Hotels &amp; Flights</title>
+  <title>travaliz.com — Hotels &amp; Flights</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -446,7 +446,7 @@
       <div class="flex items-center justify-between mb-6">
         <div>
           <h2 class="text-2xl font-extrabold text-gray-900">Welcome back</h2>
-          <p class="text-sm text-gray-400 mt-0.5">Sign in to your TravelMirror account</p>
+          <p class="text-sm text-gray-400 mt-0.5">Sign in to your travaliz.com account</p>
         </div>
         <button onclick="closeSignIn()" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 text-lg transition-colors">&times;</button>
       </div>
@@ -498,7 +498,7 @@
       <div class="flex items-center justify-between mb-6">
         <div>
           <h2 class="text-2xl font-extrabold text-gray-900">Create account</h2>
-          <p class="text-sm text-gray-400 mt-0.5">Join TravelMirror today</p>
+          <p class="text-sm text-gray-400 mt-0.5">Join travaliz.com today</p>
         </div>
         <button onclick="closeRegister()" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 text-lg transition-colors">&times;</button>
       </div>
@@ -560,11 +560,16 @@
 <!-- Header -->
 <header class="fixed top-0 left-0 right-0 z-30 py-5 px-6 backdrop-blur-md" style="background:rgba(49,46,129,0.85)">
   <div class="max-w-7xl mx-auto flex items-center justify-between">
-    <a href="/" class="flex items-center gap-3">
-      <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:rgba(255,255,255,0.2)">
-        <span class="text-white text-lg">✈</span>
-      </div>
-      <h1 class="text-xl font-black text-white tracking-tight">TravelMirror</h1>
+    <a href="/" class="flex items-center gap-2.5" style="text-decoration:none">
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="2" y="17" width="10" height="7" rx="2" stroke="#a5b4fc" stroke-width="1.6" fill="none"/>
+        <rect x="14" y="19" width="7" height="5" rx="1.5" stroke="#a5b4fc" stroke-width="1.4" fill="none"/>
+        <line x1="12" y1="20.5" x2="14" y2="20.5" stroke="#a5b4fc" stroke-width="1.4"/>
+        <path d="M6 17V14a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v3" stroke="#a5b4fc" stroke-width="1.5" fill="none"/>
+        <path d="M20 8 L28 13 L23 13.5 L21.5 18 L14 12 Z" fill="#818cf8"/>
+        <line x1="14" y1="12" x2="11" y2="15" stroke="#818cf8" stroke-width="1.2"/>
+      </svg>
+      <h1 style="font-size:19px;font-weight:900;color:#fff;letter-spacing:-0.5px;line-height:1">Travel<span style="color:#a5b4fc">Mirror</span></h1>
     </a>
 
     <!-- Desktop nav -->
@@ -1291,11 +1296,11 @@
     </div>
   </div>
 
-  <!-- ── WHY TRAVELMIRROR ───────────────────────────────────────────── -->
+  <!-- ── WHY travaliz.com ───────────────────────────────────────────── -->
   <div class="rounded-3xl overflow-hidden mb-14" style="background:linear-gradient(135deg,#1e1b4b,#4338ca)">
     <div class="p-10 sm:p-14">
       <div class="text-center mb-10">
-        <h2 class="text-3xl font-extrabold text-white mb-2">Why millions choose TravelMirror</h2>
+        <h2 class="text-3xl font-extrabold text-white mb-2">Why millions choose travaliz.com</h2>
         <p class="text-indigo-200 text-sm">We search hundreds of sites so you don't have to</p>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-8">
@@ -1447,7 +1452,7 @@
   <div class="rounded-3xl overflow-hidden mb-14" style="background:linear-gradient(135deg,#1e1b4b,#4338ca)">
     <div class="p-10 sm:p-14">
       <div class="text-center mb-10">
-        <h2 class="text-3xl font-extrabold text-white mb-2">Why book your car with TravelMirror</h2>
+        <h2 class="text-3xl font-extrabold text-white mb-2">Why book your car with travaliz.com</h2>
         <p class="text-indigo-200 text-sm">We compare Hertz, Avis, Sixt, Europcar and 400+ more in seconds</p>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-4 gap-8">
@@ -1870,7 +1875,7 @@
 
       <section>
         <h3 class="font-semibold text-gray-800 mb-2">1. Who We Are</h3>
-        <p>TravelMirror is a travel search demo application that aggregates flight, hotel, and car rental data via the Amadeus Self-Service API. It is built and maintained by <a href="https://thebozgun.com" target="_blank" class="text-indigo-600 hover:underline">thebozgun.com</a>. Questions can be directed to <a href="mailto:contact@thebozgun.com" class="text-indigo-600 hover:underline">contact@thebozgun.com</a>.</p>
+        <p>travaliz.com is a travel search demo application that aggregates flight, hotel, and car rental data via the Amadeus Self-Service API. It is built and maintained by <a href="https://thebozgun.com" target="_blank" class="text-indigo-600 hover:underline">thebozgun.com</a>. Questions can be directed to <a href="mailto:contact@thebozgun.com" class="text-indigo-600 hover:underline">contact@thebozgun.com</a>.</p>
       </section>
 
       <section>
@@ -1903,7 +1908,7 @@
 
       <section>
         <h3 class="font-semibold text-gray-800 mb-2">5. Demo Nature of This Service</h3>
-        <p>TravelMirror is a <strong class="text-gray-700">demonstration project</strong>. Bookings made through this platform are not real reservations. No payments are processed. Booking data is stored temporarily in an ephemeral SQLite database and is not retained between server restarts.</p>
+        <p>travaliz.com is a <strong class="text-gray-700">demonstration project</strong>. Bookings made through this platform are not real reservations. No payments are processed. Booking data is stored temporarily in an ephemeral SQLite database and is not retained between server restarts.</p>
       </section>
 
       <section>
@@ -2150,7 +2155,7 @@ function shareBooking(item) {
     ? `Flight: ${item.name}\n${item.from} → ${item.to} · ${item.airline}\nRef: ${item.ref || '-'}`
     : `Hotel: ${item.name}\n$${item.price}/night\nRef: ${item.ref || '-'}`;
   if (navigator.share) {
-    navigator.share({ title: 'TravelMirror Booking', text });
+    navigator.share({ title: 'travaliz.com Booking', text });
   } else {
     const wa = 'https://wa.me/?text=' + encodeURIComponent(text);
     window.open(wa, '_blank');
@@ -2170,8 +2175,8 @@ function addToCalendar(item) {
   const summary = item.type === 'flight'
     ? `Flight: ${item.name} (${item.from}→${item.to})`
     : `Hotel: ${item.name}`;
-  const desc = item.ref ? 'Ref: ' + item.ref : 'TravelMirror booking';
-  const ics = `BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nDTSTAMP:${dtStamp}\nUID:${item.id}@travelmirror\nSUMMARY:${summary}\nDESCRIPTION:${desc}\nDTSTART:${dtStamp}\nDTEND:${dtStamp}\nEND:VEVENT\nEND:VCALENDAR`;
+  const desc = item.ref ? 'Ref: ' + item.ref : 'travaliz.com booking';
+  const ics = `BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nDTSTAMP:${dtStamp}\nUID:${item.id}@travaliz.com\nSUMMARY:${summary}\nDESCRIPTION:${desc}\nDTSTART:${dtStamp}\nDTEND:${dtStamp}\nEND:VEVENT\nEND:VCALENDAR`;
   const blob = new Blob([ics], { type: 'text/calendar' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a'); a.href = url; a.download = 'booking.ics'; a.click();
@@ -3064,7 +3069,7 @@ document.querySelectorAll('.multi-leg').forEach(el => initLegAutocomplete(el));
 
     <div class="flex items-center gap-3">
       <div class="w-7 h-7 rounded-xl flex items-center justify-center text-white text-xs font-bold shrink-0" style="background:linear-gradient(135deg,#4f46e5,#7c3aed)">✈</div>
-      <span class="font-bold text-sm" style="color:var(--text-primary)">TravelMirror</span>
+      <span class="font-bold text-sm" style="color:var(--text-primary)">travaliz.com</span>
       <span style="color:var(--border)">·</span>
       <button onclick="openPrivacyPolicy()" class="text-xs hover:text-indigo-500 transition-colors" style="color:var(--text-muted)">Privacy</button>
       <span style="color:var(--border)">·</span>
@@ -3072,7 +3077,7 @@ document.querySelectorAll('.multi-leg').forEach(el => initLegAutocomplete(el));
     </div>
 
     <div class="flex items-center gap-4">
-      <p class="text-xs" style="color:var(--text-muted)">© 2026 TravelMirror</p>
+      <p class="text-xs" style="color:var(--text-muted)">© 2026 travaliz.com</p>
       <span style="color:var(--border)">·</span>
       <p class="text-xs" style="color:var(--text-muted)">IT &amp; Web by <a href="https://thebozgun.com" target="_blank" rel="noopener noreferrer" class="text-indigo-500 hover:text-indigo-400 transition-colors font-medium">thebozgun.com</a></p>
     </div>

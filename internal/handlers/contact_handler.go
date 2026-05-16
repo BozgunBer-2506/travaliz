@@ -79,7 +79,7 @@ func (h *TravelHandler) ContactHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := sendEmail(apiKey, "TravelMirror <noreply@thebozgun.com>", "contact@thebozgun.com",
+	if err := sendEmail(apiKey, "travaliz.com <noreply@thebozgun.com>", "contact@thebozgun.com",
 		fmt.Sprintf("New message from %s", req.Name),
 		fmt.Sprintf(`<p><strong>Name:</strong> %s</p><p><strong>Email:</strong> %s</p><p><strong>Message:</strong><br>%s</p>`,
 			req.Name, req.Email, strings.ReplaceAll(req.Message, "\n", "<br>")),
@@ -90,8 +90,8 @@ func (h *TravelHandler) ContactHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Confirmation mail to user
-	if err := sendEmail(apiKey, "TravelMirror <noreply@thebozgun.com>", req.Email,
-		"We received your message — TravelMirror",
+	if err := sendEmail(apiKey, "travaliz.com <noreply@thebozgun.com>", req.Email,
+		"We received your message — travaliz.com",
 		fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -109,7 +109,7 @@ func (h *TravelHandler) ContactHandler(w http.ResponseWriter, r *http.Request) {
                   <span style="font-size:24px">✈</span>
                 </td>
                 <td style="padding-left:12px">
-                  <span style="font-size:22px;font-weight:900;color:#ffffff;letter-spacing:-0.5px">TravelMirror</span>
+                  <span style="font-size:22px;font-weight:900;color:#ffffff;letter-spacing:-0.5px">travaliz.com</span>
                 </td>
               </tr>
             </table>
@@ -171,17 +171,17 @@ func (h *TravelHandler) ContactHandler(w http.ResponseWriter, r *http.Request) {
 
           <!-- CTA -->
           <p style="margin:0 0 20px;font-size:14px;color:#94a3b8;line-height:1.6">
-            In the meantime, feel free to explore flights, hotels, and car rentals on TravelMirror.
+            In the meantime, feel free to explore flights, hotels, and car rentals on travaliz.com.
           </p>
           <a href="https://go-web-api-eight.vercel.app" style="display:inline-block;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#ffffff;font-size:14px;font-weight:700;padding:14px 28px;border-radius:12px;text-decoration:none">
-            Back to TravelMirror →
+            Back to travaliz.com →
           </a>
 
         </td></tr>
 
         <!-- Footer -->
         <tr><td align="center" style="padding-top:28px">
-          <p style="margin:0 0 6px;font-size:12px;color:#334155">© 2026 TravelMirror · All rights reserved</p>
+          <p style="margin:0 0 6px;font-size:12px;color:#334155">© 2026 travaliz.com · All rights reserved</p>
           <p style="margin:0;font-size:11px;color:#1e293b">
             IT &amp; Web · <a href="https://thebozgun.com" style="color:#4f46e5;text-decoration:none">thebozgun.com</a>
           </p>
