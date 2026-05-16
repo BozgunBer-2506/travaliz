@@ -220,7 +220,7 @@
 <div id="hotel-detail-modal" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
   style="background:rgba(15,15,30,0.75);backdrop-filter:blur(8px)"
   onclick="if(event.target===this)closeHotelDetail()">
-  <div class="bg-white w-full sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col" style="max-width:680px;max-height:92vh" onclick="event.stopPropagation()">
+  <div class="w-full sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col" style="max-width:680px;max-height:92vh;background:#ffffff;color:#0f172a" onclick="event.stopPropagation()">
     <!-- Hero image -->
     <div class="relative shrink-0" style="height:260px;background:linear-gradient(135deg,#312e81,#6366f1)">
       <img id="hd-photo" src="" alt="" class="w-full h-full object-cover" onerror="this.style.display='none'" />
@@ -267,7 +267,7 @@
 <div id="booking-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4"
   style="background:rgba(15,15,30,0.7);backdrop-filter:blur(8px)"
   onclick="if(event.target===this)closeBookingModal()">
-  <div class="bg-white rounded-3xl shadow-2xl w-full overflow-hidden flex flex-col" style="max-width:520px;max-height:92vh" onclick="event.stopPropagation()">
+  <div class="rounded-3xl shadow-2xl w-full overflow-hidden flex flex-col" style="max-width:520px;max-height:92vh;background:#ffffff;color:#0f172a" onclick="event.stopPropagation()">
 
     <!-- Modal header -->
     <div id="modal-header" class="p-5 text-white flex items-center justify-between shrink-0" style="background:linear-gradient(135deg,#312e81,#6366f1)">
@@ -423,7 +423,7 @@
 
 <!-- Sign In Modal -->
 <div id="signin-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(15,15,30,0.75);backdrop-filter:blur(8px)" onclick="if(event.target===this)closeSignIn()">
-  <div class="bg-white w-full rounded-3xl shadow-2xl overflow-hidden" style="max-width:420px" onclick="event.stopPropagation()">
+  <div class="w-full rounded-3xl shadow-2xl overflow-hidden" style="max-width:420px;background:#ffffff;color:#0f172a" onclick="event.stopPropagation()">
     <div class="p-8">
       <div class="flex items-center justify-between mb-6">
         <div>
@@ -475,7 +475,7 @@
 
 <!-- Register Modal -->
 <div id="register-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(15,15,30,0.75);backdrop-filter:blur(8px)" onclick="if(event.target===this)closeRegister()">
-  <div class="bg-white w-full rounded-3xl shadow-2xl overflow-hidden" style="max-width:420px" onclick="event.stopPropagation()">
+  <div class="w-full rounded-3xl shadow-2xl overflow-hidden" style="max-width:420px;background:#ffffff;color:#0f172a" onclick="event.stopPropagation()">
     <div class="p-8">
       <div class="flex items-center justify-between mb-6">
         <div>
@@ -761,7 +761,7 @@
         <div id="ow-rt-form" class="{{if eq .TripType "multi"}}hidden{{end}} flex flex-col lg:flex-row gap-3 lg:items-end">
           <div class="field-wrapper flex-1">
             <span class="field-label">From</span>
-            <input id="from-display" type="text" autocomplete="off" placeholder="London Heathrow (LHR)"
+            <input id="from-display" type="text" autocomplete="off" placeholder="City or airport"
               value="{{.FromSkyID}}" class="field-input" />
             <input name="fromSky" id="from-sky" type="hidden" value="{{.FromSkyID}}" />
             <input name="fromEntity" id="from-entity" type="hidden" value="{{.FromEntityID}}" />
@@ -772,7 +772,7 @@
           </button>
           <div class="field-wrapper flex-1">
             <span class="field-label">To</span>
-            <input id="to-display" type="text" autocomplete="off" placeholder="Paris Charles de Gaulle (CDG)"
+            <input id="to-display" type="text" autocomplete="off" placeholder="City or airport"
               value="{{.ToSkyID}}" class="field-input" />
             <input name="toSky" id="to-sky" type="hidden" value="{{.ToSkyID}}" />
             <input name="toEntity" id="to-entity" type="hidden" value="{{.ToEntityID}}" />
@@ -910,9 +910,9 @@
     </div>
   </div>
   {{if .Hotels}}
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:20px">
     {{range .Hotels}}
-    <div class="bg-white rounded-3xl shadow-sm overflow-hidden flex flex-col card-hover border border-gray-100 cursor-pointer hotel-card"
+    <div class="hotel-card"
       data-id="{{.HotelID}}"
       data-name="{{.HotelName}}"
       data-price="{{printf "%.0f" .Price}}"
@@ -920,32 +920,35 @@
       data-stars="{{.Stars}}"
       data-rating="{{printf "%.1f" .Rating}}"
       data-ratingword="{{.RatingWord}}"
-      onclick="openHotelDetail(this)">
-      <div class="h-52 relative overflow-hidden" style="background:linear-gradient(135deg,#312e81,#6366f1)">
+      onclick="openHotelDetail(this)"
+      style="cursor:pointer;border-radius:18px;overflow:hidden;border:1px solid var(--border);box-shadow:0 2px 16px rgba(0,0,0,0.07);background:var(--bg-card);transition:transform .18s,box-shadow .18s"
+      onmouseenter="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 32px rgba(0,0,0,0.13)'"
+      onmouseleave="this.style.transform='';this.style.boxShadow='0 2px 16px rgba(0,0,0,0.07)'">
+      <!-- Photo -->
+      <div style="height:190px;position:relative;overflow:hidden;background:linear-gradient(135deg,#4338ca 0%,#7c3aed 100%)">
         {{if .PhotoURL}}
-        <img src="{{.PhotoURL}}" alt="{{.HotelName}}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onerror="this.style.display='none'" loading="lazy" />
+        <img src="{{.PhotoURL}}" alt="{{.HotelName}}" referrerpolicy="no-referrer" loading="lazy"
+          style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover"
+          onerror="this.remove()" />
         {{end}}
-        {{if .Stars}}
-        <span class="absolute top-3 left-3 bg-white/90 backdrop-blur text-amber-500 text-xs font-bold px-2.5 py-1 rounded-full shadow">
-          {{.Stars}}★
-        </span>
-        {{end}}
+        <div style="position:absolute;bottom:0;left:0;right:0;height:80px;background:linear-gradient(to top,rgba(0,0,0,0.5),transparent)"></div>
         {{if .Rating}}
-        <span class="absolute top-3 right-3 bg-indigo-600 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow">
-          {{printf "%.1f" .Rating}}
-        </span>
+        <div style="position:absolute;top:10px;right:10px;background:#4f46e5;color:#fff;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px">{{printf "%.1f" .Rating}}</div>
         {{end}}
-        <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
       </div>
-      <div class="p-5 flex flex-col flex-1">
-        <p class="text-xs text-gray-400 mb-1">{{.RatingWord}} · {{printf "%.1f" .Rating}}/10</p>
-        <h3 class="text-sm font-bold text-gray-900 leading-snug mb-3 line-clamp-2">{{.HotelName}}</h3>
-        <div class="mt-auto flex items-center justify-between">
+      <!-- Info -->
+      <div style="padding:14px 16px 16px">
+        {{if .Stars}}
+        <div style="color:#f59e0b;font-size:13px;font-weight:700;margin-bottom:5px;letter-spacing:1px" data-stars="{{.Stars}}"></div>
+        {{end}}
+        <div style="font-size:13px;font-weight:700;color:var(--text-primary);margin-bottom:2px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">{{.HotelName}}</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px">{{.RatingWord}}</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding-top:12px;border-top:1px solid var(--border)">
           <div>
-            <span class="text-2xl font-extrabold text-gray-900">${{printf "%.0f" .Price}}</span>
-            <span class="text-xs text-gray-400 ml-1">/ night</span>
+            <span style="font-size:21px;font-weight:800;color:var(--text-primary)">${{printf "%.0f" .Price}}</span>
+            <span style="font-size:11px;color:var(--text-muted);margin-left:2px">/night</span>
           </div>
-          <span class="text-xs text-indigo-600 font-semibold border border-indigo-200 px-3 py-1.5 rounded-xl hover:bg-indigo-50 transition-colors">View →</span>
+          <span style="font-size:11px;font-weight:600;color:#6366f1;border:1px solid rgba(99,102,241,0.4);padding:5px 12px;border-radius:10px">View →</span>
         </div>
       </div>
     </div>
@@ -1430,6 +1433,7 @@
   {{end}}
 
   {{else}}
+  {{if .FromSkyID}}
   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
     <div>
       <h2 class="text-lg sm:text-2xl font-extrabold text-gray-900">
@@ -1444,6 +1448,7 @@
       <p class="text-sm text-gray-400 mt-1"><span id="flights-count">{{len .Flights}}</span> flights found</p>
     </div>
   </div>
+  {{end}}
 
   {{if .Flights}}
   <!-- Filter bar -->
@@ -1453,7 +1458,7 @@
     <div class="flex items-center gap-1 bg-slate-50 rounded-xl p-1">
       <button onclick="setFlightFilter('stops','any')" id="f-stops-any" class="flight-filter-btn active text-xs font-semibold px-3 py-1.5 rounded-lg transition-all">Any</button>
       <button onclick="setFlightFilter('stops','0')" id="f-stops-0" class="flight-filter-btn text-xs font-semibold px-3 py-1.5 rounded-lg transition-all text-gray-500">Direct only</button>
-      <button onclick="setFlightFilter('stops','1')" id="f-stops-1" class="flight-filter-btn text-xs font-semibold px-3 py-1.5 rounded-lg transition-all text-gray-500">1 stop</button>
+      <button onclick="setFlightFilter('stops','1+')" id="f-stops-1" class="flight-filter-btn text-xs font-semibold px-3 py-1.5 rounded-lg transition-all text-gray-500">With stops</button>
     </div>
     <!-- Depart time -->
     <div class="flex items-center gap-1 bg-slate-50 rounded-xl p-1">
@@ -1484,10 +1489,99 @@
     <p class="text-sm text-gray-400">Try removing some filters</p>
   </div>
   {{else if not .Error}}
-  <div class="text-center py-24 max-w-md mx-auto">
-    <div class="w-20 h-20 bg-slate-100 rounded-3xl flex items-center justify-center text-4xl mx-auto mb-6">✈️</div>
-    <h3 class="text-xl font-bold text-gray-900 mb-2">No flights found</h3>
-    <p class="text-sm text-gray-400">Try different airports or adjust your dates</p>
+  <div class="mb-8">
+    <p class="text-xs font-semibold uppercase tracking-widest mb-6" style="color:var(--text-muted)">Popular routes</p>
+
+    <!-- 2-col layout: big card left + 2 stacked right, then 3 below -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+      <!-- Big card: LHR → JFK -->
+      <a href="/flights?fromSky=LHR&toSky=JFK" class="group relative overflow-hidden rounded-3xl lg:row-span-2 flex flex-col justify-end cursor-pointer" style="min-height:300px">
+        <img src="https://images.unsplash.com/photo-1485871981521-5b1fd3805eee?w=800&q=80&auto=format&fit=crop" alt="New York" class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" onerror="this.style.display='none'" />
+        <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(0,0,0,.75) 0%,rgba(0,0,0,.15) 60%,transparent 100%)"></div>
+        <div class="relative p-6 flex flex-col gap-3">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-bold px-2.5 py-1 rounded-lg text-white font-mono" style="background:rgba(255,255,255,0.18);backdrop-filter:blur(8px)">LHR</span>
+            <span class="text-white/60 text-sm">→</span>
+            <span class="text-xs font-bold px-2.5 py-1 rounded-lg text-white font-mono" style="background:rgba(255,255,255,0.18);backdrop-filter:blur(8px)">JFK</span>
+          </div>
+          <div>
+            <p class="font-extrabold text-white text-xl leading-tight">London → New York</p>
+            <p class="text-sm text-white/60 mt-1">United Kingdom · United States</p>
+          </div>
+          <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-white w-fit px-3 py-1.5 rounded-xl transition-all group-hover:gap-2.5" style="background:rgba(99,102,241,0.7);backdrop-filter:blur(8px)">Search flights →</span>
+        </div>
+      </a>
+
+      <!-- IST → CDG -->
+      <a href="/flights?fromSky=IST&toSky=CDG" class="group relative overflow-hidden rounded-3xl flex flex-col justify-end cursor-pointer" style="min-height:142px">
+        <img src="https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=600&q=80&auto=format&fit=crop" alt="Paris" class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" onerror="this.style.display='none'" />
+        <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(0,0,0,.72) 0%,transparent 70%)"></div>
+        <div class="relative p-5 flex items-end justify-between">
+          <div>
+            <div class="flex items-center gap-1.5 mb-1.5">
+              <span class="text-xs font-bold px-2 py-0.5 rounded-md text-white font-mono" style="background:rgba(255,255,255,0.18);backdrop-filter:blur(6px)">IST</span>
+              <span class="text-white/50 text-xs">→</span>
+              <span class="text-xs font-bold px-2 py-0.5 rounded-md text-white font-mono" style="background:rgba(255,255,255,0.18);backdrop-filter:blur(6px)">CDG</span>
+            </div>
+            <p class="font-extrabold text-white text-base">Istanbul → Paris</p>
+          </div>
+          <span class="text-white/40 text-xl group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform">✈</span>
+        </div>
+      </a>
+
+      <!-- DXB → LHR -->
+      <a href="/flights?fromSky=DXB&toSky=LHR" class="group relative overflow-hidden rounded-3xl flex flex-col justify-end cursor-pointer" style="min-height:142px">
+        <img src="https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=600&q=80&auto=format&fit=crop" alt="Dubai" class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" onerror="this.style.display='none'" />
+        <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(0,0,0,.72) 0%,transparent 70%)"></div>
+        <div class="relative p-5 flex items-end justify-between">
+          <div>
+            <div class="flex items-center gap-1.5 mb-1.5">
+              <span class="text-xs font-bold px-2 py-0.5 rounded-md text-white font-mono" style="background:rgba(255,255,255,0.18);backdrop-filter:blur(6px)">DXB</span>
+              <span class="text-white/50 text-xs">→</span>
+              <span class="text-xs font-bold px-2 py-0.5 rounded-md text-white font-mono" style="background:rgba(255,255,255,0.18);backdrop-filter:blur(6px)">LHR</span>
+            </div>
+            <p class="font-extrabold text-white text-base">Dubai → London</p>
+          </div>
+          <span class="text-white/40 text-xl group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform">✈</span>
+        </div>
+      </a>
+
+      <!-- BCN → JFK -->
+      <a href="/flights?fromSky=BCN&toSky=JFK" class="group relative overflow-hidden rounded-3xl flex flex-col justify-end cursor-pointer" style="min-height:142px">
+        <img src="https://images.unsplash.com/photo-1539037116277-4db20889f2d4?w=600&q=80&auto=format&fit=crop" alt="Barcelona" class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" onerror="this.style.display='none'" />
+        <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(0,0,0,.72) 0%,transparent 70%)"></div>
+        <div class="relative p-5 flex items-end justify-between">
+          <div>
+            <div class="flex items-center gap-1.5 mb-1.5">
+              <span class="text-xs font-bold px-2 py-0.5 rounded-md text-white font-mono" style="background:rgba(255,255,255,0.18);backdrop-filter:blur(6px)">BCN</span>
+              <span class="text-white/50 text-xs">→</span>
+              <span class="text-xs font-bold px-2 py-0.5 rounded-md text-white font-mono" style="background:rgba(255,255,255,0.18);backdrop-filter:blur(6px)">JFK</span>
+            </div>
+            <p class="font-extrabold text-white text-base">Barcelona → New York</p>
+          </div>
+          <span class="text-white/40 text-xl group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform">✈</span>
+        </div>
+      </a>
+
+      <!-- NRT → SYD -->
+      <a href="/flights?fromSky=NRT&toSky=SYD" class="group relative overflow-hidden rounded-3xl flex flex-col justify-end cursor-pointer" style="min-height:142px">
+        <img src="https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?w=600&q=80&auto=format&fit=crop" alt="Sydney" class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" onerror="this.style.display='none'" />
+        <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(0,0,0,.72) 0%,transparent 70%)"></div>
+        <div class="relative p-5 flex items-end justify-between">
+          <div>
+            <div class="flex items-center gap-1.5 mb-1.5">
+              <span class="text-xs font-bold px-2 py-0.5 rounded-md text-white font-mono" style="background:rgba(255,255,255,0.18);backdrop-filter:blur(6px)">NRT</span>
+              <span class="text-white/50 text-xs">→</span>
+              <span class="text-xs font-bold px-2 py-0.5 rounded-md text-white font-mono" style="background:rgba(255,255,255,0.18);backdrop-filter:blur(6px)">SYD</span>
+            </div>
+            <p class="font-extrabold text-white text-base">Tokyo → Sydney</p>
+          </div>
+          <span class="text-white/40 text-xl group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform">✈</span>
+        </div>
+      </a>
+
+    </div>
   </div>
   {{end}}
   {{end}}{{end}}
@@ -1495,7 +1589,7 @@
 </main>
 
 {{define "car-cards"}}
-<div class="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden card-hover cursor-pointer car-card" data-type="economy" data-trans="auto" data-seats="5" data-price="29" onclick="openCarBooking(this)" data-car="Toyota Yaris 2024" data-provider="Hertz" data-pickup="{{$.PickupCity}}" data-pickupdate="{{$.PickupDate}}" data-dropoff="{{$.DropoffDate}}">
+<div class="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden card-hover cursor-pointer car-card" data-type="economy" data-trans="auto" data-seats="5" data-price="29" onclick="openCarBooking(this)" data-car="Toyota Yaris 2026" data-provider="Hertz" data-pickup="{{$.PickupCity}}" data-pickupdate="{{$.PickupDate}}" data-dropoff="{{$.DropoffDate}}">
   <div class="relative h-44 overflow-hidden bg-gray-50 flex items-center justify-center">
     <img src="/images/cars.jpg" class="w-full h-full object-cover transition-transform duration-500" alt="Toyota Yaris" loading="lazy" />
     <span class="absolute top-3 left-3 text-xs font-bold px-2.5 py-1 rounded-full text-indigo-700 border border-indigo-200" style="background:rgba(238,242,255,.95)">Economy</span>
@@ -1503,7 +1597,7 @@
   </div>
   <div class="p-5">
     <div class="flex items-start justify-between mb-3">
-      <div><p class="font-extrabold text-gray-900">Toyota Yaris 2024</p><p class="text-xs text-gray-400 mt-0.5">or similar</p></div>
+      <div><p class="font-extrabold text-gray-900">Toyota Yaris 2026</p><p class="text-xs text-gray-400 mt-0.5">or similar</p></div>
       <div class="text-right"><p class="text-2xl font-extrabold text-gray-900">$29</p><p class="text-xs text-gray-400">/ day</p></div>
     </div>
     <div class="flex gap-4 text-xs text-gray-500 mb-4 flex-wrap">
@@ -1516,7 +1610,7 @@
     </div>
   </div>
 </div>
-<div class="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden card-hover cursor-pointer car-card" data-type="compact" data-trans="auto" data-seats="5" data-price="38" onclick="openCarBooking(this)" data-car="Volkswagen Golf 2024" data-provider="Avis" data-pickup="{{$.PickupCity}}" data-pickupdate="{{$.PickupDate}}" data-dropoff="{{$.DropoffDate}}">
+<div class="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden card-hover cursor-pointer car-card" data-type="compact" data-trans="auto" data-seats="5" data-price="38" onclick="openCarBooking(this)" data-car="Volkswagen Golf 2026" data-provider="Avis" data-pickup="{{$.PickupCity}}" data-pickupdate="{{$.PickupDate}}" data-dropoff="{{$.DropoffDate}}">
   <div class="relative h-44 overflow-hidden bg-gray-50">
     <img src="/images/cars.jpg" class="w-full h-full object-cover transition-transform duration-500" alt="Volkswagen Golf" loading="lazy" />
     <span class="absolute top-3 left-3 text-xs font-bold px-2.5 py-1 rounded-full text-sky-700 border border-sky-200" style="background:rgba(240,249,255,.95)">Compact</span>
@@ -1524,7 +1618,7 @@
   </div>
   <div class="p-5">
     <div class="flex items-start justify-between mb-3">
-      <div><p class="font-extrabold text-gray-900">Volkswagen Golf 2024</p><p class="text-xs text-gray-400 mt-0.5">or similar</p></div>
+      <div><p class="font-extrabold text-gray-900">Volkswagen Golf 2026</p><p class="text-xs text-gray-400 mt-0.5">or similar</p></div>
       <div class="text-right"><p class="text-2xl font-extrabold text-gray-900">$38</p><p class="text-xs text-gray-400">/ day</p></div>
     </div>
     <div class="flex gap-4 text-xs text-gray-500 mb-4 flex-wrap">
@@ -1537,7 +1631,7 @@
     </div>
   </div>
 </div>
-<div class="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden card-hover cursor-pointer car-card" data-type="suv" data-trans="auto" data-seats="7" data-price="62" onclick="openCarBooking(this)" data-car="Toyota RAV4 2024" data-provider="Sixt" data-pickup="{{$.PickupCity}}" data-pickupdate="{{$.PickupDate}}" data-dropoff="{{$.DropoffDate}}">
+<div class="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden card-hover cursor-pointer car-card" data-type="suv" data-trans="auto" data-seats="7" data-price="62" onclick="openCarBooking(this)" data-car="Toyota RAV4 2026" data-provider="Sixt" data-pickup="{{$.PickupCity}}" data-pickupdate="{{$.PickupDate}}" data-dropoff="{{$.DropoffDate}}">
   <div class="relative h-44 overflow-hidden bg-gray-50">
     <img src="/images/cars.jpg" class="w-full h-full object-cover transition-transform duration-500" alt="Toyota RAV4" loading="lazy" />
     <span class="absolute top-3 left-3 text-xs font-bold px-2.5 py-1 rounded-full text-amber-700 border border-amber-200" style="background:rgba(255,251,235,.95)">SUV</span>
@@ -1545,7 +1639,7 @@
   </div>
   <div class="p-5">
     <div class="flex items-start justify-between mb-3">
-      <div><p class="font-extrabold text-gray-900">Toyota RAV4 2024</p><p class="text-xs text-gray-400 mt-0.5">or similar</p></div>
+      <div><p class="font-extrabold text-gray-900">Toyota RAV4 2026</p><p class="text-xs text-gray-400 mt-0.5">or similar</p></div>
       <div class="text-right"><p class="text-2xl font-extrabold text-gray-900">$62</p><p class="text-xs text-gray-400">/ day</p></div>
     </div>
     <div class="flex gap-4 text-xs text-gray-500 mb-4 flex-wrap">
@@ -1558,7 +1652,7 @@
     </div>
   </div>
 </div>
-<div class="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden card-hover cursor-pointer car-card" data-type="luxury" data-trans="auto" data-seats="5" data-price="145" onclick="openCarBooking(this)" data-car="Mercedes-Benz C-Class 2024" data-provider="Europcar" data-pickup="{{$.PickupCity}}" data-pickupdate="{{$.PickupDate}}" data-dropoff="{{$.DropoffDate}}">
+<div class="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden card-hover cursor-pointer car-card" data-type="luxury" data-trans="auto" data-seats="5" data-price="145" onclick="openCarBooking(this)" data-car="Mercedes-Benz C-Class 2026" data-provider="Europcar" data-pickup="{{$.PickupCity}}" data-pickupdate="{{$.PickupDate}}" data-dropoff="{{$.DropoffDate}}">
   <div class="relative h-44 overflow-hidden bg-gray-50">
     <img src="/images/cars.jpg" class="w-full h-full object-cover transition-transform duration-500" alt="Mercedes C-Class" loading="lazy" />
     <span class="absolute top-3 left-3 text-xs font-bold px-2.5 py-1 rounded-full text-violet-700 border border-violet-200" style="background:rgba(245,243,255,.95)">Luxury</span>
@@ -1579,7 +1673,7 @@
     </div>
   </div>
 </div>
-<div class="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden card-hover cursor-pointer car-card" data-type="economy" data-trans="manual" data-seats="4" data-price="24" onclick="openCarBooking(this)" data-car="Fiat 500 2024" data-provider="Budget" data-pickup="{{$.PickupCity}}" data-pickupdate="{{$.PickupDate}}" data-dropoff="{{$.DropoffDate}}">
+<div class="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden card-hover cursor-pointer car-card" data-type="economy" data-trans="manual" data-seats="4" data-price="24" onclick="openCarBooking(this)" data-car="Fiat 500 2026" data-provider="Budget" data-pickup="{{$.PickupCity}}" data-pickupdate="{{$.PickupDate}}" data-dropoff="{{$.DropoffDate}}">
   <div class="relative h-44 overflow-hidden bg-gray-50">
     <img src="/images/cars.jpg" class="w-full h-full object-cover transition-transform duration-500" alt="Fiat 500" loading="lazy" />
     <span class="absolute top-3 left-3 text-xs font-bold px-2.5 py-1 rounded-full text-indigo-700 border border-indigo-200" style="background:rgba(238,242,255,.95)">Economy</span>
@@ -1587,7 +1681,7 @@
   </div>
   <div class="p-5">
     <div class="flex items-start justify-between mb-3">
-      <div><p class="font-extrabold text-gray-900">Fiat 500 2024</p><p class="text-xs text-gray-400 mt-0.5">or similar</p></div>
+      <div><p class="font-extrabold text-gray-900">Fiat 500 2026</p><p class="text-xs text-gray-400 mt-0.5">or similar</p></div>
       <div class="text-right"><p class="text-sm line-through text-gray-300">$30</p><p class="text-2xl font-extrabold text-gray-900">$24</p><p class="text-xs text-gray-400">/ day</p></div>
     </div>
     <div class="flex gap-4 text-xs text-gray-500 mb-4 flex-wrap">
@@ -1600,7 +1694,7 @@
     </div>
   </div>
 </div>
-<div class="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden card-hover cursor-pointer car-card" data-type="suv" data-trans="auto" data-seats="5" data-price="78" onclick="openCarBooking(this)" data-car="BMW X3 2024" data-provider="Hertz" data-pickup="{{$.PickupCity}}" data-pickupdate="{{$.PickupDate}}" data-dropoff="{{$.DropoffDate}}">
+<div class="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden card-hover cursor-pointer car-card" data-type="suv" data-trans="auto" data-seats="5" data-price="78" onclick="openCarBooking(this)" data-car="BMW X3 2026" data-provider="Hertz" data-pickup="{{$.PickupCity}}" data-pickupdate="{{$.PickupDate}}" data-dropoff="{{$.DropoffDate}}">
   <div class="relative h-44 overflow-hidden bg-gray-50">
     <img src="/images/cars.jpg" class="w-full h-full object-cover transition-transform duration-500" alt="BMW X3" loading="lazy" />
     <span class="absolute top-3 left-3 text-xs font-bold px-2.5 py-1 rounded-full text-amber-700 border border-amber-200" style="background:rgba(255,251,235,.95)">SUV</span>
@@ -1608,7 +1702,7 @@
   </div>
   <div class="p-5">
     <div class="flex items-start justify-between mb-3">
-      <div><p class="font-extrabold text-gray-900">BMW X3 2024</p><p class="text-xs text-gray-400 mt-0.5">or similar</p></div>
+      <div><p class="font-extrabold text-gray-900">BMW X3 2026</p><p class="text-xs text-gray-400 mt-0.5">or similar</p></div>
       <div class="text-right"><p class="text-2xl font-extrabold text-gray-900">$78</p><p class="text-xs text-gray-400">/ day</p></div>
     </div>
     <div class="flex gap-4 text-xs text-gray-500 mb-4 flex-wrap">
@@ -1690,7 +1784,7 @@
 
 <!-- Privacy Policy Modal -->
 <div id="privacy-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onclick="closePrivacyPolicy()">
-  <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto" onclick="event.stopPropagation()">
+  <div class="rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto" style="background:#ffffff;color:#0f172a" onclick="event.stopPropagation()">
     <div class="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between rounded-t-2xl">
       <h2 class="text-lg font-bold text-gray-800">Privacy Policy</h2>
       <button onclick="closePrivacyPolicy()" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors text-gray-500">✕</button>
@@ -1766,7 +1860,7 @@
 
 <!-- Contact Modal -->
 <div id="contact-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onclick="closeContact()">
-  <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full" onclick="event.stopPropagation()">
+  <div class="rounded-2xl shadow-2xl max-w-md w-full" style="background:#ffffff;color:#0f172a" onclick="event.stopPropagation()">
     <div class="border-b border-gray-100 px-6 py-4 flex items-center justify-between">
       <h2 class="text-lg font-bold text-gray-800">Contact</h2>
       <button onclick="closeContact()" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors text-gray-500">✕</button>
@@ -1831,6 +1925,12 @@ const roomTypes = {
     {name:'Penthouse Suite',bed:'1 king bed · Panoramic views',size:'120 m²',multi:2.4},
   ],
 };
+
+// Render star symbols into [data-stars] spans on hotel cards
+document.querySelectorAll('[data-stars]').forEach(el => {
+  const n = parseInt(el.dataset.stars) || 0;
+  el.textContent = '★'.repeat(n);
+});
 
 let currentHotelData = null;
 
@@ -2095,7 +2195,8 @@ let pendingBooking = null;
 function openBookingModal(booking) {
   pendingBooking = booking;
   // Header
-  document.getElementById('modal-header-label').textContent = booking.type === 'flight' ? 'Flight Booking' : 'Hotel Booking';
+  const labels = { flight: 'Flight Booking', hotel: 'Hotel Booking', car: 'Car Rental' };
+  document.getElementById('modal-header-label').textContent = labels[booking.type] || 'Booking';
   document.getElementById('modal-header-title').textContent = booking.type === 'flight'
     ? `${booking.from} → ${booking.to}`
     : booking.name;
@@ -2108,6 +2209,13 @@ function openBookingModal(booking) {
       <div class="flex justify-between"><span class="text-gray-400">Arrives</span><span class="font-semibold">${booking.arrive}</span></div>
       <div class="flex justify-between"><span class="text-gray-400">Duration</span><span class="font-semibold">${booking.duration}</span></div>
       <div class="flex justify-between pt-2 border-t border-indigo-100"><span class="text-gray-500 font-semibold">Price</span><span class="font-extrabold text-indigo-600">$${booking.price} / person</span></div>`;
+  } else if (booking.type === 'car') {
+    summaryHTML = `
+      <div class="flex justify-between"><span class="text-gray-400">Vehicle</span><span class="font-semibold">${booking.name}</span></div>
+      ${booking.provider ? `<div class="flex justify-between"><span class="text-gray-400">Provider</span><span class="font-semibold">${booking.provider}</span></div>` : ''}
+      <div class="flex justify-between"><span class="text-gray-400">Pick-up</span><span class="font-semibold">${booking.checkin || '-'}</span></div>
+      <div class="flex justify-between"><span class="text-gray-400">Drop-off</span><span class="font-semibold">${booking.checkout || '-'}</span></div>
+      <div class="flex justify-between pt-2 border-t border-indigo-100"><span class="text-gray-500 font-semibold">Price</span><span class="font-extrabold text-indigo-600">$${booking.price}/day</span></div>`;
   } else {
     summaryHTML = `
       <div class="flex justify-between"><span class="text-gray-400">Hotel</span><span class="font-semibold">${booking.name}</span></div>
@@ -2574,12 +2682,13 @@ function submitFlightForm(e) {
 function openCarBooking(card) {
   const d = card.dataset;
   openBookingModal({
-    type: 'hotel',
+    type: 'car',
     hotelId: d.car.replace(/\s/g,'-'),
-    name: d.car + (d.pickup ? ' · ' + d.pickup : ''),
+    name: d.car,
     price: d.price,
     checkin: d.pickupdate || '',
     checkout: d.dropoff || '',
+    provider: d.provider || '',
     _btn: null,
   });
 }
@@ -2681,8 +2790,8 @@ function applyFlightFilters() {
 
     let show = true;
     if (flightFilters.stops !== 'any') {
-      const maxStops = parseInt(flightFilters.stops);
-      if (stops > maxStops) show = false;
+      if (flightFilters.stops === '0' && stops !== 0) show = false;
+      if (flightFilters.stops === '1+' && stops < 1) show = false;
     }
     if (show && flightFilters.time !== 'any') {
       if (flightFilters.time === 'morning'   && (hour < 5  || hour >= 12)) show = false;
@@ -2729,26 +2838,24 @@ document.querySelectorAll('.multi-leg').forEach(el => initLegAutocomplete(el));
 </script>
 
 <!-- Footer -->
-<footer class="mt-16 border-t py-8 px-6" style="border-color:var(--border)">
-  <div class="max-w-7xl mx-auto flex flex-col items-center gap-4 text-center">
-    <div class="flex items-center gap-2">
-      <div class="w-7 h-7 rounded-lg flex items-center justify-center" style="background:rgba(99,102,241,0.15)">
-        <span class="text-sm">✈</span>
-      </div>
-      <span class="font-black text-sm" style="color:var(--text-primary)">TravelMirror</span>
-    </div>
-    <div class="flex items-center gap-5">
-      <button onclick="openPrivacyPolicy()" class="text-xs hover:text-indigo-500 transition-colors" style="color:var(--text-secondary)">Privacy Policy</button>
+<footer class="mt-16 px-6 py-6" style="border-top:1px solid var(--border)">
+  <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+
+    <div class="flex items-center gap-3">
+      <div class="w-7 h-7 rounded-xl flex items-center justify-center text-white text-xs font-bold shrink-0" style="background:linear-gradient(135deg,#4f46e5,#7c3aed)">✈</div>
+      <span class="font-bold text-sm" style="color:var(--text-primary)">TravelMirror</span>
       <span style="color:var(--border)">·</span>
-      <button onclick="openContact()" class="text-xs hover:text-indigo-500 transition-colors" style="color:var(--text-secondary)">Contact</button>
+      <button onclick="openPrivacyPolicy()" class="text-xs hover:text-indigo-500 transition-colors" style="color:var(--text-muted)">Privacy</button>
+      <span style="color:var(--border)">·</span>
+      <button onclick="openContact()" class="text-xs hover:text-indigo-500 transition-colors" style="color:var(--text-muted)">Contact</button>
     </div>
-    <p class="text-xs" style="color:var(--text-muted)">© 2026 TravelMirror · All rights reserved</p>
-    <p class="text-xs" style="color:var(--text-muted)">
-      IT &amp; Web ·
-      <a href="https://thebozgun.com" target="_blank" rel="noopener noreferrer"
-        class="text-indigo-500 hover:text-indigo-400 transition-colors font-medium">thebozgun.com</a>
-      · Web development &amp; IT solutions
-    </p>
+
+    <div class="flex items-center gap-4">
+      <p class="text-xs" style="color:var(--text-muted)">© 2026 TravelMirror</p>
+      <span style="color:var(--border)">·</span>
+      <p class="text-xs" style="color:var(--text-muted)">IT &amp; Web by <a href="https://thebozgun.com" target="_blank" rel="noopener noreferrer" class="text-indigo-500 hover:text-indigo-400 transition-colors font-medium">thebozgun.com</a></p>
+    </div>
+
   </div>
 </footer>
 </body>

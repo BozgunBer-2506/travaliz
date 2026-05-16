@@ -13,6 +13,24 @@ import (
 
 const amadeusBase = "https://test.api.amadeus.com"
 
+var verifiedHotelPhotos = []string{
+	"photo-1564501049412-61c2a3083791",
+	"photo-1551882547-ff40c63fe5fa",
+	"photo-1520250497591-112f2f40a3f4",
+	"photo-1582719508461-905c673771fd",
+	"photo-1573843981267-be1999ff37cd",
+	"photo-1522708323590-d24dbb6b0267",
+	"photo-1590490360182-c33d57733427",
+	"photo-1613977257363-707ba9348227",
+	"photo-1555854877-bab0e564b8d5",
+	"photo-1455587734955-081b22074882",
+}
+
+func cityPhoto(city string, idx int) string {
+	_ = city
+	return "https://images.unsplash.com/" + verifiedHotelPhotos[idx%len(verifiedHotelPhotos)] + "?w=600&q=80"
+}
+
 // --- Amadeus API response types ---
 
 type amadeusTokenResponse struct {
@@ -268,7 +286,6 @@ func (ac *AmadeusClient) FetchHotelsByCity(city, cityCode, checkIn, checkOut, ad
 		return nil, fmt.Errorf("hotel offers decode: %w", err)
 	}
 
-	cityQ := url.QueryEscape(city)
 	hotels := make([]HotelData, 0, len(offersPayload.Data))
 	for i, item := range offersPayload.Data {
 		if !item.Available || len(item.Offers) == 0 {
@@ -298,7 +315,7 @@ func (ac *AmadeusClient) FetchHotelsByCity(city, cityCode, checkIn, checkOut, ad
 		}
 
 		score := pseudoScore(name)
-		photo := fmt.Sprintf("https://source.unsplash.com/600x400/?hotel,luxury,%s&sig=%d", cityQ, i*17+len(city)%200)
+		photo := cityPhoto(city, i)
 
 		hotels = append(hotels, HotelData{
 			HotelID:    i + 1,

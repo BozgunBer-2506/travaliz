@@ -199,8 +199,14 @@ func (h *TravelHandler) FlightsHandler(w http.ResponseWriter, r *http.Request) {
 	toEntityID := q.Get("toEntity")
 	date := q.Get("date")
 
-	if fromSkyID == "" { fromSkyID = "LHR" }
-	if toSkyID == "" { toSkyID = "CDG" }
+	if fromSkyID == "" || toSkyID == "" {
+		h.render(w, pageData{
+			Tab: "flights", TripType: "oneway",
+			Adults: adults, Children: children, CabinClass: cabinClass,
+		})
+		return
+	}
+
 	if date == "" { date = time.Now().AddDate(0, 0, 1).Format("2006-01-02") }
 	if fromEntityID == "" { fromEntityID = h.resolveEntityID(fromSkyID) }
 	if toEntityID == "" { toEntityID = h.resolveEntityID(toSkyID) }

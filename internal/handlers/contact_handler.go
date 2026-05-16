@@ -27,8 +27,14 @@ func sendEmail(apiKey, from, to, subject, html string) error {
 		"subject": subject,
 		"html":    html,
 	}
-	payload, _ := json.Marshal(body)
-	req, _ := http.NewRequest("POST", "https://api.resend.com/emails", bytes.NewReader(payload))
+	payload, err := json.Marshal(body)
+	if err != nil {
+		return fmt.Errorf("marshal error: %w", err)
+	}
+	req, err := http.NewRequest("POST", "https://api.resend.com/emails", bytes.NewReader(payload))
+	if err != nil {
+		return fmt.Errorf("request error: %w", err)
+	}
 	req.Header.Set("Authorization", "Bearer "+apiKey)
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
@@ -84,7 +90,7 @@ func (h *TravelHandler) ContactHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Confirmation mail to user
-	sendEmail(apiKey, "TravelMirror <noreply@thebozgun.com>", req.Email,
+	if err := sendEmail(apiKey, "TravelMirror <noreply@thebozgun.com>", req.Email,
 		"We received your message — TravelMirror",
 		fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en">
@@ -186,7 +192,9 @@ func (h *TravelHandler) ContactHandler(w http.ResponseWriter, r *http.Request) {
   </table>
 </body>
 </html>`, req.Name, req.Email),
-	)
+	); err != nil {
+		fmt.Printf("confirmation email failed for %s: %v\n", req.Email, err)
+	}
 
 	json.NewEncoder(w).Encode(ContactResponse{OK: true})
 }

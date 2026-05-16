@@ -3,10 +3,12 @@ package proxy
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
+	"sort"
 	"strings"
 	"time"
 )
@@ -22,6 +24,9 @@ const (
 
 	hotelsHost  = "hotels-com-provider.p.rapidapi.com"
 	hotelsBase  = "https://hotels-com-provider.p.rapidapi.com"
+
+	bookingHost = "booking-com.p.rapidapi.com"
+	bookingBase = "https://booking-com.p.rapidapi.com"
 )
 
 // HotelData is the flat struct passed to templates and JSON API.
@@ -129,6 +134,67 @@ type gfFlightResponse struct {
 	Data   gfFlightData `json:"data"`
 }
 
+// --- Skyscanner internal structs ---
+
+type skyAirportEntry struct {
+	EntityID   string `json:"entityId"`
+	EntityType string `json:"entityType"`
+	Name       string `json:"name"`
+	IataCode   string `json:"iataCode"`
+	Location   string `json:"location"`
+}
+
+type skyAirportResponse struct {
+	Status bool              `json:"status"`
+	Data   []skyAirportEntry `json:"data"`
+}
+
+type skyPrice struct {
+	Raw       float64 `json:"raw"`
+	Formatted string  `json:"formatted"`
+}
+
+type skyPlace struct {
+	ID          string `json:"id"`
+	City        string `json:"city"`
+	Country     string `json:"country"`
+	DisplayCode string `json:"displayCode"`
+}
+
+type skyCarrierInfo struct {
+	ID      int    `json:"id"`
+	LogoURL string `json:"logoUrl"`
+	Name    string `json:"name"`
+}
+
+type skyLeg struct {
+	ID                string   `json:"id"`
+	Origin            skyPlace `json:"origin"`
+	Destination       skyPlace `json:"destination"`
+	DurationInMinutes int      `json:"durationInMinutes"`
+	StopCount         int      `json:"stopCount"`
+	Departure         string   `json:"departure"`
+	Arrival           string   `json:"arrival"`
+	Carriers          struct {
+		Marketing []skyCarrierInfo `json:"marketing"`
+	} `json:"carriers"`
+}
+
+type skyItinerary struct {
+	ID    string   `json:"id"`
+	Price skyPrice `json:"price"`
+	Legs  []skyLeg `json:"legs"`
+}
+
+type skyFlightData struct {
+	Itineraries []skyItinerary `json:"itineraries"`
+}
+
+type skyFlightResponse struct {
+	Status bool          `json:"status"`
+	Data   skyFlightData `json:"data"`
+}
+
 // --- Hotels.com regions internal structs ---
 
 type hcRegion struct {
@@ -148,6 +214,54 @@ type hcRegion struct {
 
 type hcRegionResponse struct {
 	Data []hcRegion `json:"data"`
+}
+
+type bookingDestResponse struct {
+	Result []struct {
+		DestID   string `json:"dest_id"`
+		DestType string `json:"dest_type"`
+		Label    string `json:"label"`
+	} `json:"result"`
+}
+
+type bookingHotelSearchResponse struct {
+	Result []struct {
+		HotelID       int     `json:"hotel_id"`
+		HotelName     string  `json:"hotel_name"`
+		Class         float64 `json:"class"`
+		ReviewScore   float64 `json:"review_score"`
+		ReviewWordEN  string  `json:"review_score_word"`
+		MinTotalPrice float64 `json:"min_total_price"`
+		MaxPhotoURL   string  `json:"max_photo_url"`
+		MainPhotoURL  string  `json:"main_photo_url"`
+	} `json:"result"`
+}
+
+type hcHotelSearchResponse struct {
+	Data struct {
+		Body struct {
+			SearchResults struct {
+				Results []struct {
+					ID         int    `json:"id"`
+					Name       string `json:"name"`
+					StarRating int    `json:"starRating"`
+					GuestReviews struct {
+						UnformattedRating float64 `json:"unformattedRating"`
+						Brands            string  `json:"brands"`
+					} `json:"guestReviews"`
+					RatePlan struct {
+						Price struct {
+							ExactCurrent float64 `json:"exactCurrent"`
+						} `json:"price"`
+					} `json:"ratePlan"`
+					OptimizedThumbUrls struct {
+						SrpDesktop string `json:"srpDesktop"`
+					} `json:"optimizedThumbUrls"`
+					ThumbnailURL string `json:"thumbnailUrl"`
+				} `json:"results"`
+			} `json:"searchResults"`
+		} `json:"body"`
+	} `json:"data"`
 }
 
 // ---
@@ -179,34 +293,37 @@ func (pc *ProxyClient) doGet(base, host, endpoint string, params map[string]stri
 	return pc.HTTPClient.Do(req)
 }
 
-// SearchHotelDestinations returns city suggestions for hotel autocomplete via Hotels.com regions API.
+// SearchHotelDestinations returns city suggestions for hotel autocomplete via Booking.com API.
 func (pc *ProxyClient) SearchHotelDestinations(query string) ([]DestSuggestion, error) {
-	resp, err := pc.doGet(hotelsBase, hotelsHost, "/v2/regions", map[string]string{
-		"query":  query,
-		"locale": "en_US",
-		"domain": "US",
+	resp, err := pc.doGet(bookingBase, bookingHost, "/v1/hotels/locations", map[string]string{
+		"name":   query,
+		"locale": "en-us",
 	})
 	if err != nil {
 		return nil, fmt.Errorf("hotel destination search failed: %w", err)
 	}
 	defer resp.Body.Close()
 
-	var payload hcRegionResponse
+	var payload []struct {
+		DestID   string `json:"dest_id"`
+		DestType string `json:"dest_type"`
+		Label    string `json:"label"`
+		Name     string `json:"name"`
+	}
 	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
 		return nil, fmt.Errorf("failed to decode hotel destination response: %w", err)
 	}
 
 	results := make([]DestSuggestion, 0)
-	for _, r := range payload.Data {
-		if r.Type != "CITY" && r.Type != "NEIGHBORHOOD" && r.Type != "AIRPORT" {
+	for _, r := range payload {
+		if r.DestType != "city" && r.DestType != "region" {
 			continue
 		}
-		hierarchy := r.HierarchyInfo.Country.Name
 		results = append(results, DestSuggestion{
-			EntityID:  r.GaiaID,
-			Name:      r.RegionNames.DisplayName,
-			Type:      strings.ToLower(r.Type),
-			Hierarchy: hierarchy,
+			EntityID:  r.DestID,
+			Name:      r.Label,
+			Type:      r.DestType,
+			Hierarchy: "",
 		})
 		if len(results) >= 6 {
 			break
@@ -215,7 +332,7 @@ func (pc *ProxyClient) SearchHotelDestinations(query string) ([]DestSuggestion, 
 	return results, nil
 }
 
-// SearchHotelDestination returns the first city gaiaId for a query.
+// SearchHotelDestination returns the first city dest_id for a query.
 func (pc *ProxyClient) SearchHotelDestination(query string) (string, error) {
 	results, err := pc.SearchHotelDestinations(query)
 	if err != nil {
@@ -241,29 +358,62 @@ func (pc *ProxyClient) SearchAirports(query string) ([]FlightDestSuggestion, err
 	}
 
 	var results []FlightDestSuggestion
-	for _, group := range payload.Data {
-		countryName := ""
-		if idx := strings.LastIndex(group.Name, ", "); idx >= 0 {
-			countryName = group.Name[idx+2:]
+	addResult := func(id, name, city, country string) {
+		if len(id) != 3 {
+			return
 		}
-		for _, a := range group.List {
-			if a.Type != "airport" || len(a.ID) != 3 {
-				continue
+		for _, r := range results {
+			if r.SkyID == id {
+				return // deduplicate
 			}
-			results = append(results, FlightDestSuggestion{
-				SkyID:       a.ID,
-				EntityID:    a.ID,
-				Name:        a.Name,
-				CityName:    a.City,
-				CountryName: countryName,
-				PlaceType:   "airport",
-			})
+		}
+		results = append(results, FlightDestSuggestion{
+			SkyID:       id,
+			EntityID:    id,
+			Name:        name,
+			CityName:    city,
+			CountryName: country,
+			PlaceType:   "airport",
+		})
+	}
+	for _, group := range payload.Data {
+		country := ""
+		if idx := strings.LastIndex(group.Name, ", "); idx >= 0 {
+			country = group.Name[idx+2:]
+		}
+		// group itself may be an airport entry (e.g. direct IATA code search)
+		addResult(group.ID, group.Name, group.City, country)
+		// nested list items
+		for _, a := range group.List {
+			addResult(a.ID, a.Name, a.City, country)
 		}
 		if len(results) >= 8 {
 			break
 		}
 	}
 	return results, nil
+}
+
+// resolveSkyscannerEntityID resolves an IATA code to a Skyscanner entity ID via autocomplete.
+func (pc *ProxyClient) resolveSkyscannerEntityID(iata string) string {
+	resp, err := pc.doGet(skyBase, skyHost, "/flights/auto-complete", map[string]string{"query": iata})
+	if err != nil {
+		return iata
+	}
+	defer resp.Body.Close()
+	var payload skyAirportResponse
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		return iata
+	}
+	for _, a := range payload.Data {
+		if a.IataCode == iata {
+			return a.EntityID
+		}
+	}
+	if len(payload.Data) > 0 && payload.Data[0].EntityID != "" {
+		return payload.Data[0].EntityID
+	}
+	return iata
 }
 
 // hotelTemplates define names, stars and pricing only; photos are generated dynamically per city.
@@ -320,22 +470,143 @@ func (pc *ProxyClient) fetchMockHotels(city string) ([]HotelData, error) {
 	return hotels, nil
 }
 
-// FetchHotels tries Amadeus live data first; falls back to mock if not configured or on error.
-func (pc *ProxyClient) FetchHotels(city, regionID, checkIn, checkOut, adults, children, rooms string) ([]HotelData, error) {
-	if pc.Amadeus.Enabled() {
-		cityCode, err := pc.Amadeus.LookupCityCode(city)
-		if err != nil {
-			log.Printf("amadeus city lookup failed (%v), using mock", err)
-		} else {
-			hotels, err := pc.Amadeus.FetchHotelsByCity(city, cityCode, checkIn, checkOut, adults, rooms)
-			if err != nil {
-				log.Printf("amadeus hotel fetch failed (%v), using mock", err)
-			} else {
-				return hotels, nil
-			}
-		}
+// fetchHotelsFromBooking fetches real hotel listings with photos via Booking.com RapidAPI.
+func (pc *ProxyClient) fetchHotelsFromBooking(city, checkIn, checkOut, adults, rooms string) ([]HotelData, error) {
+	// Step 1: resolve dest_id (response is a direct array, not wrapped)
+	destResp, err := pc.doGet(bookingBase, bookingHost, "/v1/hotels/locations", map[string]string{
+		"name":   city,
+		"locale": "en-us",
+	})
+	if err != nil {
+		return nil, fmt.Errorf("booking dest search: %w", err)
 	}
-	return pc.fetchMockHotels(city)
+	defer destResp.Body.Close()
+	var destList []struct {
+		DestID   string `json:"dest_id"`
+		DestType string `json:"dest_type"`
+		Label    string `json:"label"`
+	}
+	if err := json.NewDecoder(destResp.Body).Decode(&destList); err != nil {
+		return nil, fmt.Errorf("booking dest decode: %w", err)
+	}
+	if len(destList) == 0 {
+		return nil, fmt.Errorf("booking: no destination for %s", city)
+	}
+	dest := destList[0]
+
+	// Step 2: search hotels
+	resp, err := pc.doGet(bookingBase, bookingHost, "/v1/hotels/search", map[string]string{
+		"dest_id":           dest.DestID,
+		"dest_type":         dest.DestType,
+		"checkin_date":      checkIn,
+		"checkout_date":     checkOut,
+		"adults_number":     adults,
+		"room_number":       rooms,
+		"locale":            "en-us",
+		"currency":          "USD",
+		"order_by":          "popularity",
+		"units":             "metric",
+		"filter_by_currency": "USD",
+	})
+	if err != nil {
+		return nil, fmt.Errorf("booking hotel search: %w", err)
+	}
+	defer resp.Body.Close()
+	var payload bookingHotelSearchResponse
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		return nil, fmt.Errorf("booking hotel decode: %w", err)
+	}
+	if len(payload.Result) == 0 {
+		return nil, fmt.Errorf("booking returned no hotels")
+	}
+
+	hotels := make([]HotelData, 0, len(payload.Result))
+	for i, r := range payload.Result {
+		photo := r.MaxPhotoURL
+		if photo == "" {
+			photo = r.MainPhotoURL
+		}
+		stars := int(r.Class)
+		if stars == 0 {
+			stars = 3
+		}
+		hotels = append(hotels, HotelData{
+			HotelID:    i + 1,
+			HotelName:  r.HotelName,
+			Price:      r.MinTotalPrice,
+			Currency:   "USD",
+			Rating:     r.ReviewScore,
+			RatingWord: r.ReviewWordEN,
+			PhotoURL:   photo,
+			Stars:      stars,
+		})
+	}
+	return hotels, nil
+}
+
+// fetchHotelsFromHotelsCom fetches real hotel listings with photos via Hotels.com RapidAPI.
+func (pc *ProxyClient) fetchHotelsFromHotelsCom(regionID, checkIn, checkOut, adults, rooms string) ([]HotelData, error) {
+	if regionID == "" {
+		return nil, fmt.Errorf("no region ID")
+	}
+	resp, err := pc.doGet(hotelsBase, hotelsHost, "/v2/hotels/search", map[string]string{
+		"region_id":      regionID,
+		"locale":         "en_US",
+		"check_in_date":  checkIn,
+		"check_out_date": checkOut,
+		"adults_number":  adults,
+		"rooms_number":   rooms,
+		"domain":         "US",
+		"sort_order":     "STAR_RATING_HIGHEST_FIRST",
+	})
+	if err != nil {
+		return nil, fmt.Errorf("hotels.com search failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	var payload hcHotelSearchResponse
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		return nil, fmt.Errorf("failed to decode hotels.com response: %w", err)
+	}
+
+	results := payload.Data.Body.SearchResults.Results
+	if len(results) == 0 {
+		return nil, fmt.Errorf("hotels.com returned no results")
+	}
+
+	hotels := make([]HotelData, 0, len(results))
+	for i, r := range results {
+		photo := r.OptimizedThumbUrls.SrpDesktop
+		if photo == "" {
+			photo = r.ThumbnailURL
+		}
+		rating := r.GuestReviews.UnformattedRating
+		stars := r.StarRating
+		if stars == 0 {
+			stars = 3
+		}
+		hotels = append(hotels, HotelData{
+			HotelID:    i + 1,
+			HotelName:  r.Name,
+			Price:      r.RatePlan.Price.ExactCurrent,
+			Currency:   "USD",
+			Rating:     rating,
+			RatingWord: amadeusRatingWord(rating),
+			PhotoURL:   photo,
+			Stars:      stars,
+		})
+	}
+	return hotels, nil
+}
+
+// FetchHotels tries Booking.com first for real data with photos, falls back to mock.
+func (pc *ProxyClient) FetchHotels(city, regionID, checkIn, checkOut, adults, children, rooms string) ([]HotelData, error) {
+	hotels, err := pc.fetchHotelsFromBooking(city, checkIn, checkOut, adults, rooms)
+	if err != nil {
+		log.Printf("booking.com fetch failed (%v), using mock", err)
+		return pc.fetchMockHotels(city)
+	}
+	return hotels, nil
 }
 
 // FetchTravelData is kept for the /travel-data JSON endpoint (always mock).
@@ -343,16 +614,8 @@ func (pc *ProxyClient) FetchTravelData() ([]HotelData, error) {
 	return pc.fetchMockHotels("London")
 }
 
-// FetchFlights searches flights via Google Flights API.
-// fromEntityID and toEntityID are ignored (Google Flights uses IATA codes only).
-func (pc *ProxyClient) FetchFlights(fromSkyID, _, toSkyID, _, date, returnDate, adults, children, cabinClass string) ([]FlightData, error) {
-	if adults == "" {
-		adults = "1"
-	}
-	if cabinClass == "" {
-		cabinClass = "economy"
-	}
-
+// fetchFlightsGF searches flights via Google Flights (fallback).
+func (pc *ProxyClient) fetchFlightsGF(fromSkyID, toSkyID, date, returnDate, adults, children, cabinClass string) ([]FlightData, error) {
 	params := map[string]string{
 		"departure_id":  fromSkyID,
 		"arrival_id":    toSkyID,
@@ -360,7 +623,7 @@ func (pc *ProxyClient) FetchFlights(fromSkyID, _, toSkyID, _, date, returnDate, 
 		"travel_class":  strings.ToUpper(cabinClass),
 		"adults":        adults,
 		"currency":      "USD",
-		"search_type":   "best",
+		"search_type":   "cheap",
 		"language_code": "en-US",
 		"country_code":  "US",
 	}
@@ -370,22 +633,25 @@ func (pc *ProxyClient) FetchFlights(fromSkyID, _, toSkyID, _, date, returnDate, 
 	if returnDate != "" {
 		params["return_date"] = returnDate
 	}
-
 	resp, err := pc.doGet(gfBase, gfHost, "/api/v1/searchFlights", params)
 	if err != nil {
-		return nil, fmt.Errorf("flight search failed: %w", err)
+		return nil, fmt.Errorf("gf flight search: %w", err)
 	}
 	defer resp.Body.Close()
 
+	body, _ := io.ReadAll(resp.Body)
+	log.Printf("[GF] status=%d body_prefix=%.300s", resp.StatusCode, string(body))
+
 	var payload gfFlightResponse
-	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
-		return nil, fmt.Errorf("failed to decode flight response: %w", err)
-	}
-	if !payload.Status {
-		return nil, fmt.Errorf("google flights returned no results")
+	if err := json.Unmarshal(body, &payload); err != nil {
+		return nil, fmt.Errorf("gf flight decode: %w", err)
 	}
 
 	all := append(payload.Data.Itineraries.TopFlights, payload.Data.Itineraries.OtherFlights...)
+	if len(all) == 0 {
+		return nil, fmt.Errorf("google flights: no itineraries")
+	}
+	sort.Slice(all, func(i, j int) bool { return all[i].Price < all[j].Price })
 	flights := make([]FlightData, 0, len(all))
 	for _, it := range all {
 		if len(it.Flights) == 0 {
@@ -393,11 +659,19 @@ func (pc *ProxyClient) FetchFlights(fromSkyID, _, toSkyID, _, date, returnDate, 
 		}
 		first := it.Flights[0]
 		last := it.Flights[len(it.Flights)-1]
+		dep := it.DepartureTime
+		arr := it.ArrivalTime
+		if len(dep) >= 16 {
+			dep = dep[11:16]
+		}
+		if len(arr) >= 16 {
+			arr = arr[11:16]
+		}
 		flights = append(flights, FlightData{
 			FromCode:        first.DepartureAirport.AirportCode,
 			ToCode:          last.ArrivalAirport.AirportCode,
-			DepartTime:      extractTime(it.DepartureTime),
-			ArriveTime:      extractTime(it.ArrivalTime),
+			DepartTime:      dep,
+			ArriveTime:      arr,
 			DurationHours:   it.Duration.Raw / 60,
 			DurationMinutes: it.Duration.Raw % 60,
 			Airline:         first.Airline,
@@ -410,31 +684,88 @@ func (pc *ProxyClient) FetchFlights(fromSkyID, _, toSkyID, _, date, returnDate, 
 	return flights, nil
 }
 
-// extractTime pulls the time from "15-06-2026 11:25 PM" and converts to 24h format ("23:25").
-func extractTime(s string) string {
-	// s format: "DD-MM-YYYY HH:MM AM/PM"
-	parts := strings.Fields(s)
-	if len(parts) < 2 {
-		return s
+// FetchFlights tries Skyscanner first (shows LCC prices), falls back to Google Flights.
+func (pc *ProxyClient) FetchFlights(fromSkyID, fromEntityID, toSkyID, toEntityID, date, returnDate, adults, children, cabinClass string) ([]FlightData, error) {
+	if adults == "" {
+		adults = "1"
 	}
-	timePart := parts[1] // "11:25"
-	ampm := ""
-	if len(parts) >= 3 {
-		ampm = strings.ToUpper(parts[2]) // "AM" or "PM"
+	if cabinClass == "" {
+		cabinClass = "economy"
 	}
-	if ampm == "" {
-		return timePart // already 24h or unknown format
+
+	// Resolve Skyscanner entity IDs (numeric) from IATA codes
+	fromID := fromEntityID
+	if fromID == "" || fromID == fromSkyID {
+		fromID = pc.resolveSkyscannerEntityID(fromSkyID)
 	}
-	hm := strings.SplitN(timePart, ":", 2)
-	if len(hm) != 2 {
-		return timePart
+	toID := toEntityID
+	if toID == "" || toID == toSkyID {
+		toID = pc.resolveSkyscannerEntityID(toSkyID)
 	}
-	hour := 0
-	fmt.Sscanf(hm[0], "%d", &hour)
-	if ampm == "PM" && hour != 12 {
-		hour += 12
-	} else if ampm == "AM" && hour == 12 {
-		hour = 0
+
+	endpoint := "/flights/search-one-way"
+	if returnDate != "" {
+		endpoint = "/flights/search-roundtrip"
 	}
-	return fmt.Sprintf("%02d:%s", hour, hm[1])
+
+	params := map[string]string{
+		"fromEntityId": fromID,
+		"toEntityId":   toID,
+		"departDate":   date,
+		"market":       "US",
+		"locale":       "en-US",
+		"currency":     "USD",
+		"adults":       adults,
+		"cabinClass":   cabinClass,
+	}
+	if returnDate != "" {
+		params["returnDate"] = returnDate
+	}
+	if children != "" && children != "0" {
+		params["children"] = children
+	}
+
+	resp, err := pc.doGet(skyBase, skyHost, endpoint, params)
+	if err == nil {
+		defer resp.Body.Close()
+		var payload skyFlightResponse
+		if json.NewDecoder(resp.Body).Decode(&payload) == nil && payload.Status && len(payload.Data.Itineraries) > 0 {
+			its := payload.Data.Itineraries
+			sort.Slice(its, func(i, j int) bool { return its[i].Price.Raw < its[j].Price.Raw })
+			flights := make([]FlightData, 0, len(its))
+			for _, it := range its {
+				if len(it.Legs) == 0 {
+					continue
+				}
+				leg := it.Legs[0]
+				airline, logo := "", ""
+				if len(leg.Carriers.Marketing) > 0 {
+					airline = leg.Carriers.Marketing[0].Name
+					logo = leg.Carriers.Marketing[0].LogoURL
+				}
+				flights = append(flights, FlightData{
+					FromCode: leg.Origin.DisplayCode, ToCode: leg.Destination.DisplayCode,
+					DepartTime: extractISOTime(leg.Departure), ArriveTime: extractISOTime(leg.Arrival),
+					DurationHours: leg.DurationInMinutes / 60, DurationMinutes: leg.DurationInMinutes % 60,
+					Airline: airline, AirlineLogo: logo,
+					Price: it.Price.Raw, Currency: "USD", Stops: leg.StopCount,
+				})
+			}
+			if len(flights) > 0 {
+				return flights, nil
+			}
+		}
+	}
+
+	// Fallback: Google Flights
+	log.Printf("skyscanner failed, falling back to google flights for %s→%s", fromSkyID, toSkyID)
+	return pc.fetchFlightsGF(fromSkyID, toSkyID, date, returnDate, adults, children, cabinClass)
+}
+
+// extractISOTime pulls HH:MM from a Skyscanner ISO timestamp like "2026-06-15T11:25:00".
+func extractISOTime(s string) string {
+	if idx := strings.Index(s, "T"); idx >= 0 && len(s) > idx+6 {
+		return s[idx+1 : idx+6]
+	}
+	return s
 }
