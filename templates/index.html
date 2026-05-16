@@ -640,10 +640,12 @@
 </header>
 
 <!-- Hero + Search -->
-<div class="hero-gradient pt-24 pb-16 px-6 relative overflow-hidden">
-  <!-- decorative blobs -->
-  <div class="absolute top-0 right-0 w-96 h-96 rounded-full opacity-10" style="background:radial-gradient(circle,white,transparent);transform:translate(30%,-30%)"></div>
-  <div class="absolute bottom-0 left-0 w-64 h-64 rounded-full opacity-10" style="background:radial-gradient(circle,white,transparent);transform:translate(-40%,40%)"></div>
+<div class="hero-gradient pt-24 pb-16 px-6 relative">
+  <!-- decorative blobs (clipped inside their own layer) -->
+  <div class="absolute inset-0 overflow-hidden pointer-events-none">
+    <div class="absolute top-0 right-0 w-96 h-96 rounded-full opacity-10" style="background:radial-gradient(circle,white,transparent);transform:translate(30%,-30%)"></div>
+    <div class="absolute bottom-0 left-0 w-64 h-64 rounded-full opacity-10" style="background:radial-gradient(circle,white,transparent);transform:translate(-40%,40%)"></div>
+  </div>
 
   <div class="max-w-5xl mx-auto relative z-10">
     {{if eq .Tab "hotels"}}
