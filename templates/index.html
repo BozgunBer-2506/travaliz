@@ -939,7 +939,7 @@
       <!-- Info -->
       <div style="padding:14px 16px 16px">
         {{if .Stars}}
-        <div style="color:#f59e0b;font-size:13px;font-weight:700;margin-bottom:5px;letter-spacing:1px" data-stars="{{.Stars}}"></div>
+        <div style="color:#f59e0b;font-size:13px;font-weight:700;margin-bottom:5px;letter-spacing:1px">{{if ge .Stars 1}}★{{end}}{{if ge .Stars 2}}★{{end}}{{if ge .Stars 3}}★{{end}}{{if ge .Stars 4}}★{{end}}{{if ge .Stars 5}}★{{end}}</div>
         {{end}}
         <div style="font-size:13px;font-weight:700;color:var(--text-primary);margin-bottom:2px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">{{.HotelName}}</div>
         <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px">{{.RatingWord}}</div>
@@ -1926,11 +1926,6 @@ const roomTypes = {
   ],
 };
 
-// Render star symbols into [data-stars] spans on hotel cards
-document.querySelectorAll('[data-stars]').forEach(el => {
-  const n = parseInt(el.dataset.stars) || 0;
-  el.textContent = '★'.repeat(n);
-});
 
 let currentHotelData = null;
 
