@@ -6,7 +6,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"net/url"
 	"os"
 	"sort"
 	"strings"
@@ -465,15 +464,14 @@ func (pc *ProxyClient) fetchMockHotels(city string) ([]HotelData, error) {
 	if seed < 0 {
 		seed = -seed
 	}
-	cityQ := url.QueryEscape(city)
 	hotels := make([]HotelData, 0, len(hotelTemplates))
 	for i := range hotelTemplates {
 		idx := (int(seed) + i) % len(hotelTemplates)
 		tpl := hotelTemplates[idx]
 		name := city + " " + tpl.suffix
 		price := tpl.base + float64((int(seed)+i)%5)*11.0
-		sig := int(seed)%200 + i*17
-		photo := fmt.Sprintf("https://source.unsplash.com/600x400/?hotel,luxury,%s&sig=%d", cityQ, sig)
+		picID := 200 + (int(seed)+i*7)%800
+		photo := fmt.Sprintf("https://picsum.photos/id/%d/600/400", picID)
 		hotels = append(hotels, HotelData{
 			HotelID:    int(seed%9000) + 1000 + i,
 			HotelName:  name,
