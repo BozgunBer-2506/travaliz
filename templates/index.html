@@ -195,6 +195,11 @@
     [data-theme="dark"] .bg-sky-50 { background: rgba(14,165,233,0.1) !important; }
     [data-theme="dark"] .bg-violet-50 { background: rgba(139,92,246,0.1) !important; }
     [data-theme="dark"] .rounded-3xl.border.border-gray-100 { background: var(--bg-card) !important; border-color: var(--border) !important; }
+    /* Themed scrollbar */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.35); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(99,102,241,0.6); }
   </style>
   <script>
     (function() {
@@ -223,7 +228,7 @@
   <div class="w-full sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col" style="max-width:680px;max-height:92vh;background:#ffffff;color:#0f172a" onclick="event.stopPropagation()">
     <!-- Hero image -->
     <div class="relative shrink-0" style="height:260px;background:linear-gradient(135deg,#312e81,#6366f1)">
-      <img id="hd-photo" src="" alt="" referrerpolicy="no-referrer" class="w-full h-full object-cover" onerror="this.style.display='none'" />
+      <img id="hd-photo" src="" alt="" referrerpolicy="no-referrer" class="w-full h-full object-cover" onerror="this.src='https://picsum.photos/680/260?random='+Math.floor(Math.random()*200);this.onerror=null" />
       <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(0,0,0,.5) 0%,transparent 50%)"></div>
       <button onclick="closeHotelDetail()" class="absolute top-4 right-4 w-9 h-9 rounded-full bg-black/40 hover:bg-black/60 flex items-center justify-center text-white text-xl transition-colors">&times;</button>
       <div class="absolute bottom-4 left-5">
@@ -423,7 +428,7 @@
 
 <!-- Sign In Modal -->
 <div id="signin-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(15,15,30,0.75);backdrop-filter:blur(8px)" onclick="if(event.target===this)closeSignIn()">
-  <div class="w-full rounded-3xl shadow-2xl overflow-hidden" style="max-width:420px;background:#ffffff;color:#0f172a" onclick="event.stopPropagation()">
+  <div class="w-full rounded-3xl shadow-2xl overflow-hidden" style="max-width:420px;background:var(--bg-card);color:var(--text-primary)" onclick="event.stopPropagation()">
     <div class="p-8">
       <div class="flex items-center justify-between mb-6">
         <div>
@@ -475,7 +480,7 @@
 
 <!-- Register Modal -->
 <div id="register-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(15,15,30,0.75);backdrop-filter:blur(8px)" onclick="if(event.target===this)closeRegister()">
-  <div class="w-full rounded-3xl shadow-2xl overflow-hidden" style="max-width:420px;background:#ffffff;color:#0f172a" onclick="event.stopPropagation()">
+  <div class="w-full rounded-3xl shadow-2xl overflow-hidden" style="max-width:420px;background:var(--bg-card);color:var(--text-primary)" onclick="event.stopPropagation()">
     <div class="p-8">
       <div class="flex items-center justify-between mb-6">
         <div>
@@ -1628,7 +1633,7 @@
   <div class="relative h-44 overflow-hidden bg-gray-50 flex items-center justify-center">
     <img src="/images/cars.jpg" class="w-full h-full object-cover transition-transform duration-500" alt="Toyota Yaris" loading="lazy" />
     <span class="absolute top-3 left-3 text-xs font-bold px-2.5 py-1 rounded-full text-indigo-700 border border-indigo-200" style="background:rgba(238,242,255,.95)">Economy</span>
-    <span class="absolute top-3 right-3 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">Free cancel</span>
+    <span class="absolute top-3 right-3 text-xs font-semibold px-2.5 py-1 rounded-full" style="background:rgba(0,0,0,0.52);color:#fff;backdrop-filter:blur(4px)">Free cancel</span>
   </div>
   <div class="p-5">
     <div class="flex items-start justify-between mb-3">
@@ -1649,7 +1654,7 @@
   <div class="relative h-44 overflow-hidden bg-gray-50">
     <img src="/images/cars.jpg" class="w-full h-full object-cover transition-transform duration-500" alt="Volkswagen Golf" loading="lazy" />
     <span class="absolute top-3 left-3 text-xs font-bold px-2.5 py-1 rounded-full text-sky-700 border border-sky-200" style="background:rgba(240,249,255,.95)">Compact</span>
-    <span class="absolute top-3 right-3 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">Free cancel</span>
+    <span class="absolute top-3 right-3 text-xs font-semibold px-2.5 py-1 rounded-full" style="background:rgba(0,0,0,0.52);color:#fff;backdrop-filter:blur(4px)">Free cancel</span>
   </div>
   <div class="p-5">
     <div class="flex items-start justify-between mb-3">
@@ -1670,7 +1675,7 @@
   <div class="relative h-44 overflow-hidden bg-gray-50">
     <img src="/images/cars.jpg" class="w-full h-full object-cover transition-transform duration-500" alt="Toyota RAV4" loading="lazy" />
     <span class="absolute top-3 left-3 text-xs font-bold px-2.5 py-1 rounded-full text-amber-700 border border-amber-200" style="background:rgba(255,251,235,.95)">SUV</span>
-    <span class="absolute top-3 right-3 text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full">Unlimited km</span>
+    <span class="absolute top-3 right-3 text-xs font-semibold px-2.5 py-1 rounded-full" style="background:rgba(0,0,0,0.52);color:#fff;backdrop-filter:blur(4px)">Unlimited km</span>
   </div>
   <div class="p-5">
     <div class="flex items-start justify-between mb-3">
@@ -1691,7 +1696,7 @@
   <div class="relative h-44 overflow-hidden bg-gray-50">
     <img src="/images/cars.jpg" class="w-full h-full object-cover transition-transform duration-500" alt="Mercedes C-Class" loading="lazy" />
     <span class="absolute top-3 left-3 text-xs font-bold px-2.5 py-1 rounded-full text-violet-700 border border-violet-200" style="background:rgba(245,243,255,.95)">Luxury</span>
-    <span class="absolute top-3 right-3 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">Free cancel</span>
+    <span class="absolute top-3 right-3 text-xs font-semibold px-2.5 py-1 rounded-full" style="background:rgba(0,0,0,0.52);color:#fff;backdrop-filter:blur(4px)">Free cancel</span>
   </div>
   <div class="p-5">
     <div class="flex items-start justify-between mb-3">
@@ -1712,7 +1717,7 @@
   <div class="relative h-44 overflow-hidden bg-gray-50">
     <img src="/images/cars.jpg" class="w-full h-full object-cover transition-transform duration-500" alt="Fiat 500" loading="lazy" />
     <span class="absolute top-3 left-3 text-xs font-bold px-2.5 py-1 rounded-full text-indigo-700 border border-indigo-200" style="background:rgba(238,242,255,.95)">Economy</span>
-    <span class="absolute top-3 right-3 text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2.5 py-1 rounded-full">-20% today</span>
+    <span class="absolute top-3 right-3 text-xs font-semibold px-2.5 py-1 rounded-full" style="background:rgba(0,0,0,0.52);color:#fff;backdrop-filter:blur(4px)">-20% today</span>
   </div>
   <div class="p-5">
     <div class="flex items-start justify-between mb-3">
@@ -1733,7 +1738,7 @@
   <div class="relative h-44 overflow-hidden bg-gray-50">
     <img src="/images/cars.jpg" class="w-full h-full object-cover transition-transform duration-500" alt="BMW X3" loading="lazy" />
     <span class="absolute top-3 left-3 text-xs font-bold px-2.5 py-1 rounded-full text-amber-700 border border-amber-200" style="background:rgba(255,251,235,.95)">SUV</span>
-    <span class="absolute top-3 right-3 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">Free cancel</span>
+    <span class="absolute top-3 right-3 text-xs font-semibold px-2.5 py-1 rounded-full" style="background:rgba(0,0,0,0.52);color:#fff;backdrop-filter:blur(4px)">Free cancel</span>
   </div>
   <div class="p-5">
     <div class="flex items-start justify-between mb-3">
@@ -1938,7 +1943,7 @@ const descMap = {
   4: 'An upscale property combining stylish design with first-class amenities. Enjoy spacious rooms, an inviting pool deck, and a restaurant serving locally inspired cuisine. Perfect for those seeking comfort without compromise.',
   5: 'An iconic luxury retreat that sets the standard for five-star hospitality. Every detail has been thoughtfully curated — from the marble-clad suites and Michelin-starred dining to the world-class spa and personalised butler service.',
 };
-const badgeColors = ['bg-emerald-50 text-emerald-700 border-emerald-200','bg-sky-50 text-sky-700 border-sky-200','bg-violet-50 text-violet-700 border-violet-200','bg-amber-50 text-amber-700 border-amber-200'];
+const badgeColors = ['','','',''];
 const quickBadges = {
   3: ['Free cancellation','No prepayment'],
   4: ['Free cancellation','Breakfast available','No prepayment'],
@@ -1982,8 +1987,8 @@ function openHotelDetail(card) {
 
   // Badges
   const badges = quickBadges[stars] || quickBadges[3];
-  document.getElementById('hd-badges').innerHTML = badges.map((b, i) =>
-    `<span class="text-xs font-semibold px-3 py-1 rounded-full border ${badgeColors[i % badgeColors.length]}">${b}</span>`
+  document.getElementById('hd-badges').innerHTML = badges.map(b =>
+    `<span style="font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;border:1px solid var(--border);color:var(--text-secondary);background:var(--bg-card2)">${b}</span>`
   ).join('');
 
   // Amenities
@@ -2133,15 +2138,21 @@ function renderBookings() {
         <span style="color:var(--text-muted);font-size:12px;margin-left:4px">›</span>
       </div>
       <div class="bk-actions hidden" style="border-top:1px solid var(--border);padding:10px 12px;display:flex;align-items:center;gap:8px">
-        <button onclick="shareToWhatsApp(${itemJson})" title="WhatsApp"
-          style="width:36px;height:36px;border-radius:50%;background:#25d366;border:none;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center">💬</button>
-        <button onclick="addToCalendar(${itemJson})" title="Add to calendar"
-          style="width:36px;height:36px;border-radius:50%;background:#4f46e5;border:none;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center">📅</button>
-        <button onclick="shareBooking(${itemJson})" title="Share"
-          style="width:36px;height:36px;border-radius:50%;background:#0ea5e9;border:none;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center">🔗</button>
+        <button onclick="shareToWhatsApp(${itemJson})"
+          style="font-size:11px;font-weight:600;padding:5px 12px;border-radius:8px;background:transparent;color:var(--text-secondary);border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;gap:4px">
+          💬 WhatsApp
+        </button>
+        <button onclick="addToCalendar(${itemJson})"
+          style="font-size:11px;font-weight:600;padding:5px 12px;border-radius:8px;background:transparent;color:var(--text-secondary);border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;gap:4px">
+          📅 Calendar
+        </button>
+        <button onclick="shareBooking(${itemJson})"
+          style="font-size:11px;font-weight:600;padding:5px 12px;border-radius:8px;background:transparent;color:var(--text-secondary);border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;gap:4px">
+          ↗ Share
+        </button>
         <button onclick="cancelBooking(${item.id})"
-          style="margin-left:auto;font-size:11px;font-weight:600;padding:6px 14px;border-radius:20px;background:transparent;color:#dc2626;border:1px solid #fca5a5;cursor:pointer">
-          Cancel
+          style="margin-left:auto;font-size:11px;font-weight:600;padding:5px 12px;border-radius:8px;background:transparent;color:var(--text-muted);border:1px solid var(--border);cursor:pointer">
+          Remove
         </button>
       </div>`;
     list.appendChild(div);
@@ -2239,7 +2250,7 @@ function applyPrices() {
   document.querySelectorAll('.price-total').forEach(el => {
     const nights = parseInt(el.dataset.nights) || 0;
     if (nights < 2) { el.textContent = ''; return; }
-    const priceSpan = el.closest('div').querySelector('.price-display');
+    const priceSpan = el.parentElement.querySelector('.price-display');
     const usd = priceSpan ? parseFloat(priceSpan.dataset.usd) || 0 : 0;
     const total = Math.round(usd * rate * nights);
     el.textContent = sym + total.toLocaleString() + ' total · ' + nights + ' nights';
