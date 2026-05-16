@@ -239,6 +239,7 @@
       document.documentElement.setAttribute('data-theme', t);
     })();
   </script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="bg-slate-50 min-h-screen flex flex-col">
 
@@ -699,7 +700,6 @@
       <a href="/cars" class="px-4 py-2 rounded-full text-sm font-semibold transition-all {{if eq .Tab "cars"}}bg-white text-indigo-700 shadow-lg{{else}}text-white/75 hover:text-white hover:bg-white/10{{end}}">Car Rentals</a>
       <button onclick="toggleBookings()" class="relative ml-2 px-4 py-2 rounded-full text-sm font-semibold text-white/75 hover:text-white hover:bg-white/10 transition-all">
         Bookings
-        <span id="booking-badge" class="hidden absolute -top-1 -right-1 bg-rose-500 text-white text-xs font-bold w-5 h-5 rounded-full items-center justify-center"></span>
       </button>
     </nav>
 
@@ -719,12 +719,27 @@
         style="appearance:none;-webkit-appearance:none;background:rgba(255,255,255,0.1);min-width:72px;text-align:center">
         <option value="EUR" style="background:#312e81;color:#fff">€ EUR</option>
         <option value="USD" style="background:#312e81;color:#fff">$ USD</option>
+        <option value="GBP" style="background:#312e81;color:#fff">£ GBP</option>
         <option value="TRY" style="background:#312e81;color:#fff">₺ TRY</option>
       </select>
-      <!-- Sign In -->
-      <button onclick="openSignIn()" class="px-4 py-1.5 rounded-full text-sm font-semibold text-white border border-white/30 hover:bg-white/10 transition-all">
-        Sign In
-      </button>
+<!-- Auth -->
+      <div id="auth-signed-out" class="flex items-center gap-2">
+        <button onclick="openSignIn()" class="px-4 py-1.5 rounded-full text-sm font-semibold text-white border border-white/30 hover:bg-white/10 transition-all">Sign In</button>
+      </div>
+      <div id="auth-signed-in" class="hidden relative">
+        <button onclick="toggleUserMenu()" class="flex items-center gap-2 px-2 py-1 rounded-full hover:bg-white/10 transition-all">
+          <img id="auth-avatar" src="" alt="" class="w-7 h-7 rounded-full object-cover hidden" />
+          <div id="auth-initials" class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white" style="background:rgba(255,255,255,0.25)"></div>
+          <span id="auth-name" class="text-sm font-semibold text-white hidden md:block"></span>
+        </button>
+        <div id="user-menu" class="hidden absolute right-0 top-10 w-48 rounded-2xl shadow-xl overflow-hidden z-50" style="background:var(--bg-card);border:1px solid var(--border)">
+          <div class="px-4 py-3 border-b" style="border-color:var(--border)">
+            <p id="user-menu-name" class="text-sm font-bold" style="color:var(--text-primary)"></p>
+            <p id="user-menu-email" class="text-xs mt-0.5" style="color:var(--text-muted)"></p>
+          </div>
+          <button onclick="signOut()" class="w-full text-left px-4 py-3 text-sm font-semibold text-red-500 hover:bg-red-50 transition-colors">Sign out</button>
+        </div>
+      </div>
       <button id="hamburger-btn" onclick="toggleMobileMenu()" class="md:hidden flex flex-col justify-center gap-1.5 w-9 h-9 p-1.5 rounded-lg hover:bg-white/10 transition-colors">
         <span class="block h-0.5 rounded-full transition-all" style="background:#ffffff"></span>
         <span class="block h-0.5 rounded-full transition-all" style="background:#ffffff"></span>
@@ -740,7 +755,6 @@
     <a href="/cars" class="px-4 py-2.5 rounded-xl text-sm font-semibold transition-all {{if eq .Tab "cars"}}bg-white text-indigo-700{{else}}text-white/75 hover:text-white hover:bg-white/10{{end}}">Car Rentals</a>
     <button onclick="toggleBookings();toggleMobileMenu()" class="relative text-left px-4 py-2.5 rounded-xl text-sm font-semibold text-white/75 hover:text-white hover:bg-white/10 transition-all">
       Bookings
-      <span id="booking-badge-mobile" class="hidden absolute top-1.5 left-24 bg-rose-500 text-white text-xs font-bold w-5 h-5 rounded-full items-center justify-center"></span>
     </button>
     <!-- Theme toggle in mobile menu -->
     <button onclick="toggleTheme()" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-white/75 hover:text-white hover:bg-white/10 transition-all">
@@ -758,6 +772,7 @@
         style="appearance:none;-webkit-appearance:none;background:rgba(255,255,255,0.15);min-width:80px;text-align:center">
         <option value="EUR" style="background:#312e81;color:#fff">€ EUR</option>
         <option value="USD" style="background:#312e81;color:#fff">$ USD</option>
+        <option value="GBP" style="background:#312e81;color:#fff">£ GBP</option>
         <option value="TRY" style="background:#312e81;color:#fff">₺ TRY</option>
       </select>
     </div>
@@ -833,15 +848,15 @@
                   <button type="button" onclick="changeCount('h_adults',1,1,9)" class="counter-btn-plus">+</button>
                 </div>
               </div>
-              <div class="flex items-center justify-between py-3" style="border-bottom:1px solid var(--border)">
-                <div><p class="text-sm font-semibold" style="color:var(--text-primary)">Children</p><p class="text-xs" style="color:var(--text-muted)">Age 0–17</p></div>
-                <div class="flex items-center gap-4">
-                  <button type="button" onclick="event.stopPropagation();addRemoveChild('h',-1)" class="counter-btn">−</button>
-                  <span id="h_children-val" class="text-sm font-bold w-4 text-center" style="color:var(--text-primary)">{{or .Children "0"}}</span>
-                  <button type="button" onclick="event.stopPropagation();addRemoveChild('h',1)" class="counter-btn-plus">+</button>
+              <!-- Children rows -->
+              <div id="h-children-section" style="border-bottom:1px solid var(--border);padding-bottom:8px;margin-bottom:4px">
+                <div class="flex items-center justify-between py-3">
+                  <div><p class="text-sm font-semibold" style="color:var(--text-primary)">Children</p><p class="text-xs" style="color:var(--text-muted)">Age 0–17</p></div>
+                  <button type="button" onclick="event.stopPropagation();addChildRow('h')" class="counter-btn-plus" style="width:auto;border-radius:8px;padding:4px 12px;font-size:12px;font-weight:700">+ Add child</button>
                 </div>
+                <div id="h-child-rows"></div>
+                <input type="hidden" id="h_children-val" value="{{or .Children "0"}}" />
               </div>
-              <div id="h-child-ages" class="space-y-2 pb-2"></div>
               <div class="flex items-center justify-between py-3">
                 <div><p class="text-sm font-semibold" style="color:var(--text-primary)">Rooms</p></div>
                 <div class="flex items-center gap-4">
@@ -915,15 +930,15 @@
                   <button type="button" onclick="changeCount('f_adults',1,1,9)" class="counter-btn-plus">+</button>
                 </div>
               </div>
-              <div class="flex items-center justify-between py-3">
-                <div><p class="text-sm font-semibold" style="color:var(--text-primary)">Children</p><p class="text-xs" style="color:var(--text-muted)">Age 2–11</p></div>
-                <div class="flex items-center gap-4">
-                  <button type="button" onclick="event.stopPropagation();addRemoveChild('f',-1)" class="counter-btn">−</button>
-                  <span id="f_children-val" class="text-sm font-bold w-4 text-center" style="color:var(--text-primary)">{{or .Children "0"}}</span>
-                  <button type="button" onclick="event.stopPropagation();addRemoveChild('f',1)" class="counter-btn-plus">+</button>
+              <!-- Children rows -->
+              <div id="f-children-section" style="padding-bottom:8px;margin-bottom:4px">
+                <div class="flex items-center justify-between py-3">
+                  <div><p class="text-sm font-semibold" style="color:var(--text-primary)">Children</p><p class="text-xs" style="color:var(--text-muted)">Age 2–11</p></div>
+                  <button type="button" onclick="event.stopPropagation();addChildRow('f')" class="counter-btn-plus" style="width:auto;border-radius:8px;padding:4px 12px;font-size:12px;font-weight:700">+ Add child</button>
                 </div>
+                <div id="f-child-rows"></div>
+                <input type="hidden" id="f_children-val" value="{{or .Children "0"}}" />
               </div>
-              <div id="f-child-ages" class="space-y-2 pb-2"></div>
               <button type="button" onclick="toggleDropdown('flight-guests-drop')" class="w-full mt-3 py-2.5 rounded-xl text-sm font-bold text-white" style="background:linear-gradient(135deg,#4f46e5,#7c3aed)">Done</button>
             </div>
             <input type="hidden" name="adults" id="f_adults-in" value="{{or .Adults "1"}}" />
@@ -1801,132 +1816,39 @@
 </main>
 
 {{define "car-cards"}}
-<div class="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden card-hover cursor-pointer car-card" data-type="economy" data-trans="auto" data-seats="5" data-price="29" onclick="openCarBooking(this)" data-car="Toyota Yaris 2026" data-provider="Hertz" data-pickup="{{$.PickupCity}}" data-pickupdate="{{$.PickupDate}}" data-dropoff="{{$.DropoffDate}}">
-  <div class="relative h-44 overflow-hidden bg-gray-50 flex items-center justify-center">
-    <img src="/images/cars.jpg" class="w-full h-full object-cover transition-transform duration-500" alt="Toyota Yaris" loading="lazy" />
-    <span class="absolute top-3 left-3 text-xs font-bold px-2.5 py-1 rounded-full text-indigo-700 border border-indigo-200" style="background:rgba(238,242,255,.95)">Economy</span>
-    <span class="absolute top-3 right-3 text-xs font-semibold px-2.5 py-1 rounded-full" style="background:rgba(0,0,0,0.52);color:#fff;backdrop-filter:blur(4px)">Free cancel</span>
+{{range .Cars}}
+<div class="rounded-3xl border shadow-sm overflow-hidden card-hover cursor-pointer car-card"
+  data-type="{{.Category}}" data-trans="{{.Transmission}}"
+  data-seats="{{.Seats}}" data-price="{{printf "%.0f" .PricePerDay}}"
+  onclick="openCarBooking(this)"
+  data-car="{{.CarName}}" data-provider="{{.Provider}}"
+  data-pickup="{{$.PickupCity}}" data-pickupdate="{{$.PickupDate}}" data-dropoff="{{$.DropoffDate}}"
+  style="background:var(--bg-card);border-color:var(--border)">
+  <div class="relative h-44 overflow-hidden flex items-center justify-center" style="background:var(--bg-card2)">
+    <img src="/images/cars.jpg" class="w-full h-full object-cover transition-transform duration-500" alt="{{.CarName}}" loading="lazy" />
+    <span class="absolute top-3 left-3 text-xs font-bold px-2.5 py-1 rounded-full border" style="background:rgba(238,242,255,.95);color:{{.CategoryColor}};border-color:{{.CategoryColor}}22">{{.Category}}</span>
+    <span class="absolute top-3 right-3 text-xs font-semibold px-2.5 py-1 rounded-full" style="background:rgba(0,0,0,0.52);color:#fff;backdrop-filter:blur(4px)">{{.Badge}}</span>
   </div>
   <div class="p-5">
     <div class="flex items-start justify-between mb-3">
-      <div><p class="font-extrabold text-gray-900">Toyota Yaris 2026</p><p class="text-xs text-gray-400 mt-0.5">or similar</p></div>
-      <div class="text-right"><p class="text-2xl font-extrabold text-gray-900">$29</p><p class="text-xs text-gray-400">/ day</p></div>
+      <div><p class="font-extrabold" style="color:var(--text-primary)">{{.CarName}}</p><p class="text-xs mt-0.5" style="color:var(--text-muted)">or similar</p></div>
+      <div class="text-right">
+        {{if gt .OriginalPrice 0.0}}<p class="text-sm line-through" style="color:var(--text-muted)">${{printf "%.0f" .OriginalPrice}}</p>{{end}}
+        <p class="text-2xl font-extrabold" style="color:var(--text-primary)">${{printf "%.0f" .PricePerDay}}</p>
+        <p class="text-xs" style="color:var(--text-muted)">/ day</p>
+      </div>
     </div>
-    <div class="flex gap-4 text-xs text-gray-500 mb-4 flex-wrap">
-      <span class="flex items-center gap-1"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v2h20v-2c0-3.3-6.7-5-10-5z"/></svg>5 seats</span>
-      <span>4 doors</span><span>Automatic</span><span>A/C</span>
+    <div class="flex gap-4 text-xs mb-4 flex-wrap" style="color:var(--text-muted)">
+      <span class="flex items-center gap-1"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v2h20v-2c0-3.3-6.7-5-10-5z"/></svg>{{.Seats}} seats</span>
+      <span>{{.Doors}} doors</span><span>{{.Transmission}}</span><span>A/C</span>
     </div>
-    <div class="flex items-center justify-between pt-3 border-t border-gray-100">
-      <img src="https://logo.clearbit.com/hertz.com" alt="Hertz" class="h-5 object-contain" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'text-xs font-bold text-gray-400',textContent:'HERTZ'}))" />
+    <div class="flex items-center justify-between pt-3" style="border-top:1px solid var(--border)">
+      <img src="{{.ProviderLogo}}" alt="{{.Provider}}" class="h-5 object-contain" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'text-xs font-bold',style:'color:var(--text-muted)',textContent:'{{.Provider}}'}))"/>
       <button class="text-xs font-bold text-white px-5 py-2 rounded-xl" style="background:linear-gradient(135deg,#4f46e5,#7c3aed)">Reserve</button>
     </div>
   </div>
 </div>
-<div class="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden card-hover cursor-pointer car-card" data-type="compact" data-trans="auto" data-seats="5" data-price="38" onclick="openCarBooking(this)" data-car="Volkswagen Golf 2026" data-provider="Avis" data-pickup="{{$.PickupCity}}" data-pickupdate="{{$.PickupDate}}" data-dropoff="{{$.DropoffDate}}">
-  <div class="relative h-44 overflow-hidden bg-gray-50">
-    <img src="/images/cars.jpg" class="w-full h-full object-cover transition-transform duration-500" alt="Volkswagen Golf" loading="lazy" />
-    <span class="absolute top-3 left-3 text-xs font-bold px-2.5 py-1 rounded-full text-sky-700 border border-sky-200" style="background:rgba(240,249,255,.95)">Compact</span>
-    <span class="absolute top-3 right-3 text-xs font-semibold px-2.5 py-1 rounded-full" style="background:rgba(0,0,0,0.52);color:#fff;backdrop-filter:blur(4px)">Free cancel</span>
-  </div>
-  <div class="p-5">
-    <div class="flex items-start justify-between mb-3">
-      <div><p class="font-extrabold text-gray-900">Volkswagen Golf 2026</p><p class="text-xs text-gray-400 mt-0.5">or similar</p></div>
-      <div class="text-right"><p class="text-2xl font-extrabold text-gray-900">$38</p><p class="text-xs text-gray-400">/ day</p></div>
-    </div>
-    <div class="flex gap-4 text-xs text-gray-500 mb-4 flex-wrap">
-      <span class="flex items-center gap-1"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v2h20v-2c0-3.3-6.7-5-10-5z"/></svg>5 seats</span>
-      <span>4 doors</span><span>Automatic</span><span>A/C</span>
-    </div>
-    <div class="flex items-center justify-between pt-3 border-t border-gray-100">
-      <img src="https://logo.clearbit.com/avis.com" alt="Avis" class="h-5 object-contain" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'text-xs font-bold text-gray-400',textContent:'AVIS'}))" />
-      <button class="text-xs font-bold text-white px-5 py-2 rounded-xl" style="background:linear-gradient(135deg,#4f46e5,#7c3aed)">Reserve</button>
-    </div>
-  </div>
-</div>
-<div class="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden card-hover cursor-pointer car-card" data-type="suv" data-trans="auto" data-seats="7" data-price="62" onclick="openCarBooking(this)" data-car="Toyota RAV4 2026" data-provider="Sixt" data-pickup="{{$.PickupCity}}" data-pickupdate="{{$.PickupDate}}" data-dropoff="{{$.DropoffDate}}">
-  <div class="relative h-44 overflow-hidden bg-gray-50">
-    <img src="/images/cars.jpg" class="w-full h-full object-cover transition-transform duration-500" alt="Toyota RAV4" loading="lazy" />
-    <span class="absolute top-3 left-3 text-xs font-bold px-2.5 py-1 rounded-full text-amber-700 border border-amber-200" style="background:rgba(255,251,235,.95)">SUV</span>
-    <span class="absolute top-3 right-3 text-xs font-semibold px-2.5 py-1 rounded-full" style="background:rgba(0,0,0,0.52);color:#fff;backdrop-filter:blur(4px)">Unlimited km</span>
-  </div>
-  <div class="p-5">
-    <div class="flex items-start justify-between mb-3">
-      <div><p class="font-extrabold text-gray-900">Toyota RAV4 2026</p><p class="text-xs text-gray-400 mt-0.5">or similar</p></div>
-      <div class="text-right"><p class="text-2xl font-extrabold text-gray-900">$62</p><p class="text-xs text-gray-400">/ day</p></div>
-    </div>
-    <div class="flex gap-4 text-xs text-gray-500 mb-4 flex-wrap">
-      <span class="flex items-center gap-1"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v2h20v-2c0-3.3-6.7-5-10-5z"/></svg>7 seats</span>
-      <span>5 doors</span><span>Automatic</span><span>A/C</span>
-    </div>
-    <div class="flex items-center justify-between pt-3 border-t border-gray-100">
-      <img src="https://logo.clearbit.com/sixt.com" alt="Sixt" class="h-5 object-contain" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'text-xs font-bold text-gray-400',textContent:'SIXT'}))" />
-      <button class="text-xs font-bold text-white px-5 py-2 rounded-xl" style="background:linear-gradient(135deg,#4f46e5,#7c3aed)">Reserve</button>
-    </div>
-  </div>
-</div>
-<div class="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden card-hover cursor-pointer car-card" data-type="luxury" data-trans="auto" data-seats="5" data-price="145" onclick="openCarBooking(this)" data-car="Mercedes-Benz C-Class 2026" data-provider="Europcar" data-pickup="{{$.PickupCity}}" data-pickupdate="{{$.PickupDate}}" data-dropoff="{{$.DropoffDate}}">
-  <div class="relative h-44 overflow-hidden bg-gray-50">
-    <img src="/images/cars.jpg" class="w-full h-full object-cover transition-transform duration-500" alt="Mercedes C-Class" loading="lazy" />
-    <span class="absolute top-3 left-3 text-xs font-bold px-2.5 py-1 rounded-full text-violet-700 border border-violet-200" style="background:rgba(245,243,255,.95)">Luxury</span>
-    <span class="absolute top-3 right-3 text-xs font-semibold px-2.5 py-1 rounded-full" style="background:rgba(0,0,0,0.52);color:#fff;backdrop-filter:blur(4px)">Free cancel</span>
-  </div>
-  <div class="p-5">
-    <div class="flex items-start justify-between mb-3">
-      <div><p class="font-extrabold text-gray-900">Mercedes-Benz C-Class</p><p class="text-xs text-gray-400 mt-0.5">or similar</p></div>
-      <div class="text-right"><p class="text-2xl font-extrabold text-gray-900">$145</p><p class="text-xs text-gray-400">/ day</p></div>
-    </div>
-    <div class="flex gap-4 text-xs text-gray-500 mb-4 flex-wrap">
-      <span class="flex items-center gap-1"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v2h20v-2c0-3.3-6.7-5-10-5z"/></svg>5 seats</span>
-      <span>4 doors</span><span>Automatic</span><span>Leather A/C</span>
-    </div>
-    <div class="flex items-center justify-between pt-3 border-t border-gray-100">
-      <img src="https://logo.clearbit.com/europcar.com" alt="Europcar" class="h-5 object-contain" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'text-xs font-bold text-gray-400',textContent:'EUROPCAR'}))" />
-      <button class="text-xs font-bold text-white px-5 py-2 rounded-xl" style="background:linear-gradient(135deg,#4f46e5,#7c3aed)">Reserve</button>
-    </div>
-  </div>
-</div>
-<div class="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden card-hover cursor-pointer car-card" data-type="economy" data-trans="manual" data-seats="4" data-price="24" onclick="openCarBooking(this)" data-car="Fiat 500 2026" data-provider="Budget" data-pickup="{{$.PickupCity}}" data-pickupdate="{{$.PickupDate}}" data-dropoff="{{$.DropoffDate}}">
-  <div class="relative h-44 overflow-hidden bg-gray-50">
-    <img src="/images/cars.jpg" class="w-full h-full object-cover transition-transform duration-500" alt="Fiat 500" loading="lazy" />
-    <span class="absolute top-3 left-3 text-xs font-bold px-2.5 py-1 rounded-full text-indigo-700 border border-indigo-200" style="background:rgba(238,242,255,.95)">Economy</span>
-    <span class="absolute top-3 right-3 text-xs font-semibold px-2.5 py-1 rounded-full" style="background:rgba(0,0,0,0.52);color:#fff;backdrop-filter:blur(4px)">-20% today</span>
-  </div>
-  <div class="p-5">
-    <div class="flex items-start justify-between mb-3">
-      <div><p class="font-extrabold text-gray-900">Fiat 500 2026</p><p class="text-xs text-gray-400 mt-0.5">or similar</p></div>
-      <div class="text-right"><p class="text-sm line-through text-gray-300">$30</p><p class="text-2xl font-extrabold text-gray-900">$24</p><p class="text-xs text-gray-400">/ day</p></div>
-    </div>
-    <div class="flex gap-4 text-xs text-gray-500 mb-4 flex-wrap">
-      <span class="flex items-center gap-1"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v2h20v-2c0-3.3-6.7-5-10-5z"/></svg>4 seats</span>
-      <span>3 doors</span><span>Manual</span><span>A/C</span>
-    </div>
-    <div class="flex items-center justify-between pt-3 border-t border-gray-100">
-      <img src="https://logo.clearbit.com/budget.com" alt="Budget" class="h-5 object-contain" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'text-xs font-bold text-gray-400',textContent:'BUDGET'}))" />
-      <button class="text-xs font-bold text-white px-5 py-2 rounded-xl" style="background:linear-gradient(135deg,#4f46e5,#7c3aed)">Reserve</button>
-    </div>
-  </div>
-</div>
-<div class="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden card-hover cursor-pointer car-card" data-type="suv" data-trans="auto" data-seats="5" data-price="78" onclick="openCarBooking(this)" data-car="BMW X3 2026" data-provider="Hertz" data-pickup="{{$.PickupCity}}" data-pickupdate="{{$.PickupDate}}" data-dropoff="{{$.DropoffDate}}">
-  <div class="relative h-44 overflow-hidden bg-gray-50">
-    <img src="/images/cars.jpg" class="w-full h-full object-cover transition-transform duration-500" alt="BMW X3" loading="lazy" />
-    <span class="absolute top-3 left-3 text-xs font-bold px-2.5 py-1 rounded-full text-amber-700 border border-amber-200" style="background:rgba(255,251,235,.95)">SUV</span>
-    <span class="absolute top-3 right-3 text-xs font-semibold px-2.5 py-1 rounded-full" style="background:rgba(0,0,0,0.52);color:#fff;backdrop-filter:blur(4px)">Free cancel</span>
-  </div>
-  <div class="p-5">
-    <div class="flex items-start justify-between mb-3">
-      <div><p class="font-extrabold text-gray-900">BMW X3 2026</p><p class="text-xs text-gray-400 mt-0.5">or similar</p></div>
-      <div class="text-right"><p class="text-2xl font-extrabold text-gray-900">$78</p><p class="text-xs text-gray-400">/ day</p></div>
-    </div>
-    <div class="flex gap-4 text-xs text-gray-500 mb-4 flex-wrap">
-      <span class="flex items-center gap-1"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v2h20v-2c0-3.3-6.7-5-10-5z"/></svg>5 seats</span>
-      <span>5 doors</span><span>Automatic</span><span>A/C</span>
-    </div>
-    <div class="flex items-center justify-between pt-3 border-t border-gray-100">
-      <img src="https://logo.clearbit.com/hertz.com" alt="Hertz" class="h-5 object-contain" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'text-xs font-bold text-gray-400',textContent:'HERTZ'}))" />
-      <button class="text-xs font-bold text-white px-5 py-2 rounded-xl" style="background:linear-gradient(135deg,#4f46e5,#7c3aed)">Reserve</button>
-    </div>
-  </div>
-</div>
+{{end}}
 {{end}}
 
 {{define "flight-card"}}
@@ -2281,15 +2203,7 @@ function setLoading(form) {
 // Bookings
 function getBookings() { return JSON.parse(localStorage.getItem('tm_bookings') || '[]'); }
 function saveBookings(b) { localStorage.setItem('tm_bookings', JSON.stringify(b)); }
-function updateBadge() {
-  const b = getBookings();
-  ['booking-badge','booking-badge-mobile'].forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.textContent = b.length;
-    el.style.display = b.length === 0 ? 'none' : 'flex';
-  });
-}
+function updateBadge() {}
 
 function cancelBooking(id) {
   const b = getBookings().filter(x => x.id !== id);
@@ -2521,8 +2435,8 @@ function toggleMobileMenu() {
 }
 
 // ── Currency ─────────────────────────────────────────────────────────────────
-const CURRENCY_RATES = { EUR: 0.92, USD: 1.0, TRY: 32.0 };
-const CURRENCY_SYMBOLS = { EUR: '€', USD: '$', TRY: '₺' };
+const CURRENCY_RATES = { EUR: 0.92, USD: 1.0, GBP: 0.79, TRY: 32.0 };
+const CURRENCY_SYMBOLS = { EUR: '€', USD: '$', GBP: '£', TRY: '₺' };
 
 function setCurrency(code) {
   localStorage.setItem('currency', code);
@@ -2580,6 +2494,12 @@ function updateThemeIcon(theme) {
   }
 }
 
+// ── Supabase Auth ─────────────────────────────────────────────────────────────
+const _sb = supabase.createClient(
+  'https://isrbbnxgjmlkcetwguom.supabase.co',
+  'sb_publishable_q3YOJMmUh6jehr2GdtT9Yw_bfFgnRgS'
+);
+
 function openSignIn() {
   document.getElementById('signin-modal').classList.remove('hidden');
 }
@@ -2592,38 +2512,97 @@ function openRegister() {
 function closeRegister() {
   document.getElementById('register-modal').classList.add('hidden');
 }
-function switchToRegister() {
-  closeSignIn();
-  openRegister();
+function switchToRegister() { closeSignIn(); openRegister(); }
+function switchToSignIn()   { closeRegister(); openSignIn(); }
+
+function toggleUserMenu() {
+  document.getElementById('user-menu').classList.toggle('hidden');
 }
-function switchToSignIn() {
-  closeRegister();
-  openSignIn();
+document.addEventListener('click', function(e) {
+  const menu = document.getElementById('user-menu');
+  if (menu && !menu.classList.contains('hidden') && !e.target.closest('#auth-signed-in')) {
+    menu.classList.add('hidden');
+  }
+});
+
+function setAuthUI(user) {
+  const out = document.getElementById('auth-signed-out');
+  const inn = document.getElementById('auth-signed-in');
+  if (!out || !inn) return;
+  if (!user) {
+    out.classList.remove('hidden');
+    inn.classList.add('hidden');
+    return;
+  }
+  out.classList.add('hidden');
+  inn.classList.remove('hidden');
+  const name  = user.user_metadata?.full_name || user.user_metadata?.name || user.email.split('@')[0];
+  const email = user.email;
+  const photo = user.user_metadata?.avatar_url || user.user_metadata?.picture || '';
+  document.getElementById('auth-name').textContent = name;
+  document.getElementById('user-menu-name').textContent = name;
+  document.getElementById('user-menu-email').textContent = email;
+  const avatarEl   = document.getElementById('auth-avatar');
+  const initialsEl = document.getElementById('auth-initials');
+  if (photo) {
+    avatarEl.src = photo;
+    avatarEl.classList.remove('hidden');
+    initialsEl.classList.add('hidden');
+  } else {
+    initialsEl.textContent = name.charAt(0).toUpperCase();
+    initialsEl.classList.remove('hidden');
+    avatarEl.classList.add('hidden');
+  }
 }
-function signInWithGoogle() {
-  showToast('Google sign-in coming soon!');
+
+_sb.auth.getSession().then(({ data }) => setAuthUI(data.session?.user || null));
+_sb.auth.onAuthStateChange((_event, session) => setAuthUI(session?.user || null));
+
+async function signInWithGoogle() {
+  const { error } = await _sb.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.origin }
+  });
+  if (error) showToast('Google sign-in failed: ' + error.message);
 }
-function submitSignIn() {
+
+async function submitSignIn() {
   const email = document.getElementById('si-email').value.trim();
   const pass  = document.getElementById('si-password').value;
   const err   = document.getElementById('si-error');
   if (!email.includes('@')) { err.textContent = 'Enter a valid email.'; err.classList.remove('hidden'); return; }
   if (pass.length < 6)      { err.textContent = 'Password must be at least 6 characters.'; err.classList.remove('hidden'); return; }
   err.classList.add('hidden');
-  showToast('Sign-in backend not connected yet.');
+  const { error } = await _sb.auth.signInWithPassword({ email, password: pass });
+  if (error) { err.textContent = error.message; err.classList.remove('hidden'); return; }
+  closeSignIn();
+  showToast('Welcome back!');
 }
-function submitRegister() {
+
+async function submitRegister() {
   const first = document.getElementById('reg-first').value.trim();
   const last  = document.getElementById('reg-last').value.trim();
   const email = document.getElementById('reg-email').value.trim();
   const pass  = document.getElementById('reg-password').value;
   const err   = document.getElementById('reg-error');
-  if (!first)                { err.textContent = 'First name is required.'; err.classList.remove('hidden'); return; }
-  if (!last)                 { err.textContent = 'Last name is required.'; err.classList.remove('hidden'); return; }
-  if (!email.includes('@'))  { err.textContent = 'Enter a valid email.'; err.classList.remove('hidden'); return; }
-  if (pass.length < 8)       { err.textContent = 'Password must be at least 8 characters.'; err.classList.remove('hidden'); return; }
+  if (!first)               { err.textContent = 'First name is required.'; err.classList.remove('hidden'); return; }
+  if (!last)                { err.textContent = 'Last name is required.'; err.classList.remove('hidden'); return; }
+  if (!email.includes('@')) { err.textContent = 'Enter a valid email.'; err.classList.remove('hidden'); return; }
+  if (pass.length < 8)      { err.textContent = 'Password must be at least 8 characters.'; err.classList.remove('hidden'); return; }
   err.classList.add('hidden');
-  showToast('Registration backend not connected yet.');
+  const { error } = await _sb.auth.signUp({
+    email, password: pass,
+    options: { data: { full_name: first + ' ' + last } }
+  });
+  if (error) { err.textContent = error.message; err.classList.remove('hidden'); return; }
+  closeRegister();
+  showToast('Account created! Check your email to confirm.');
+}
+
+async function signOut() {
+  await _sb.auth.signOut();
+  document.getElementById('user-menu').classList.add('hidden');
+  showToast('Signed out.');
 }
 
 function toggleBookings() {
@@ -3009,44 +2988,60 @@ function changeCount(key, delta, min, max) {
   updateGuestLabel();
 }
 
-function addRemoveChild(prefix, delta) {
-  const valEl = document.getElementById(prefix + '_children-val');
-  const inEl  = document.getElementById(prefix + '_children-in');
-  const container = document.getElementById(prefix + '-child-ages');
-  let val = parseInt(valEl.textContent) + delta;
-  if (val < 0) val = 0;
-  if (val > 6) val = 6;
-  valEl.textContent = val;
-  if (inEl) inEl.value = val;
-  if (!container) { updateGuestLabel(); return; }
-  // sync age rows to match count
-  const existing = container.querySelectorAll('.child-age-row');
-  if (delta > 0) {
-    const idx = existing.length + 1;
-    const row = document.createElement('div');
-    row.className = 'child-age-row flex items-center justify-between gap-3 pt-2';
-    row.style.borderTop = '1px solid var(--border)';
-    row.innerHTML = `
-      <span style="font-size:13px;color:var(--text-secondary)">Child ${idx} age</span>
-      <select name="childAge${idx}" onclick="event.stopPropagation()"
-        style="font-size:13px;font-weight:600;padding:5px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg-card2);color:var(--text-primary);cursor:pointer;outline:none">
-        ${[...Array(18)].map((_,i)=>`<option value="${i}">${i === 0 ? 'Under 1' : i + ' year' + (i>1?'s':'')}</option>`).join('')}
-      </select>`;
-    container.appendChild(row);
-  } else if (delta < 0 && existing.length > 0) {
-    existing[existing.length - 1].remove();
+function addChildRow(prefix) {
+  const container = document.getElementById(prefix + '-child-rows');
+  const hiddenEl  = document.getElementById(prefix + '_children-val');
+  if (!container || !hiddenEl) return;
+  const count = container.querySelectorAll('.child-row').length;
+  if (count >= 6) return;
+  const idx = count + 1;
+  const ageOpts = [...Array(18)].map((_,i) =>
+    `<option value="${i}">${i === 0 ? 'Under 1' : i + ' yr' + (i > 1 ? 's' : '')}</option>`
+  ).join('');
+  const row = document.createElement('div');
+  row.className = 'child-row flex items-center justify-between gap-2 py-2';
+  row.style.borderTop = '1px solid var(--border)';
+  row.innerHTML = `
+    <span style="font-size:13px;font-weight:600;color:var(--text-primary)">Child ${idx}</span>
+    <div class="flex items-center gap-2">
+      <select onclick="event.stopPropagation()"
+        style="font-size:12px;font-weight:600;padding:4px 8px;border-radius:8px;border:1px solid var(--border);background:var(--bg-card2);color:var(--text-primary);cursor:pointer;outline:none">
+        ${ageOpts}
+      </select>
+      <button type="button" onclick="event.stopPropagation();removeChildRow(this,'${prefix}')"
+        style="width:24px;height:24px;border-radius:50%;border:1px solid var(--border);background:var(--bg-card2);color:var(--text-muted);font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center">×</button>
+    </div>`;
+  container.appendChild(row);
+  hiddenEl.value = container.querySelectorAll('.child-row').length;
+  updateGuestLabel();
+}
+
+function removeChildRow(btn, prefix) {
+  const row = btn.closest('.child-row');
+  const container = document.getElementById(prefix + '-child-rows');
+  const hiddenEl  = document.getElementById(prefix + '_children-val');
+  if (row) row.remove();
+  // re-label remaining rows
+  if (container) {
+    container.querySelectorAll('.child-row').forEach((r, i) => {
+      const label = r.querySelector('span');
+      if (label) label.textContent = 'Child ' + (i + 1);
+    });
+    if (hiddenEl) hiddenEl.value = container.querySelectorAll('.child-row').length;
   }
   updateGuestLabel();
 }
 
 function updateGuestLabel() {
   const ha = parseInt(document.getElementById('h_adults-val')?.textContent || 2);
-  const hc = parseInt(document.getElementById('h_children-val')?.textContent || 0);
+  const hcEl = document.getElementById('h_children-val');
+  const hc = parseInt(hcEl ? (hcEl.tagName === 'INPUT' ? hcEl.value : hcEl.textContent) : 0) || 0;
   const hr = parseInt(document.getElementById('h_rooms-val')?.textContent || 1);
   const hl = document.getElementById('hotel-guests-label');
   if (hl) hl.textContent = `${ha} Adult${ha>1?'s':''}${hc>0?', '+hc+' Child'+(hc>1?'ren':''):''} · ${hr} Room${hr>1?'s':''}`;
   const fa = parseInt(document.getElementById('f_adults-val')?.textContent || 1);
-  const fc = parseInt(document.getElementById('f_children-val')?.textContent || 0);
+  const fcEl = document.getElementById('f_children-val');
+  const fc = parseInt(fcEl ? (fcEl.tagName === 'INPUT' ? fcEl.value : fcEl.textContent) : 0) || 0;
   const fl = document.getElementById('flight-guests-label');
   if (fl) fl.textContent = `${fa} Adult${fa>1?'s':''}${fc>0?' · '+fc+' Child'+(fc>1?'ren':''):''}`;
 }
@@ -3179,6 +3174,14 @@ function openCarBooking(card) {
 let carActiveFilter = 'all';
 let carActiveTrans = 'all';
 
+function searchCarCity(city) {
+  const form = document.getElementById('cars-form');
+  if (!form) return;
+  const pickup = form.querySelector('[name="pickup"]');
+  if (pickup) pickup.value = city;
+  form.submit();
+}
+
 function filterCars(val) {
   const typeFilters = ['all','economy','compact','suv','luxury'];
   const transFilters = ['auto','manual'];
@@ -3215,8 +3218,8 @@ function sortCars(key) {
 
 function applyCarFilters() {
   document.querySelectorAll('.car-card').forEach(c => {
-    const typeOk = carActiveFilter === 'all' || c.dataset.type === carActiveFilter;
-    const transOk = carActiveTrans === 'all' || c.dataset.trans === carActiveTrans;
+    const typeOk = carActiveFilter === 'all' || c.dataset.type.toLowerCase() === carActiveFilter;
+    const transOk = carActiveTrans === 'all' || c.dataset.trans.toLowerCase() === carActiveTrans;
     c.style.display = (typeOk && transOk) ? '' : 'none';
   });
 }

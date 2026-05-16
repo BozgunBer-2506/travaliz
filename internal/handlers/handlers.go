@@ -48,6 +48,7 @@ type pageData struct {
 	Hotels       []proxy.HotelData
 	Flights      []proxy.FlightData
 	FlightLegs   []FlightLeg
+	Cars         []proxy.CarData
 	PickupCity   string
 	PickupDate   string
 	DropoffDate  string
@@ -261,6 +262,11 @@ func (h *TravelHandler) CarsHandler(w http.ResponseWriter, r *http.Request) {
 	if pd.DropoffDate == "" {
 		pd.DropoffDate = time.Now().AddDate(0, 0, 7).Format("2006-01-02")
 	}
+	seedCity := pd.PickupCity
+	if seedCity == "" {
+		seedCity = "featured"
+	}
+	pd.Cars = h.ProxyClient.FetchCarsByCity(seedCity)
 	h.render(w, pd)
 }
 
