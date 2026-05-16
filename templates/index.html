@@ -246,6 +246,20 @@
 <!-- Toast -->
 <div id="toast" class="toast"></div>
 
+<!-- Cookie Banner -->
+<div id="cookie-banner" class="fixed bottom-0 left-0 right-0 z-[9998] px-4 py-4 md:px-8" style="background:var(--bg-card);border-top:1px solid var(--border)">
+  <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center gap-4">
+    <div class="flex-1">
+      <p class="text-sm font-semibold mb-0.5" style="color:var(--text-primary)">We use cookies</p>
+      <p class="text-xs" style="color:var(--text-muted)">We use cookies to improve your experience, remember preferences, and analyse traffic. By continuing you agree to our use of cookies.</p>
+    </div>
+    <div class="flex items-center gap-2 shrink-0">
+      <button onclick="acceptCookies('essential')" class="px-4 py-2 rounded-xl text-xs font-semibold transition-all" style="border:1px solid var(--border);background:var(--bg-card2);color:var(--text-muted)">Essential only</button>
+      <button onclick="acceptCookies('all')" class="px-4 py-2 rounded-xl text-xs font-bold text-white transition-all" style="background:linear-gradient(135deg,#4f46e5,#7c3aed)">Accept all</button>
+    </div>
+  </div>
+</div>
+
 <!-- Scroll to top -->
 <button id="scroll-top-btn" onclick="window.scrollTo({top:0,behavior:'smooth'})"
   title="Back to top"
@@ -562,118 +576,129 @@
 
 <!-- Sign In Modal -->
 <div id="signin-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(15,15,30,0.75);backdrop-filter:blur(8px)" onclick="if(event.target===this)closeSignIn()">
-  <div class="w-full rounded-3xl shadow-2xl overflow-hidden" style="max-width:420px;background:var(--bg-card);color:var(--text-primary)" onclick="event.stopPropagation()">
+  <div class="w-full rounded-3xl shadow-2xl overflow-hidden" style="max-width:420px;background:var(--bg-card);border:1px solid var(--border)" onclick="event.stopPropagation()">
     <div class="p-8">
       <div class="flex items-center justify-between mb-6">
         <div>
-          <h2 class="text-2xl font-extrabold text-gray-900">Welcome back</h2>
-          <p class="text-sm text-gray-400 mt-0.5">Sign in to your travaliz.com account</p>
+          <h2 class="text-2xl font-extrabold" style="color:var(--text-primary)">Welcome back</h2>
+          <p class="text-sm mt-0.5" style="color:var(--text-muted)">Sign in to your travaliz.com account</p>
         </div>
-        <button onclick="closeSignIn()" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 text-lg transition-colors">&times;</button>
+        <button onclick="closeSignIn()" class="w-8 h-8 rounded-full flex items-center justify-center text-lg transition-colors" style="background:var(--bg-card2);color:var(--text-muted)">&times;</button>
       </div>
-
-      <!-- Google button -->
-      <button onclick="signInWithGoogle()" class="w-full flex items-center justify-center gap-3 py-3 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors mb-5">
+      <button onclick="signInWithGoogle()" class="w-full flex items-center justify-center gap-3 py-3 rounded-xl text-sm font-semibold transition-colors mb-5" style="border:1px solid var(--border);background:var(--bg-card2);color:var(--text-primary)">
         <svg class="w-5 h-5" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
         Continue with Google
       </button>
-
       <div class="flex items-center gap-3 mb-5">
-        <div class="flex-1 h-px bg-gray-100"></div>
-        <span class="text-xs text-gray-400 font-medium">or</span>
-        <div class="flex-1 h-px bg-gray-100"></div>
+        <div class="flex-1 h-px" style="background:var(--border)"></div>
+        <span class="text-xs font-medium" style="color:var(--text-muted)">or</span>
+        <div class="flex-1 h-px" style="background:var(--border)"></div>
       </div>
-
       <div class="space-y-3 mb-4">
         <div>
-          <label class="text-xs font-semibold text-gray-500 mb-1 block">Email</label>
-          <input id="si-email" type="email" placeholder="you@example.com"
-            class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all" />
+          <label class="text-xs font-semibold mb-1 block" style="color:var(--text-muted)">Email</label>
+          <input id="si-email" type="email" placeholder="you@example.com" class="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none transition-all" style="border:1px solid var(--border);background:var(--bg-card2);color:var(--text-primary)" />
         </div>
         <div>
-          <label class="text-xs font-semibold text-gray-500 mb-1 block">Password</label>
-          <input id="si-password" type="password" placeholder="••••••••"
-            class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all" />
+          <label class="text-xs font-semibold mb-1 block" style="color:var(--text-muted)">Password</label>
+          <input id="si-password" type="password" placeholder="••••••••" class="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none transition-all" style="border:1px solid var(--border);background:var(--bg-card2);color:var(--text-primary)" />
         </div>
       </div>
       <div class="flex justify-end mb-5">
-        <button class="text-xs text-indigo-500 hover:underline">Forgot password?</button>
+        <button class="text-xs text-indigo-400 hover:underline">Forgot password?</button>
       </div>
-      <p id="si-error" class="text-red-500 text-xs mb-3 hidden"></p>
-      <button onclick="submitSignIn()" class="w-full py-3 rounded-xl text-sm font-bold text-white mb-4 transition-all hover:-translate-y-0.5"
-        style="background:linear-gradient(135deg,#4f46e5,#7c3aed);box-shadow:0 4px 16px rgba(79,70,229,.3)">
-        Sign In
-      </button>
-      <p class="text-center text-sm text-gray-400">
-        No account?
-        <button onclick="switchToRegister()" class="text-indigo-500 font-semibold hover:underline">Create one</button>
-      </p>
+      <p id="si-error" class="text-red-400 text-xs mb-3 hidden"></p>
+      <button onclick="submitSignIn()" class="w-full py-3 rounded-xl text-sm font-bold text-white mb-4 transition-all hover:-translate-y-0.5" style="background:linear-gradient(135deg,#4f46e5,#7c3aed);box-shadow:0 4px 16px rgba(79,70,229,.3)">Sign In</button>
+      <p class="text-center text-sm" style="color:var(--text-muted)">No account? <button onclick="switchToRegister()" class="text-indigo-400 font-semibold hover:underline">Create one</button></p>
     </div>
   </div>
 </div>
 
 <!-- Register Modal -->
 <div id="register-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(15,15,30,0.75);backdrop-filter:blur(8px)" onclick="if(event.target===this)closeRegister()">
-  <div class="w-full rounded-3xl shadow-2xl overflow-hidden" style="max-width:420px;background:var(--bg-card);color:var(--text-primary)" onclick="event.stopPropagation()">
+  <div class="w-full rounded-3xl shadow-2xl overflow-hidden" style="max-width:420px;background:var(--bg-card);border:1px solid var(--border)" onclick="event.stopPropagation()">
     <div class="p-8">
       <div class="flex items-center justify-between mb-6">
         <div>
-          <h2 class="text-2xl font-extrabold text-gray-900">Create account</h2>
-          <p class="text-sm text-gray-400 mt-0.5">Join travaliz.com today</p>
+          <h2 class="text-2xl font-extrabold" style="color:var(--text-primary)">Create account</h2>
+          <p class="text-sm mt-0.5" style="color:var(--text-muted)">Join travaliz.com today</p>
         </div>
-        <button onclick="closeRegister()" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 text-lg transition-colors">&times;</button>
+        <button onclick="closeRegister()" class="w-8 h-8 rounded-full flex items-center justify-center text-lg transition-colors" style="background:var(--bg-card2);color:var(--text-muted)">&times;</button>
       </div>
-
-      <!-- Google button -->
-      <button onclick="signInWithGoogle()" class="w-full flex items-center justify-center gap-3 py-3 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors mb-5">
+      <button onclick="signInWithGoogle()" class="w-full flex items-center justify-center gap-3 py-3 rounded-xl text-sm font-semibold transition-colors mb-5" style="border:1px solid var(--border);background:var(--bg-card2);color:var(--text-primary)">
         <svg class="w-5 h-5" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
         Sign up with Google
       </button>
-
       <div class="flex items-center gap-3 mb-5">
-        <div class="flex-1 h-px bg-gray-100"></div>
-        <span class="text-xs text-gray-400 font-medium">or</span>
-        <div class="flex-1 h-px bg-gray-100"></div>
+        <div class="flex-1 h-px" style="background:var(--border)"></div>
+        <span class="text-xs font-medium" style="color:var(--text-muted)">or</span>
+        <div class="flex-1 h-px" style="background:var(--border)"></div>
       </div>
-
       <div class="space-y-3 mb-5">
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="text-xs font-semibold text-gray-500 mb-1 block">First Name</label>
-            <input id="reg-first" type="text" placeholder="John"
-              class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all" />
+            <label class="text-xs font-semibold mb-1 block" style="color:var(--text-muted)">First Name</label>
+            <input id="reg-first" type="text" placeholder="John" class="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none transition-all" style="border:1px solid var(--border);background:var(--bg-card2);color:var(--text-primary)" />
           </div>
           <div>
-            <label class="text-xs font-semibold text-gray-500 mb-1 block">Last Name</label>
-            <input id="reg-last" type="text" placeholder="Doe"
-              class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all" />
+            <label class="text-xs font-semibold mb-1 block" style="color:var(--text-muted)">Last Name</label>
+            <input id="reg-last" type="text" placeholder="Doe" class="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none transition-all" style="border:1px solid var(--border);background:var(--bg-card2);color:var(--text-primary)" />
           </div>
         </div>
         <div>
-          <label class="text-xs font-semibold text-gray-500 mb-1 block">Email</label>
-          <input id="reg-email" type="email" placeholder="you@example.com"
-            class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all" />
+          <label class="text-xs font-semibold mb-1 block" style="color:var(--text-muted)">Email</label>
+          <input id="reg-email" type="email" placeholder="you@example.com" class="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none transition-all" style="border:1px solid var(--border);background:var(--bg-card2);color:var(--text-primary)" />
         </div>
         <div>
-          <label class="text-xs font-semibold text-gray-500 mb-1 block">Phone</label>
-          <input id="reg-phone" type="tel" placeholder="+1 555 000 0000"
-            class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all" />
+          <label class="text-xs font-semibold mb-1 block" style="color:var(--text-muted)">Phone</label>
+          <input id="reg-phone" type="tel" placeholder="+1 555 000 0000" class="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none transition-all" style="border:1px solid var(--border);background:var(--bg-card2);color:var(--text-primary)" />
         </div>
         <div>
-          <label class="text-xs font-semibold text-gray-500 mb-1 block">Password</label>
-          <input id="reg-password" type="password" placeholder="Min. 8 characters"
-            class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all" />
+          <label class="text-xs font-semibold mb-1 block" style="color:var(--text-muted)">Password</label>
+          <input id="reg-password" type="password" placeholder="Min. 8 characters" class="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none transition-all" style="border:1px solid var(--border);background:var(--bg-card2);color:var(--text-primary)" />
         </div>
       </div>
-      <p id="reg-error" class="text-red-500 text-xs mb-3 hidden"></p>
-      <button onclick="submitRegister()" class="w-full py-3 rounded-xl text-sm font-bold text-white mb-4 transition-all hover:-translate-y-0.5"
-        style="background:linear-gradient(135deg,#4f46e5,#7c3aed);box-shadow:0 4px 16px rgba(79,70,229,.3)">
-        Create Account
-      </button>
-      <p class="text-center text-sm text-gray-400">
-        Already have an account?
-        <button onclick="switchToSignIn()" class="text-indigo-500 font-semibold hover:underline">Sign in</button>
-      </p>
+      <p id="reg-error" class="text-red-400 text-xs mb-3 hidden"></p>
+      <button onclick="submitRegister()" class="w-full py-3 rounded-xl text-sm font-bold text-white mb-4 transition-all hover:-translate-y-0.5" style="background:linear-gradient(135deg,#4f46e5,#7c3aed);box-shadow:0 4px 16px rgba(79,70,229,.3)">Create Account</button>
+      <p class="text-center text-sm" style="color:var(--text-muted)">Already have an account? <button onclick="switchToSignIn()" class="text-indigo-400 font-semibold hover:underline">Sign in</button></p>
+    </div>
+  </div>
+</div>
+
+<!-- Profile Modal -->
+<div id="profile-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(15,15,30,0.75);backdrop-filter:blur(8px)" onclick="if(event.target===this)closeProfile()">
+  <div class="w-full rounded-3xl shadow-2xl overflow-hidden" style="max-width:460px;background:var(--bg-card);border:1px solid var(--border)" onclick="event.stopPropagation()">
+    <div class="p-8">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-xl font-extrabold" style="color:var(--text-primary)">My Account</h2>
+        <button onclick="closeProfile()" class="w-8 h-8 rounded-full flex items-center justify-center text-lg" style="background:var(--bg-card2);color:var(--text-muted)">&times;</button>
+      </div>
+      <div class="flex items-center gap-4 mb-6 pb-6" style="border-bottom:1px solid var(--border)">
+        <img id="profile-avatar" src="" alt="" class="w-16 h-16 rounded-full object-cover hidden" />
+        <div id="profile-initials" class="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold text-white" style="background:linear-gradient(135deg,#4f46e5,#7c3aed)"></div>
+        <div>
+          <p id="profile-name" class="text-lg font-bold" style="color:var(--text-primary)"></p>
+          <p id="profile-email" class="text-sm" style="color:var(--text-muted)"></p>
+        </div>
+      </div>
+      <div class="space-y-3">
+        <div>
+          <label class="text-xs font-semibold mb-1 block" style="color:var(--text-muted)">Full Name</label>
+          <input id="profile-name-input" type="text" class="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none transition-all" style="border:1px solid var(--border);background:var(--bg-card2);color:var(--text-primary)" />
+        </div>
+        <div>
+          <label class="text-xs font-semibold mb-1 block" style="color:var(--text-muted)">Email</label>
+          <input id="profile-email-input" type="email" disabled class="w-full rounded-xl px-4 py-2.5 text-sm opacity-60 cursor-not-allowed" style="border:1px solid var(--border);background:var(--bg-card2);color:var(--text-primary)" />
+        </div>
+        <div>
+          <label class="text-xs font-semibold mb-1 block" style="color:var(--text-muted)">Phone</label>
+          <input id="profile-phone-input" type="tel" placeholder="+1 555 000 0000" class="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none transition-all" style="border:1px solid var(--border);background:var(--bg-card2);color:var(--text-primary)" />
+        </div>
+      </div>
+      <div class="flex gap-3 mt-6">
+        <button onclick="saveProfile()" class="flex-1 py-2.5 rounded-xl text-sm font-bold text-white" style="background:linear-gradient(135deg,#4f46e5,#7c3aed)">Save changes</button>
+        <button onclick="signOut()" class="px-5 py-2.5 rounded-xl text-sm font-semibold text-red-400" style="border:1px solid var(--border);background:var(--bg-card2)">Sign out</button>
+      </div>
     </div>
   </div>
 </div>
@@ -737,7 +762,8 @@
             <p id="user-menu-name" class="text-sm font-bold" style="color:var(--text-primary)"></p>
             <p id="user-menu-email" class="text-xs mt-0.5" style="color:var(--text-muted)"></p>
           </div>
-          <button onclick="signOut()" class="w-full text-left px-4 py-3 text-sm font-semibold text-red-500 hover:bg-red-50 transition-colors">Sign out</button>
+          <button onclick="openProfile()" class="w-full text-left px-4 py-3 text-sm font-semibold transition-colors" style="color:var(--text-primary)">My Account</button>
+          <button onclick="signOut()" class="w-full text-left px-4 py-3 text-sm font-semibold text-red-400 transition-colors" style="border-top:1px solid var(--border)">Sign out</button>
         </div>
       </div>
       <button id="hamburger-btn" onclick="toggleMobileMenu()" class="md:hidden flex flex-col justify-center gap-1.5 w-9 h-9 p-1.5 rounded-lg hover:bg-white/10 transition-colors">
@@ -2186,6 +2212,18 @@ function selectHotelRoom(nightPrice, totalPrice, roomName, nights) {
 function debounce(fn, ms) {
   let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
 }
+function acceptCookies(level) {
+  localStorage.setItem('cookie_consent', level);
+  const banner = document.getElementById('cookie-banner');
+  if (banner) { banner.style.transition = 'opacity 0.3s'; banner.style.opacity = '0'; setTimeout(() => banner.remove(), 300); }
+}
+(function() {
+  if (localStorage.getItem('cookie_consent')) {
+    const b = document.getElementById('cookie-banner');
+    if (b) b.remove();
+  }
+})();
+
 function showToast(msg, isError = false) {
   const el = document.getElementById('toast');
   el.textContent = msg;
@@ -2605,6 +2643,48 @@ async function signOut() {
   showToast('Signed out.');
 }
 
+let _currentUser = null;
+_sb.auth.onAuthStateChange((_e, session) => { _currentUser = session?.user || null; });
+_sb.auth.getSession().then(({ data }) => { _currentUser = data.session?.user || null; });
+
+function openProfile() {
+  document.getElementById('user-menu').classList.add('hidden');
+  const u = _currentUser;
+  if (!u) return;
+  const name  = u.user_metadata?.full_name || u.user_metadata?.name || '';
+  const phone = u.user_metadata?.phone || '';
+  const photo = u.user_metadata?.avatar_url || u.user_metadata?.picture || '';
+  document.getElementById('profile-name').textContent = name || u.email.split('@')[0];
+  document.getElementById('profile-email').textContent = u.email;
+  document.getElementById('profile-name-input').value  = name;
+  document.getElementById('profile-email-input').value = u.email;
+  document.getElementById('profile-phone-input').value = phone;
+  const av = document.getElementById('profile-avatar');
+  const ini = document.getElementById('profile-initials');
+  if (photo) { av.src = photo; av.classList.remove('hidden'); ini.classList.add('hidden'); }
+  else { ini.textContent = (name || u.email).charAt(0).toUpperCase(); ini.classList.remove('hidden'); av.classList.add('hidden'); }
+  document.getElementById('profile-modal').classList.remove('hidden');
+}
+function closeProfile() {
+  document.getElementById('profile-modal').classList.add('hidden');
+}
+async function saveProfile() {
+  const name  = document.getElementById('profile-name-input').value.trim();
+  const phone = document.getElementById('profile-phone-input').value.trim();
+  const { error } = await _sb.auth.updateUser({ data: { full_name: name, phone } });
+  if (error) { showToast('Error: ' + error.message); return; }
+  closeProfile();
+  showToast('Profile updated.');
+}
+
+function requireAuth(callback) {
+  if (_currentUser) { callback(); return; }
+  openSignIn();
+  const unsub = _sb.auth.onAuthStateChange((_e, session) => {
+    if (session?.user) { unsub.data.subscription.unsubscribe(); closeSignIn(); callback(); }
+  });
+}
+
 function toggleBookings() {
   const drawer = document.getElementById('bookings-drawer');
   const overlay = document.getElementById('bookings-overlay');
@@ -2618,7 +2698,21 @@ function toggleBookings() {
 let pendingBooking = null;
 
 function openBookingModal(booking) {
+  requireAuth(() => _doOpenBookingModal(booking));
+}
+function _doOpenBookingModal(booking) {
   pendingBooking = booking;
+  // Pre-fill passenger details from logged-in user
+  if (_currentUser) {
+    const u = _currentUser;
+    const fullName = u.user_metadata?.full_name || u.user_metadata?.name || '';
+    const parts = fullName.split(' ');
+    const el = (id) => document.getElementById(id);
+    if (el('b-first-name') && !el('b-first-name').value) el('b-first-name').value = parts[0] || '';
+    if (el('b-last-name')  && !el('b-last-name').value)  el('b-last-name').value  = parts.slice(1).join(' ') || '';
+    if (el('b-email')      && !el('b-email').value)      el('b-email').value      = u.email || '';
+    if (el('b-phone')      && !el('b-phone').value)      el('b-phone').value      = u.user_metadata?.phone || '';
+  }
   // Header
   const labels = { flight: 'Flight Booking', hotel: 'Hotel Booking', car: 'Car Rental' };
   document.getElementById('modal-header-label').textContent = labels[booking.type] || 'Booking';
