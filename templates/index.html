@@ -225,7 +225,7 @@
 <div id="hotel-detail-modal" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
   style="background:rgba(15,15,30,0.75);backdrop-filter:blur(8px)"
   onclick="if(event.target===this)closeHotelDetail()">
-  <div class="w-full sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col" style="max-width:680px;max-height:92vh;background:#ffffff;color:#0f172a" onclick="event.stopPropagation()">
+  <div class="w-full sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col" style="max-width:680px;max-height:92vh;background:var(--bg-card);color:var(--text-primary)" onclick="event.stopPropagation()">
     <!-- Hero image -->
     <div class="relative shrink-0" style="height:260px;background:linear-gradient(135deg,#312e81,#6366f1)">
       <img id="hd-photo" src="" alt="" referrerpolicy="no-referrer" class="w-full h-full object-cover" onerror="this.src='https://picsum.photos/680/260?random='+Math.floor(Math.random()*200);this.onerror=null" />
@@ -239,29 +239,42 @@
 
     <div class="overflow-y-auto flex-1 p-6">
       <!-- Rating + quick facts -->
-      <div class="flex items-center gap-4 mb-5 pb-5 border-b border-gray-100">
+      <div class="flex items-center gap-4 mb-4 pb-4" style="border-bottom:1px solid var(--border)">
         <div class="flex items-center gap-2">
           <span id="hd-score" class="text-white text-sm font-extrabold px-3 py-1.5 rounded-xl" style="background:#4f46e5"></span>
           <div>
-            <p id="hd-ratingword" class="text-sm font-bold text-gray-900"></p>
-            <p id="hd-reviews" class="text-xs text-gray-400"></p>
+            <p id="hd-ratingword" class="text-sm font-bold" style="color:var(--text-primary)"></p>
+            <p id="hd-reviews" class="text-xs" style="color:var(--text-muted)"></p>
           </div>
         </div>
         <div class="flex-1 flex flex-wrap gap-2" id="hd-badges"></div>
       </div>
 
+      <!-- Price summary -->
+      <div id="hd-price-summary" class="rounded-2xl p-4 mb-5 flex items-center justify-between" style="background:var(--bg-card2);border:1px solid var(--border)">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wider" style="color:var(--text-muted)">Per night</p>
+          <p id="hd-price-night" class="text-2xl font-extrabold" style="color:var(--text-primary)">€0</p>
+        </div>
+        <div style="text-align:right">
+          <p class="text-xs font-semibold uppercase tracking-wider" style="color:var(--text-muted)">Total stay</p>
+          <p id="hd-price-total" class="text-2xl font-extrabold" style="color:#6366f1">€0</p>
+          <p id="hd-nights-label" class="text-xs" style="color:var(--text-muted)"></p>
+        </div>
+      </div>
+
       <!-- Description -->
-      <p id="hd-desc" class="text-sm text-gray-600 leading-relaxed mb-6"></p>
+      <p id="hd-desc" class="text-sm leading-relaxed mb-6" style="color:var(--text-secondary)"></p>
 
       <!-- Amenities -->
       <div class="mb-6">
-        <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Amenities</p>
+        <p class="text-xs font-bold uppercase tracking-widest mb-3" style="color:var(--text-muted)">Amenities</p>
         <div id="hd-amenities" class="grid grid-cols-2 sm:grid-cols-3 gap-2"></div>
       </div>
 
       <!-- Room options -->
       <div class="mb-6">
-        <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Available Rooms</p>
+        <p class="text-xs font-bold uppercase tracking-widest mb-3" style="color:var(--text-muted)">Available Rooms</p>
         <div id="hd-rooms" class="flex flex-col gap-3"></div>
       </div>
     </div>
@@ -683,30 +696,30 @@
               </div>
               <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 text-xs">▾</span>
             </div>
-            <div id="hotel-guests-drop" class="hidden absolute top-full left-0 mt-2 bg-white border border-gray-100 rounded-2xl shadow-2xl z-50 p-5 w-72">
-              <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Guests &amp; Rooms</p>
-              <div class="flex items-center justify-between py-3 border-b border-gray-50">
-                <div><p class="text-sm font-semibold text-gray-800">Adults</p><p class="text-xs text-gray-400">Age 18+</p></div>
+            <div id="hotel-guests-drop" class="hidden absolute top-full left-0 mt-2 rounded-2xl shadow-2xl p-5 w-72" style="z-index:9999;background:var(--bg-card);border:1px solid var(--border)">
+              <p class="text-xs font-bold uppercase tracking-wider mb-4" style="color:var(--text-muted)">Guests &amp; Rooms</p>
+              <div class="flex items-center justify-between py-3" style="border-bottom:1px solid var(--border)">
+                <div><p class="text-sm font-semibold" style="color:var(--text-primary)">Adults</p><p class="text-xs" style="color:var(--text-muted)">Age 18+</p></div>
                 <div class="flex items-center gap-4">
-                  <button type="button" onclick="changeCount('h_adults',-1,1)" class="counter-btn">−</button>
-                  <span id="h_adults-val" class="text-sm font-bold w-4 text-center">{{or .Adults "2"}}</span>
-                  <button type="button" onclick="changeCount('h_adults',1,9)" class="counter-btn-plus">+</button>
+                  <button type="button" onclick="changeCount('h_adults',-1,1,9)" class="counter-btn">−</button>
+                  <span id="h_adults-val" class="text-sm font-bold w-4 text-center" style="color:var(--text-primary)">{{or .Adults "2"}}</span>
+                  <button type="button" onclick="changeCount('h_adults',1,1,9)" class="counter-btn-plus">+</button>
                 </div>
               </div>
-              <div class="flex items-center justify-between py-3 border-b border-gray-50">
-                <div><p class="text-sm font-semibold text-gray-800">Children</p><p class="text-xs text-gray-400">Age 0–17</p></div>
+              <div class="flex items-center justify-between py-3" style="border-bottom:1px solid var(--border)">
+                <div><p class="text-sm font-semibold" style="color:var(--text-primary)">Children</p><p class="text-xs" style="color:var(--text-muted)">Age 0–17</p></div>
                 <div class="flex items-center gap-4">
-                  <button type="button" onclick="changeCount('h_children',-1,0)" class="counter-btn">−</button>
-                  <span id="h_children-val" class="text-sm font-bold w-4 text-center">{{or .Children "0"}}</span>
-                  <button type="button" onclick="changeCount('h_children',1,6)" class="counter-btn-plus">+</button>
+                  <button type="button" onclick="changeCount('h_children',-1,0,6)" class="counter-btn">−</button>
+                  <span id="h_children-val" class="text-sm font-bold w-4 text-center" style="color:var(--text-primary)">{{or .Children "0"}}</span>
+                  <button type="button" onclick="changeCount('h_children',1,0,6)" class="counter-btn-plus">+</button>
                 </div>
               </div>
               <div class="flex items-center justify-between py-3">
-                <div><p class="text-sm font-semibold text-gray-800">Rooms</p></div>
+                <div><p class="text-sm font-semibold" style="color:var(--text-primary)">Rooms</p></div>
                 <div class="flex items-center gap-4">
-                  <button type="button" onclick="changeCount('h_rooms',-1,1)" class="counter-btn">−</button>
-                  <span id="h_rooms-val" class="text-sm font-bold w-4 text-center">{{or .Rooms "1"}}</span>
-                  <button type="button" onclick="changeCount('h_rooms',1,8)" class="counter-btn-plus">+</button>
+                  <button type="button" onclick="changeCount('h_rooms',-1,1,8)" class="counter-btn">−</button>
+                  <span id="h_rooms-val" class="text-sm font-bold w-4 text-center" style="color:var(--text-primary)">{{or .Rooms "1"}}</span>
+                  <button type="button" onclick="changeCount('h_rooms',1,1,8)" class="counter-btn-plus">+</button>
                 </div>
               </div>
               <button type="button" onclick="toggleDropdown('hotel-guests-drop')" class="w-full mt-3 py-2.5 rounded-xl text-sm font-bold text-white" style="background:linear-gradient(135deg,#4f46e5,#7c3aed)">Done</button>
@@ -764,22 +777,22 @@
                 <span class="text-gray-400 text-xs">▾</span>
               </div>
             </div>
-            <div id="flight-guests-drop" class="hidden absolute top-full left-0 mt-2 bg-white border border-gray-100 rounded-2xl shadow-2xl z-50 p-5 w-64">
-              <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Passengers</p>
-              <div class="flex items-center justify-between py-3 border-b border-gray-50">
-                <div><p class="text-sm font-semibold text-gray-800">Adults</p><p class="text-xs text-gray-400">Age 12+</p></div>
+            <div id="flight-guests-drop" class="hidden absolute top-full left-0 mt-2 rounded-2xl shadow-2xl p-5 w-64" style="z-index:9999;background:var(--bg-card);border:1px solid var(--border)">
+              <p class="text-xs font-bold uppercase tracking-wider mb-4" style="color:var(--text-muted)">Passengers</p>
+              <div class="flex items-center justify-between py-3" style="border-bottom:1px solid var(--border)">
+                <div><p class="text-sm font-semibold" style="color:var(--text-primary)">Adults</p><p class="text-xs" style="color:var(--text-muted)">Age 12+</p></div>
                 <div class="flex items-center gap-4">
-                  <button type="button" onclick="changeCount('f_adults',-1,1)" class="counter-btn">−</button>
-                  <span id="f_adults-val" class="text-sm font-bold w-4 text-center">{{or .Adults "1"}}</span>
-                  <button type="button" onclick="changeCount('f_adults',1,9)" class="counter-btn-plus">+</button>
+                  <button type="button" onclick="changeCount('f_adults',-1,1,9)" class="counter-btn">−</button>
+                  <span id="f_adults-val" class="text-sm font-bold w-4 text-center" style="color:var(--text-primary)">{{or .Adults "1"}}</span>
+                  <button type="button" onclick="changeCount('f_adults',1,1,9)" class="counter-btn-plus">+</button>
                 </div>
               </div>
               <div class="flex items-center justify-between py-3">
-                <div><p class="text-sm font-semibold text-gray-800">Children</p><p class="text-xs text-gray-400">Age 2–11</p></div>
+                <div><p class="text-sm font-semibold" style="color:var(--text-primary)">Children</p><p class="text-xs" style="color:var(--text-muted)">Age 2–11</p></div>
                 <div class="flex items-center gap-4">
-                  <button type="button" onclick="changeCount('f_children',-1,0)" class="counter-btn">−</button>
-                  <span id="f_children-val" class="text-sm font-bold w-4 text-center">{{or .Children "0"}}</span>
-                  <button type="button" onclick="changeCount('f_children',1,6)" class="counter-btn-plus">+</button>
+                  <button type="button" onclick="changeCount('f_children',-1,0,6)" class="counter-btn">−</button>
+                  <span id="f_children-val" class="text-sm font-bold w-4 text-center" style="color:var(--text-primary)">{{or .Children "0"}}</span>
+                  <button type="button" onclick="changeCount('f_children',1,0,6)" class="counter-btn-plus">+</button>
                 </div>
               </div>
               <button type="button" onclick="toggleDropdown('flight-guests-drop')" class="w-full mt-3 py-2.5 rounded-xl text-sm font-bold text-white" style="background:linear-gradient(135deg,#4f46e5,#7c3aed)">Done</button>
@@ -938,14 +951,27 @@
   <!-- HOTELS -->
   {{if eq .Tab "hotels"}}
   {{if .City}}
-  <div class="flex items-center justify-between mb-8">
+  <div class="flex items-center justify-between mb-4">
     <div>
-      <h2 class="text-2xl font-extrabold text-gray-900">Hotels in <span class="text-indigo-600">{{.City}}</span></h2>
-      <p class="text-sm text-gray-400 mt-1">{{len .Hotels}} properties found</p>
+      <h2 class="text-2xl font-extrabold" style="color:var(--text-primary)">Hotels in <span style="color:#6366f1">{{.City}}</span></h2>
+      <p class="text-sm mt-1" style="color:var(--text-muted)">{{len .Hotels}} properties found</p>
     </div>
   </div>
   {{if .Hotels}}
-  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:20px">
+  <!-- Hotel Filters -->
+  <div class="flex flex-wrap items-center gap-2 mb-6">
+    <span style="font-size:12px;font-weight:600;color:var(--text-muted)">Filter:</span>
+    <button onclick="filterHotels('stars','0')" id="hf-stars-0" class="hf-btn hf-active" style="font-size:12px;font-weight:600;padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:var(--bg-card2);color:var(--text-secondary);cursor:pointer">All Stars</button>
+    <button onclick="filterHotels('stars','3')" id="hf-stars-3" class="hf-btn" style="font-size:12px;font-weight:600;padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:var(--bg-card2);color:var(--text-secondary);cursor:pointer">3★+</button>
+    <button onclick="filterHotels('stars','4')" id="hf-stars-4" class="hf-btn" style="font-size:12px;font-weight:600;padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:var(--bg-card2);color:var(--text-secondary);cursor:pointer">4★+</button>
+    <button onclick="filterHotels('stars','5')" id="hf-stars-5" class="hf-btn" style="font-size:12px;font-weight:600;padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:var(--bg-card2);color:var(--text-secondary);cursor:pointer">5★</button>
+    <span style="width:1px;height:20px;background:var(--border);margin:0 4px"></span>
+    <button onclick="filterHotels('rating','0')" id="hf-rating-0" class="hf-btn hf-active" style="font-size:12px;font-weight:600;padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:var(--bg-card2);color:var(--text-secondary);cursor:pointer">Any Rating</button>
+    <button onclick="filterHotels('rating','7')" id="hf-rating-7" class="hf-btn" style="font-size:12px;font-weight:600;padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:var(--bg-card2);color:var(--text-secondary);cursor:pointer">7.0+</button>
+    <button onclick="filterHotels('rating','8')" id="hf-rating-8" class="hf-btn" style="font-size:12px;font-weight:600;padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:var(--bg-card2);color:var(--text-secondary);cursor:pointer">8.0+</button>
+    <button onclick="filterHotels('rating','9')" id="hf-rating-9" class="hf-btn" style="font-size:12px;font-weight:600;padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:var(--bg-card2);color:var(--text-secondary);cursor:pointer">9.0+</button>
+  </div>
+  <div id="hotel-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:20px">
     {{range .Hotels}}
     <div class="hotel-card"
       data-id="{{.HotelID}}"
@@ -955,6 +981,7 @@
       data-stars="{{.Stars}}"
       data-rating="{{printf "%.1f" .Rating}}"
       data-ratingword="{{.RatingWord}}"
+      data-nights="{{$.Nights}}"
       onclick="openHotelDetail(this)"
       style="cursor:pointer;border-radius:18px;overflow:hidden;border:1px solid var(--border);box-shadow:0 2px 16px rgba(0,0,0,0.07);background:var(--bg-card);transition:transform .18s,box-shadow .18s;display:flex;flex-direction:column"
       onmouseenter="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 32px rgba(0,0,0,0.13)'"
@@ -980,9 +1007,16 @@
         <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px">{{.RatingWord}}</div>
         <div style="display:flex;align-items:center;justify-content:space-between;padding-top:12px;border-top:1px solid var(--border);margin-top:auto">
           <div>
-            <span class="price-display" data-usd="{{printf "%.2f" .Price}}" style="font-size:19px;font-weight:800;color:var(--text-primary)">$0</span>
-            <span style="font-size:11px;color:var(--text-muted);margin-left:2px">/night</span>
-            <div class="price-total" data-nights="{{$.Nights}}" style="font-size:10px;color:var(--text-muted);margin-top:1px"></div>
+            <div style="display:flex;align-items:baseline;gap:3px">
+              <span class="price-display" data-usd="{{printf "%.2f" .Price}}" style="font-size:19px;font-weight:800;color:var(--text-primary)">€0</span>
+              <span style="font-size:11px;color:var(--text-muted)">/night</span>
+            </div>
+            {{if gt $.Nights 1}}
+            <div style="font-size:12px;font-weight:700;color:#6366f1;margin-top:4px">
+              <span class="price-display" data-usd="{{printf "%.2f" .Price}}" data-multiply="{{$.Nights}}">€0</span>
+              <span style="font-weight:500;color:var(--text-muted)"> total · {{$.Nights}} nights</span>
+            </div>
+            {{end}}
           </div>
           <span style="font-size:11px;font-weight:600;color:#6366f1;border:1px solid rgba(99,102,241,0.4);padding:5px 12px;border-radius:10px">View →</span>
         </div>
@@ -1969,6 +2003,28 @@ const roomTypes = {
 
 let currentHotelData = null;
 
+const hotelFilters = { stars: 0, rating: 0 };
+function filterHotels(type, val) {
+  hotelFilters[type] = parseFloat(val);
+  // update button active state
+  document.querySelectorAll('.hf-btn').forEach(b => {
+    b.style.background = 'var(--bg-card2)';
+    b.style.color = 'var(--text-secondary)';
+    b.style.borderColor = 'var(--border)';
+  });
+  const activeId = 'hf-' + type + '-' + val;
+  const activeBtn = document.getElementById(activeId);
+  if (activeBtn) { activeBtn.style.background = '#6366f1'; activeBtn.style.color = '#fff'; activeBtn.style.borderColor = '#6366f1'; }
+  // show/hide cards
+  document.querySelectorAll('.hotel-card').forEach(card => {
+    const stars = parseFloat(card.dataset.stars) || 0;
+    const rating = parseFloat(card.dataset.rating) || 0;
+    const showStars = hotelFilters.stars === 0 || stars >= hotelFilters.stars;
+    const showRating = hotelFilters.rating === 0 || rating >= hotelFilters.rating;
+    card.style.display = (showStars && showRating) ? '' : 'none';
+  });
+}
+
 function openHotelDetail(card) {
   const d = card.dataset;
   const stars = parseInt(d.stars) || 3;
@@ -1983,6 +2039,17 @@ function openHotelDetail(card) {
   document.getElementById('hd-ratingword').textContent = d.ratingword || 'Excellent';
   const reviewCount = 800 + stars * 400 + Math.floor(parseFloat(d.id || 0) * 73) % 900;
   document.getElementById('hd-reviews').textContent = reviewCount.toLocaleString() + ' verified reviews';
+
+  // Price summary
+  const nights = parseInt(d.nights) || 1;
+  const code = localStorage.getItem('currency') || 'EUR';
+  const rate = (typeof CURRENCY_RATES !== 'undefined' ? CURRENCY_RATES[code] : null) || 0.92;
+  const sym = (typeof CURRENCY_SYMBOLS !== 'undefined' ? CURRENCY_SYMBOLS[code] : null) || '€';
+  const nightPrice = Math.round(basePrice * rate);
+  const totalPrice = Math.round(basePrice * rate * nights);
+  document.getElementById('hd-price-night').textContent = sym + nightPrice.toLocaleString();
+  document.getElementById('hd-price-total').textContent = sym + totalPrice.toLocaleString();
+  document.getElementById('hd-nights-label').textContent = nights > 1 ? nights + ' nights' : '1 night';
   document.getElementById('hd-desc').textContent = descMap[stars] || descMap[3];
 
   // Badges
@@ -1994,24 +2061,28 @@ function openHotelDetail(card) {
   // Amenities
   const amenities = amenityMap[stars] || amenityMap[3];
   document.getElementById('hd-amenities').innerHTML = amenities.map(a =>
-    `<div class="flex items-center gap-2 text-sm text-gray-700 bg-gray-50 rounded-xl px-3 py-2">
-      <span class="text-indigo-400 text-base">✓</span>${a}
+    `<div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-secondary);background:var(--bg-card2);border:1px solid var(--border);border-radius:12px;padding:8px 12px">
+      <span style="color:#6366f1;font-size:14px">✓</span>${a}
     </div>`
   ).join('');
 
   // Rooms
   const rooms = roomTypes[stars] || roomTypes[3];
   document.getElementById('hd-rooms').innerHTML = rooms.map(r => {
-    const price = Math.round(basePrice * r.multi);
-    return `<div class="flex items-center justify-between bg-slate-50 rounded-2xl p-4 border border-gray-100">
+    const roomNightPrice = Math.round(basePrice * r.multi * rate);
+    const roomTotalPrice = Math.round(basePrice * r.multi * rate * nights);
+    return `<div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg-card2);border:1px solid var(--border);border-radius:16px;padding:16px">
       <div>
-        <p class="font-bold text-gray-900 text-sm">${r.name}</p>
-        <p class="text-xs text-gray-400 mt-0.5">${r.bed} · ${r.size}</p>
+        <p style="font-weight:700;color:var(--text-primary);font-size:14px">${r.name}</p>
+        <p style="font-size:12px;color:var(--text-muted);margin-top:2px">${r.bed} · ${r.size}</p>
       </div>
-      <div class="text-right flex flex-col items-end gap-2">
-        <div><span class="text-xl font-extrabold text-gray-900">$${price}</span><span class="text-xs text-gray-400">/night</span></div>
-        <button onclick="selectHotelRoom(${price})" class="text-xs font-bold text-white px-4 py-2 rounded-xl transition-all"
-          style="background:linear-gradient(135deg,#4f46e5,#7c3aed)">Book this room</button>
+      <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+        <div>
+          <span style="font-size:18px;font-weight:800;color:var(--text-primary)">${sym}${roomNightPrice.toLocaleString()}</span>
+          <span style="font-size:12px;color:var(--text-muted)">/night</span>
+          ${nights > 1 ? `<div style="font-size:11px;font-weight:700;color:#6366f1">${sym}${roomTotalPrice.toLocaleString()} total</div>` : ''}
+        </div>
+        <button onclick="selectHotelRoom(${roomNightPrice})" style="font-size:12px;font-weight:700;color:#fff;padding:6px 16px;border-radius:10px;border:none;cursor:pointer;background:linear-gradient(135deg,#4f46e5,#7c3aed)">Book</button>
       </div>
     </div>`;
   }).join('');
@@ -2244,16 +2315,9 @@ function applyPrices() {
   });
   document.querySelectorAll('.price-display').forEach(el => {
     const usd = parseFloat(el.dataset.usd) || 0;
-    const converted = Math.round(usd * rate);
+    const mult = parseFloat(el.dataset.multiply) || 1;
+    const converted = Math.round(usd * rate * mult);
     el.textContent = sym + converted.toLocaleString();
-  });
-  document.querySelectorAll('.price-total').forEach(el => {
-    const nights = parseInt(el.dataset.nights) || 0;
-    if (nights < 2) { el.textContent = ''; return; }
-    const priceSpan = el.parentElement.querySelector('.price-display');
-    const usd = priceSpan ? parseFloat(priceSpan.dataset.usd) || 0 : 0;
-    const total = Math.round(usd * rate * nights);
-    el.textContent = sym + total.toLocaleString() + ' total · ' + nights + ' nights';
   });
 }
 
@@ -2700,11 +2764,12 @@ function toggleDropdown(id) {
   }
 }
 
-function changeCount(key, delta, min) {
+function changeCount(key, delta, min, max) {
   const valEl = document.getElementById(key + '-val');
   const inEl  = document.getElementById(key + '-in');
   let val = parseInt(valEl.textContent) + delta;
   if (val < min) val = min;
+  if (max !== undefined && val > max) val = max;
   valEl.textContent = val;
   if (inEl) inEl.value = val;
   updateGuestLabel();
