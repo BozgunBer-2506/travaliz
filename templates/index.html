@@ -200,6 +200,19 @@
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.35); border-radius: 10px; }
     ::-webkit-scrollbar-thumb:hover { background: rgba(99,102,241,0.6); }
+    .hf-select {
+      font-size: 13px; font-weight: 600;
+      padding: 7px 32px 7px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg-card2);
+      color: var(--text-primary);
+      cursor: pointer; outline: none;
+      appearance: none; -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236366f1' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+    }
   </style>
   <script>
     (function() {
@@ -982,22 +995,22 @@
   {{if .Hotels}}
   <!-- Hotel Filters -->
   <div class="flex flex-wrap items-center gap-2 mb-6">
-    <select onchange="setHotelFilter('stars',this.value)" style="font-size:13px;font-weight:600;padding:7px 12px;border-radius:10px;border:1px solid var(--border);background:var(--bg-card2);color:var(--text-primary);cursor:pointer;outline:none;appearance:none;-webkit-appearance:none;padding-right:28px;background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236366f1' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E\");background-repeat:no-repeat;background-position:right 10px center">
+    <select onchange="setHotelFilter('stars',this.value)" class="hf-select">
       <option value="0">⭐ All Stars</option>
       <option value="3">3★ and above</option>
       <option value="4">4★ and above</option>
       <option value="5">5★ only</option>
     </select>
-    <select onchange="setHotelFilter('rating',this.value)" style="font-size:13px;font-weight:600;padding:7px 12px;border-radius:10px;border:1px solid var(--border);background:var(--bg-card2);color:var(--text-primary);cursor:pointer;outline:none;appearance:none;-webkit-appearance:none;padding-right:28px;background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236366f1' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E\");background-repeat:no-repeat;background-position:right 10px center">
+    <select onchange="setHotelFilter('rating',this.value)" class="hf-select">
       <option value="0">🏅 Any Rating</option>
       <option value="7">7.0+ Good</option>
       <option value="8">8.0+ Very Good</option>
       <option value="9">9.0+ Exceptional</option>
     </select>
-    <select onchange="setHotelFilter('sort',this.value)" style="font-size:13px;font-weight:600;padding:7px 12px;border-radius:10px;border:1px solid var(--border);background:var(--bg-card2);color:var(--text-primary);cursor:pointer;outline:none;appearance:none;-webkit-appearance:none;padding-right:28px;background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236366f1' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E\");background-repeat:no-repeat;background-position:right 10px center">
+    <select onchange="setHotelFilter('sort',this.value)" class="hf-select">
       <option value="default">↕ Sort</option>
-      <option value="price-asc">Price: Low → High</option>
-      <option value="price-desc">Price: High → Low</option>
+      <option value="price-asc">Price: Low to High</option>
+      <option value="price-desc">Price: High to Low</option>
       <option value="rating-desc">Rating: Best first</option>
       <option value="stars-desc">Stars: Luxury first</option>
     </select>
