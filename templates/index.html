@@ -447,6 +447,75 @@
   </div>
 </div>
 
+<!-- Booking Detail Modal -->
+<div id="booking-detail-modal" class="hidden fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4"
+  style="background:rgba(15,15,30,0.8);backdrop-filter:blur(8px)"
+  onclick="if(event.target===this)closeBookingDetail()">
+  <div class="w-full sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col" style="max-width:520px;max-height:92vh;background:var(--bg-card);color:var(--text-primary)" onclick="event.stopPropagation()">
+    <!-- Header band -->
+    <div id="bdm-header" class="px-6 py-5 flex items-center gap-4" style="background:linear-gradient(135deg,#4f46e5,#7c3aed)">
+      <div id="bdm-icon" class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl" style="background:rgba(255,255,255,0.15)">🏨</div>
+      <div class="flex-1 min-w-0">
+        <p class="text-xs font-bold uppercase tracking-widest text-white/60 mb-0.5" id="bdm-type-label">Hotel Booking</p>
+        <h3 id="bdm-name" class="text-white font-extrabold text-lg leading-tight truncate"></h3>
+      </div>
+      <button onclick="closeBookingDetail()" class="w-9 h-9 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/20 text-xl transition-colors flex-shrink-0">&times;</button>
+    </div>
+
+    <div class="overflow-y-auto flex-1 p-5 space-y-4">
+      <!-- Status + Ref -->
+      <div class="flex items-center justify-between">
+        <span class="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full" style="background:#d1fae5;color:#065f46">
+          <span style="width:6px;height:6px;border-radius:50%;background:#10b981;display:inline-block"></span>
+          Confirmed
+        </span>
+        <div style="text-align:right">
+          <p class="text-xs" style="color:var(--text-muted)">Reference</p>
+          <p id="bdm-ref" class="text-sm font-black font-mono" style="color:#6366f1"></p>
+        </div>
+      </div>
+
+      <!-- Trip details grid -->
+      <div id="bdm-trip-grid" class="grid grid-cols-2 gap-3"></div>
+
+      <!-- Price breakdown -->
+      <div id="bdm-price-box" class="rounded-2xl p-4" style="background:var(--bg-card2);border:1px solid var(--border)">
+        <p class="text-xs font-bold uppercase tracking-wider mb-3" style="color:var(--text-muted)">Price Details</p>
+        <div id="bdm-price-rows" class="space-y-2"></div>
+        <div class="flex items-center justify-between pt-3 mt-3" style="border-top:1px solid var(--border)">
+          <span class="text-sm font-bold" style="color:var(--text-primary)">Total Charged</span>
+          <span id="bdm-total" class="text-xl font-extrabold" style="color:#6366f1"></span>
+        </div>
+      </div>
+
+      <!-- Passenger info -->
+      <div id="bdm-passenger-box" class="rounded-2xl p-4" style="background:var(--bg-card2);border:1px solid var(--border)">
+        <p class="text-xs font-bold uppercase tracking-wider mb-3" style="color:var(--text-muted)">Passenger / Guest</p>
+        <div id="bdm-passenger-rows" class="space-y-1.5"></div>
+      </div>
+
+      <!-- Booked on -->
+      <p id="bdm-booked-at" class="text-xs text-center" style="color:var(--text-muted)"></p>
+
+      <!-- Actions -->
+      <div class="grid grid-cols-2 gap-3 pt-1">
+        <button id="bdm-whatsapp" onclick="" class="flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-colors" style="background:var(--bg-card2);color:var(--text-secondary);border:1px solid var(--border)">
+          💬 WhatsApp
+        </button>
+        <button id="bdm-calendar" onclick="" class="flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-colors" style="background:var(--bg-card2);color:var(--text-secondary);border:1px solid var(--border)">
+          📅 Calendar
+        </button>
+        <button id="bdm-share" onclick="" class="flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-colors" style="background:var(--bg-card2);color:var(--text-secondary);border:1px solid var(--border)">
+          ↗ Share
+        </button>
+        <button id="bdm-remove" onclick="" class="flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-colors" style="border:1px solid rgba(248,113,113,.4);color:#f87171;background:transparent">
+          🗑 Remove
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Bookings Drawer -->
 <div id="bookings-drawer" class="hidden fixed inset-y-0 right-0 w-96 bg-white shadow-2xl z-50 flex flex-col">
   <div class="flex items-center justify-between px-6 py-5 border-b">
@@ -2233,6 +2302,84 @@ function addToCalendar(item) {
   URL.revokeObjectURL(url);
 }
 
+function openBookingDetail(item) {
+  const modal = document.getElementById('booking-detail-modal');
+  const icon = item.type === 'flight' ? '✈️' : item.type === 'car' ? '🚗' : '🏨';
+  const typeLabel = item.type === 'flight' ? 'Flight Booking' : item.type === 'car' ? 'Car Rental' : 'Hotel Booking';
+
+  document.getElementById('bdm-icon').textContent = icon;
+  document.getElementById('bdm-type-label').textContent = typeLabel;
+  document.getElementById('bdm-name').textContent = item.name || item.hotelName || 'Booking';
+  document.getElementById('bdm-ref').textContent = item.ref || '-';
+  document.getElementById('bdm-booked-at').textContent = 'Booked on ' + new Date(item.at).toLocaleString();
+
+  // Trip details grid
+  let tripCells = [];
+  if (item.type === 'hotel') {
+    tripCells = [
+      { label: 'Check-in', value: item.checkin || '-' },
+      { label: 'Check-out', value: item.checkout || '-' },
+      { label: 'Guest Name', value: (item.firstName||'') + ' ' + (item.lastName||'') },
+      { label: 'Email', value: item.email || '-' },
+    ];
+  } else if (item.type === 'flight') {
+    tripCells = [
+      { label: 'From', value: item.from || '-' },
+      { label: 'To', value: item.to || '-' },
+      { label: 'Date', value: item.date || '-' },
+      { label: 'Airline', value: item.airline || '-' },
+      { label: 'Passenger', value: (item.firstName||'') + ' ' + (item.lastName||'') },
+      { label: 'Email', value: item.email || '-' },
+    ];
+  } else {
+    tripCells = [
+      { label: 'Pick-up', value: item.pickup || '-' },
+      { label: 'Drop-off', value: item.dropoff || '-' },
+      { label: 'Name', value: (item.firstName||'') + ' ' + (item.lastName||'') },
+      { label: 'Email', value: item.email || '-' },
+    ];
+  }
+  document.getElementById('bdm-trip-grid').innerHTML = tripCells.map(c => `
+    <div style="background:var(--bg-card2);border:1px solid var(--border);border-radius:14px;padding:12px 14px">
+      <p style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:4px">${c.label}</p>
+      <p style="font-size:14px;font-weight:700;color:var(--text-primary);word-break:break-all">${c.value}</p>
+    </div>`).join('');
+
+  // Price rows
+  let priceRows = '';
+  if (item.type === 'hotel' && item.checkin && item.checkout) {
+    const ci = new Date(item.checkin), co = new Date(item.checkout);
+    const nights = Math.max(1, Math.round((co - ci) / 86400000));
+    priceRows = `<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--text-secondary)"><span>${nights} night${nights>1?'s':''} × $${item.price}/night</span><span style="font-weight:600">$${(item.price*nights).toLocaleString()}</span></div>`;
+    document.getElementById('bdm-total').textContent = '$' + (item.price * nights).toLocaleString();
+  } else {
+    priceRows = `<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--text-secondary)"><span>Base fare</span><span style="font-weight:600">$${item.price||0}</span></div>`;
+    document.getElementById('bdm-total').textContent = '$' + (item.price||0);
+  }
+  document.getElementById('bdm-price-rows').innerHTML = priceRows;
+
+  // Passenger box
+  const passengerInfo = [
+    item.firstName && item.lastName ? { k: 'Full Name', v: item.firstName + ' ' + item.lastName } : null,
+    item.email ? { k: 'Email', v: item.email } : null,
+    item.phone ? { k: 'Phone', v: item.phone } : null,
+  ].filter(Boolean);
+  document.getElementById('bdm-passenger-rows').innerHTML = passengerInfo.map(r =>
+    `<div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--text-muted)">${r.k}</span><span style="font-weight:600;color:var(--text-primary)">${r.v}</span></div>`
+  ).join('');
+
+  // Action buttons
+  document.getElementById('bdm-whatsapp').onclick = () => shareToWhatsApp(item);
+  document.getElementById('bdm-calendar').onclick = () => addToCalendar(item);
+  document.getElementById('bdm-share').onclick = () => shareBooking(item);
+  document.getElementById('bdm-remove').onclick = () => { cancelBooking(item.id); closeBookingDetail(); };
+
+  modal.classList.remove('hidden');
+}
+function closeBookingDetail() {
+  document.getElementById('booking-detail-modal').classList.add('hidden');
+}
+
 function renderBookings() {
   const list = document.getElementById('bookings-list');
   const noMsg = document.getElementById('no-bookings-msg');
@@ -2241,71 +2388,30 @@ function renderBookings() {
   list.querySelectorAll('.booking-item').forEach(el => el.remove());
   if (b.length === 0) { noMsg && noMsg.classList.remove('hidden'); return; }
   noMsg && noMsg.classList.add('hidden');
-  b.forEach((item, idx) => {
-    const panelId = 'bk-panel-' + idx;
+  b.forEach((item) => {
     const div = document.createElement('div');
     div.className = 'booking-item';
-    div.style.cssText = 'border-radius:14px;border:1px solid var(--border);background:var(--bg-card);margin-bottom:8px;overflow:hidden';
+    div.style.cssText = 'border-radius:14px;border:1px solid var(--border);background:var(--bg-card);margin-bottom:8px;overflow:hidden;cursor:pointer;transition:border-color .15s';
+    div.onmouseenter = () => div.style.borderColor = '#6366f1';
+    div.onmouseleave = () => div.style.borderColor = 'var(--border)';
+    div.onclick = () => openBookingDetail(item);
     const icon = item.type === 'flight' ? '✈️' : item.type === 'car' ? '🚗' : '🏨';
     const sub = item.type === 'flight'
-      ? `${item.from || ''} → ${item.to || ''}`
+      ? (item.from && item.to ? `${item.from} → ${item.to}` : 'Flight')
       : item.type === 'car' ? (item.pickup || 'Car rental')
-      : `${item.checkin || ''} → ${item.checkout || ''}`;
-    const itemJson = JSON.stringify(item).replace(/"/g,'&quot;');
-
-    // Detail rows for expanded panel
-    let detailRows = '';
-    if (item.type === 'hotel') {
-      detailRows = `
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:12px 14px;border-bottom:1px solid var(--border)">
-          <div><p style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);margin-bottom:3px">Check-in</p><p style="font-size:13px;font-weight:700;color:var(--text-primary)">${item.checkin||'-'}</p></div>
-          <div><p style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);margin-bottom:3px">Check-out</p><p style="font-size:13px;font-weight:700;color:var(--text-primary)">${item.checkout||'-'}</p></div>
-          <div><p style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);margin-bottom:3px">Price/night</p><p style="font-size:13px;font-weight:700;color:#6366f1">$${item.price||0}</p></div>
-        </div>`;
-    } else if (item.type === 'flight') {
-      detailRows = `
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 14px;border-bottom:1px solid var(--border)">
-          <div><p style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);margin-bottom:3px">From</p><p style="font-size:13px;font-weight:700;color:var(--text-primary)">${item.from||'-'}</p></div>
-          <div><p style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);margin-bottom:3px">To</p><p style="font-size:13px;font-weight:700;color:var(--text-primary)">${item.to||'-'}</p></div>
-          <div><p style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);margin-bottom:3px">Airline</p><p style="font-size:13px;font-weight:700;color:var(--text-primary)">${item.airline||'-'}</p></div>
-          <div><p style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);margin-bottom:3px">Price</p><p style="font-size:13px;font-weight:700;color:#6366f1">$${item.price||0}</p></div>
-        </div>`;
-    }
-
+      : (item.checkin && item.checkout ? `${item.checkin} → ${item.checkout}` : 'Hotel');
     div.innerHTML = `
-      <div onclick="(function(el){const p=document.getElementById('${panelId}');if(p){const open=p.style.display!=='none';p.style.display=open?'none':'block';el.querySelector('.bk-chevron').style.transform=open?'':'rotate(90deg)'}})(this)"
-        style="display:flex;align-items:center;gap:12px;padding:13px 15px;cursor:pointer;user-select:none">
-        <span style="font-size:22px;flex-shrink:0">${icon}</span>
+      <div style="display:flex;align-items:center;gap:12px;padding:14px 16px">
+        <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#4f46e5,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">${icon}</div>
         <div style="flex:1;min-width:0">
           <p style="font-weight:700;font-size:13px;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.name || 'Booking'}</p>
-          <p style="font-size:11px;color:var(--text-muted);margin-top:2px">${sub || new Date(item.at).toLocaleDateString()}</p>
+          <p style="font-size:11px;color:var(--text-muted);margin-top:2px">${sub}</p>
         </div>
-        <div style="text-align:right;flex-shrink:0;margin-right:6px">
-          ${item.ref ? `<p style="font-size:10px;font-weight:700;color:#6366f1;font-family:monospace">${item.ref}</p>` : ''}
-          <p style="font-size:10px;color:var(--text-muted);margin-top:2px">${new Date(item.at).toLocaleDateString()}</p>
+        <div style="text-align:right;flex-shrink:0">
+          ${item.ref ? `<p style="font-size:10px;font-weight:700;color:#6366f1;font-family:monospace;margin-bottom:3px">${item.ref}</p>` : ''}
+          <span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;background:#d1fae5;color:#065f46">Confirmed</span>
         </div>
-        <span class="bk-chevron" style="color:var(--text-muted);font-size:14px;transition:transform .2s">›</span>
-      </div>
-      <div id="${panelId}" style="display:none">
-        ${detailRows}
-        <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;flex-wrap:wrap">
-          <button onclick="shareToWhatsApp(${itemJson})"
-            style="font-size:11px;font-weight:600;padding:5px 12px;border-radius:8px;background:transparent;color:var(--text-secondary);border:1px solid var(--border);cursor:pointer">
-            💬 WhatsApp
-          </button>
-          <button onclick="addToCalendar(${itemJson})"
-            style="font-size:11px;font-weight:600;padding:5px 12px;border-radius:8px;background:transparent;color:var(--text-secondary);border:1px solid var(--border);cursor:pointer">
-            📅 Calendar
-          </button>
-          <button onclick="shareBooking(${itemJson})"
-            style="font-size:11px;font-weight:600;padding:5px 12px;border-radius:8px;background:transparent;color:var(--text-secondary);border:1px solid var(--border);cursor:pointer">
-            ↗ Share
-          </button>
-          <button onclick="cancelBooking(${item.id})"
-            style="margin-left:auto;font-size:11px;font-weight:600;padding:5px 12px;border-radius:8px;background:transparent;color:#f87171;border:1px solid rgba(248,113,113,.3);cursor:pointer">
-            Remove
-          </button>
-        </div>
+        <span style="color:var(--text-muted);font-size:16px;margin-left:4px">›</span>
       </div>`;
     list.appendChild(div);
   });
