@@ -1,9 +1,12 @@
 package handlers
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
+	"os"
 	"strings"
 
 	"travel-proxy-service/internal/db"
@@ -89,6 +92,8 @@ func (h *TravelHandler) BookHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(BookingResponse{Ref: ref})
+
+	go sendB2BWebhook(booking, ref)
 }
 
 func (h *TravelHandler) MyBookingsHandler(w http.ResponseWriter, r *http.Request) {
@@ -109,6 +114,65 @@ func (h *TravelHandler) MyBookingsHandler(w http.ResponseWriter, r *http.Request
 		bookings = []*db.Booking{}
 	}
 	json.NewEncoder(w).Encode(bookings)
+}
+
+func sendB2BWebhook(b *db.Booking, ref string) {
+	webhookURL := os.Getenv("B2B_WEBHOOK_URL")
+	secret := os.Getenv("B2B_WEBHOOK_SECRET")
+	if webhookURL == "" || secret == "" {
+		return
+	}
+
+	customer := map[string]any{
+		"name":  strings.TrimSpace(b.FirstName + " " + b.LastName),
+		"email": b.Email,
+		"phone": b.Phone,
+	}
+
+	payload := map[string]any{
+		"secret":          secret,
+		"externalOrderId": ref,
+		"customer":        customer,
+	}
+
+	switch b.Type {
+	case "flight":
+		payload["flight"] = map[string]any{
+			"departureAirport": b.FromCode,
+			"arrivalAirport":   b.ToCode,
+			"airline":          b.Airline,
+			"flightNumber":     b.Airline,
+			"departureDate":    b.DepartTime,
+			"arrivalDate":      b.ArriveTime,
+			"price":            b.Price,
+			"flightClass":      "economy",
+			"passengerCount":   1,
+		}
+	case "hotel":
+		payload["hotel"] = map[string]any{
+			"hotelName":  b.HotelName,
+			"city":       b.ToCode,
+			"checkIn":    b.Checkin,
+			"checkOut":   b.Checkout,
+			"totalPrice": b.Price,
+		}
+	default:
+		return
+	}
+
+	body, err := json.Marshal(payload)
+	if err != nil {
+		log.Printf("webhook marshal error: %v", err)
+		return
+	}
+
+	resp, err := http.Post(webhookURL+"/webhooks/travaliz", "application/json", bytes.NewReader(body))
+	if err != nil {
+		log.Printf("webhook send error: %v", err)
+		return
+	}
+	defer resp.Body.Close()
+	log.Printf("B2B webhook sent for %s: HTTP %d", ref, resp.StatusCode)
 }
 
 func validateBooking(req *BookingRequest) error {
