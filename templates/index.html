@@ -2653,6 +2653,7 @@ async function submitRegister() {
 async function signOut() {
   await _sb.auth.signOut();
   document.getElementById('user-menu').classList.add('hidden');
+  closeProfile();
   showToast('Signed out.');
 }
 
