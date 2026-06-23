@@ -95,6 +95,30 @@ VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 	return b.Ref, nil
 }
 
+func (d *DB) GetBookingsByEmail(email string) ([]*Booking, error) {
+	rows, err := d.conn.Query(`SELECT id,ref,type,first_name,last_name,email,phone,
+	  from_code,to_code,airline,depart_time,arrive_time,duration,stops,
+	  hotel_name,checkin,checkout,price,currency,card_last4,created_at
+	FROM bookings WHERE email=? ORDER BY created_at DESC`, email)
+	if err != nil {
+		return nil, fmt.Errorf("query bookings: %w", err)
+	}
+	defer rows.Close()
+	var bookings []*Booking
+	for rows.Next() {
+		b := &Booking{}
+		if err := rows.Scan(
+			&b.ID, &b.Ref, &b.Type, &b.FirstName, &b.LastName, &b.Email, &b.Phone,
+			&b.FromCode, &b.ToCode, &b.Airline, &b.DepartTime, &b.ArriveTime, &b.Duration, &b.Stops,
+			&b.HotelName, &b.Checkin, &b.Checkout, &b.Price, &b.Currency, &b.CardLast4, &b.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		bookings = append(bookings, b)
+	}
+	return bookings, rows.Err()
+}
+
 func (d *DB) GetBookingByRef(ref string) (*Booking, error) {
 	row := d.conn.QueryRow(`SELECT id,ref,type,first_name,last_name,email,phone,
 	  from_code,to_code,airline,depart_time,arrive_time,duration,stops,

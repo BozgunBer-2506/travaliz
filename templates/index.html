@@ -673,37 +673,51 @@
 
 <!-- Profile Modal -->
 <div id="profile-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(15,15,30,0.75);backdrop-filter:blur(8px)" onclick="if(event.target===this)closeProfile()">
-  <div class="w-full rounded-3xl shadow-2xl overflow-hidden" style="max-width:460px;background:var(--bg-card);border:1px solid var(--border)" onclick="event.stopPropagation()">
+  <div class="w-full rounded-3xl shadow-2xl overflow-hidden" style="max-width:500px;background:var(--bg-card);border:1px solid var(--border)" onclick="event.stopPropagation()">
     <div class="p-8">
-      <div class="flex items-center justify-between mb-6">
+      <div class="flex items-center justify-between mb-5">
         <h2 class="text-xl font-extrabold" style="color:var(--text-primary)">My Account</h2>
         <button onclick="closeProfile()" class="w-8 h-8 rounded-full flex items-center justify-center text-lg" style="background:var(--bg-card2);color:var(--text-muted)">&times;</button>
       </div>
-      <div class="flex items-center gap-4 mb-6 pb-6" style="border-bottom:1px solid var(--border)">
-        <img id="profile-avatar" src="" alt="" class="w-16 h-16 rounded-full object-cover hidden" />
-        <div id="profile-initials" class="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold text-white" style="background:linear-gradient(135deg,#4f46e5,#7c3aed)"></div>
+      <div class="flex items-center gap-4 mb-5 pb-5" style="border-bottom:1px solid var(--border)">
+        <img id="profile-avatar" src="" alt="" class="w-14 h-14 rounded-full object-cover hidden" />
+        <div id="profile-initials" class="w-14 h-14 rounded-full flex items-center justify-center text-2xl font-bold text-white" style="background:linear-gradient(135deg,#4f46e5,#7c3aed)"></div>
         <div>
           <p id="profile-name" class="text-lg font-bold" style="color:var(--text-primary)"></p>
           <p id="profile-email" class="text-sm" style="color:var(--text-muted)"></p>
         </div>
       </div>
-      <div class="space-y-3">
-        <div>
-          <label class="text-xs font-semibold mb-1 block" style="color:var(--text-muted)">Full Name</label>
-          <input id="profile-name-input" type="text" class="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none transition-all" style="border:1px solid var(--border);background:var(--bg-card2);color:var(--text-primary)" />
+      <!-- Tabs -->
+      <div class="flex gap-1 mb-5 p-1 rounded-xl" style="background:var(--bg-card2)">
+        <button id="tab-profile-btn" onclick="switchProfileTab('profile')" class="flex-1 py-2 rounded-lg text-sm font-semibold transition-all" style="background:var(--bg-card);color:var(--text-primary);box-shadow:0 1px 4px rgba(0,0,0,.15)">Profile</button>
+        <button id="tab-bookings-btn" onclick="switchProfileTab('bookings')" class="flex-1 py-2 rounded-lg text-sm font-semibold transition-all" style="color:var(--text-muted)">My Bookings</button>
+      </div>
+      <!-- Profile Tab -->
+      <div id="tab-profile">
+        <div class="space-y-3">
+          <div>
+            <label class="text-xs font-semibold mb-1 block" style="color:var(--text-muted)">Full Name</label>
+            <input id="profile-name-input" type="text" class="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none transition-all" style="border:1px solid var(--border);background:var(--bg-card2);color:var(--text-primary)" />
+          </div>
+          <div>
+            <label class="text-xs font-semibold mb-1 block" style="color:var(--text-muted)">Email</label>
+            <input id="profile-email-input" type="email" disabled class="w-full rounded-xl px-4 py-2.5 text-sm opacity-60 cursor-not-allowed" style="border:1px solid var(--border);background:var(--bg-card2);color:var(--text-primary)" />
+          </div>
+          <div>
+            <label class="text-xs font-semibold mb-1 block" style="color:var(--text-muted)">Phone</label>
+            <input id="profile-phone-input" type="tel" placeholder="+1 555 000 0000" class="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none transition-all" style="border:1px solid var(--border);background:var(--bg-card2);color:var(--text-primary)" />
+          </div>
         </div>
-        <div>
-          <label class="text-xs font-semibold mb-1 block" style="color:var(--text-muted)">Email</label>
-          <input id="profile-email-input" type="email" disabled class="w-full rounded-xl px-4 py-2.5 text-sm opacity-60 cursor-not-allowed" style="border:1px solid var(--border);background:var(--bg-card2);color:var(--text-primary)" />
-        </div>
-        <div>
-          <label class="text-xs font-semibold mb-1 block" style="color:var(--text-muted)">Phone</label>
-          <input id="profile-phone-input" type="tel" placeholder="+1 555 000 0000" class="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none transition-all" style="border:1px solid var(--border);background:var(--bg-card2);color:var(--text-primary)" />
+        <div class="flex gap-3 mt-6">
+          <button onclick="saveProfile()" class="flex-1 py-2.5 rounded-xl text-sm font-bold text-white" style="background:linear-gradient(135deg,#4f46e5,#7c3aed)">Save changes</button>
+          <button onclick="signOut()" class="px-5 py-2.5 rounded-xl text-sm font-semibold text-red-400" style="border:1px solid var(--border);background:var(--bg-card2)">Sign out</button>
         </div>
       </div>
-      <div class="flex gap-3 mt-6">
-        <button onclick="saveProfile()" class="flex-1 py-2.5 rounded-xl text-sm font-bold text-white" style="background:linear-gradient(135deg,#4f46e5,#7c3aed)">Save changes</button>
-        <button onclick="signOut()" class="px-5 py-2.5 rounded-xl text-sm font-semibold text-red-400" style="border:1px solid var(--border);background:var(--bg-card2)">Sign out</button>
+      <!-- Bookings Tab -->
+      <div id="tab-bookings" class="hidden">
+        <div id="bookings-list" class="space-y-3 max-h-80 overflow-y-auto pr-1">
+          <p class="text-sm text-center py-6" style="color:var(--text-muted)">Loading...</p>
+        </div>
       </div>
     </div>
   </div>
@@ -2662,10 +2676,59 @@ function openProfile() {
   const ini = document.getElementById('profile-initials');
   if (photo) { av.src = photo; av.classList.remove('hidden'); ini.classList.add('hidden'); }
   else { ini.textContent = (name || u.email).charAt(0).toUpperCase(); ini.classList.remove('hidden'); av.classList.add('hidden'); }
+  switchProfileTab('profile');
   document.getElementById('profile-modal').classList.remove('hidden');
 }
 function closeProfile() {
   document.getElementById('profile-modal').classList.add('hidden');
+}
+
+function switchProfileTab(tab) {
+  const isProfile = tab === 'profile';
+  document.getElementById('tab-profile').classList.toggle('hidden', !isProfile);
+  document.getElementById('tab-bookings').classList.toggle('hidden', isProfile);
+  const activeStyle = 'background:var(--bg-card);color:var(--text-primary);box-shadow:0 1px 4px rgba(0,0,0,.15)';
+  const inactiveStyle = 'color:var(--text-muted)';
+  document.getElementById('tab-profile-btn').style.cssText = isProfile ? activeStyle : inactiveStyle;
+  document.getElementById('tab-bookings-btn').style.cssText = isProfile ? inactiveStyle : activeStyle;
+  if (!isProfile) loadMyBookings();
+}
+
+async function loadMyBookings() {
+  const list = document.getElementById('bookings-list');
+  if (!_currentUser) return;
+  list.innerHTML = '<p class="text-sm text-center py-6" style="color:var(--text-muted)">Loading...</p>';
+  try {
+    const res = await fetch('/my-bookings?email=' + encodeURIComponent(_currentUser.email));
+    const data = await res.json();
+    if (!data.length) {
+      list.innerHTML = '<p class="text-sm text-center py-6" style="color:var(--text-muted)">No bookings yet.</p>';
+      return;
+    }
+    list.innerHTML = data.map(b => {
+      const isHotel = b.Type === 'hotel';
+      const title = isHotel ? (b.HotelName || 'Hotel') : (b.FromCode + ' → ' + b.ToCode);
+      const subtitle = isHotel
+        ? (b.Checkin + ' – ' + b.Checkout)
+        : (b.Airline + (b.DepartTime ? ' · ' + b.DepartTime : ''));
+      const icon = isHotel ? '🏨' : (b.Type === 'car' ? '🚗' : '✈️');
+      const price = (b.Currency || 'USD') + ' ' + (b.Price || 0).toLocaleString();
+      return `<div class="flex items-center gap-3 p-3 rounded-2xl" style="background:var(--bg-card2);border:1px solid var(--border)">
+        <div class="text-2xl">${icon}</div>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-bold truncate" style="color:var(--text-primary)">${title}</p>
+          <p class="text-xs truncate" style="color:var(--text-muted)">${subtitle}</p>
+          <p class="text-xs font-semibold mt-0.5" style="color:#818cf8">${b.Ref}</p>
+        </div>
+        <div class="text-right shrink-0">
+          <p class="text-sm font-bold" style="color:var(--text-primary)">${price}</p>
+          <p class="text-xs" style="color:var(--text-muted)">****${b.CardLast4}</p>
+        </div>
+      </div>`;
+    }).join('');
+  } catch {
+    list.innerHTML = '<p class="text-sm text-center py-6 text-red-400">Failed to load bookings.</p>';
+  }
 }
 async function saveProfile() {
   const name  = document.getElementById('profile-name-input').value.trim();

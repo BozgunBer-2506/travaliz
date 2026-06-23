@@ -91,6 +91,26 @@ func (h *TravelHandler) BookHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(BookingResponse{Ref: ref})
 }
 
+func (h *TravelHandler) MyBookingsHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	email := r.URL.Query().Get("email")
+	if email == "" || !strings.Contains(email, "@") {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "valid email required"})
+		return
+	}
+	bookings, err := h.DB.GetBookingsByEmail(strings.ToLower(strings.TrimSpace(email)))
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": "failed to fetch bookings"})
+		return
+	}
+	if bookings == nil {
+		bookings = []*db.Booking{}
+	}
+	json.NewEncoder(w).Encode(bookings)
+}
+
 func validateBooking(req *BookingRequest) error {
 	switch {
 	case strings.TrimSpace(req.FirstName) == "":
