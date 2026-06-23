@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Account — travaliz.com</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --bg-base: #f8fafc;
+      --bg-card: #ffffff;
+      --bg-card2: #f1f5f9;
+      --border: rgba(0,0,0,0.09);
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #94a3b8;
+    }
+    [data-theme="dark"] {
+      --bg-base: #0d0d1a;
+      --bg-card: #13132b;
+      --bg-card2: #1a1a35;
+      --border: rgba(255,255,255,0.09);
+      --text-primary: #e2e8f0;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+    }
+    * { font-family: 'Inter', ui-sans-serif, system-ui; }
+    body { background: var(--bg-base); min-height: 100vh; }
+    .section-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    .section-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .section-row:last-child { border-bottom: none; }
+    .section-row:hover { background: var(--bg-card2); }
+    .section-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-primary);
+      padding: 16px 20px 8px;
+    }
+  </style>
+</head>
+<body data-theme="dark">
+<script>
+  (function() {
+    const t = localStorage.getItem('travaliz-theme') || 'dark';
+    document.body.setAttribute('data-theme', t);
+  })();
+</script>
+
+<!-- Header -->
+<header class="sticky top-0 z-30 py-4 px-6 backdrop-blur-md" style="background:rgba(49,46,129,0.9);border-bottom:1px solid rgba(255,255,255,0.08)">
+  <div class="max-w-5xl mx-auto flex items-center justify-between">
+    <a href="/" class="flex items-center gap-2" style="text-decoration:none">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      <h1 style="font-size:18px;font-weight:900;color:#fff;letter-spacing:-0.5px">travaliz<span style="color:#a5b4fc">.com</span></h1>
+    </a>
+    <button onclick="handleSignOut()" class="text-sm font-semibold text-white/70 hover:text-white transition-colors">Sign out</button>
+  </div>
+</header>
+
+<!-- Hero -->
+<div style="background:linear-gradient(135deg,#312e81 0%,#4f46e5 50%,#7c3aed 100%);padding:40px 24px 60px">
+  <div class="max-w-5xl mx-auto flex items-center gap-5">
+    <div id="hero-avatar-wrap">
+      <img id="hero-avatar" src="" alt="" class="hidden rounded-full object-cover" style="width:72px;height:72px;border:3px solid rgba(255,255,255,0.3)" />
+      <div id="hero-initials" class="rounded-full flex items-center justify-center text-3xl font-black text-white" style="width:72px;height:72px;background:rgba(255,255,255,0.2);border:3px solid rgba(255,255,255,0.3)"></div>
+    </div>
+    <div>
+      <p class="text-white/70 text-sm font-medium mb-0.5">Welcome back</p>
+      <h2 id="hero-name" class="text-2xl font-extrabold text-white"></h2>
+      <p id="hero-email" class="text-white/60 text-sm mt-0.5"></p>
+    </div>
+  </div>
+</div>
+
+<!-- Stats bar -->
+<div class="max-w-5xl mx-auto px-4" style="margin-top:-28px;margin-bottom:32px">
+  <div class="grid grid-cols-3 gap-3">
+    <div class="section-card flex flex-col items-center py-4 px-3">
+      <p id="stat-bookings" class="text-2xl font-black" style="color:#818cf8">0</p>
+      <p class="text-xs font-semibold mt-0.5" style="color:var(--text-muted)">Bookings</p>
+    </div>
+    <div class="section-card flex flex-col items-center py-4 px-3">
+      <p id="stat-flights" class="text-2xl font-black" style="color:#818cf8">0</p>
+      <p class="text-xs font-semibold mt-0.5" style="color:var(--text-muted)">Flights</p>
+    </div>
+    <div class="section-card flex flex-col items-center py-4 px-3">
+      <p id="stat-hotels" class="text-2xl font-black" style="color:#818cf8">0</p>
+      <p class="text-xs font-semibold mt-0.5" style="color:var(--text-muted)">Hotels</p>
+    </div>
+  </div>
+</div>
+
+<!-- Main content -->
+<div class="max-w-5xl mx-auto px-4 pb-16">
+  <div class="grid md:grid-cols-2 gap-6">
+
+    <!-- My Trips -->
+    <div class="md:col-span-2 section-card">
+      <p class="section-title">My Trips & Bookings</p>
+      <div id="bookings-list">
+        <div class="section-row"><span class="text-sm" style="color:var(--text-muted)">Loading...</span></div>
+      </div>
+    </div>
+
+    <!-- Personal Info -->
+    <div class="section-card">
+      <p class="section-title">Personal Info</p>
+      <div class="px-5 py-4 space-y-3">
+        <div>
+          <label class="text-xs font-semibold block mb-1" style="color:var(--text-muted)">Full Name</label>
+          <input id="acc-name" type="text" class="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none" style="border:1px solid var(--border);background:var(--bg-card2);color:var(--text-primary)" />
+        </div>
+        <div>
+          <label class="text-xs font-semibold block mb-1" style="color:var(--text-muted)">Email</label>
+          <input id="acc-email" type="email" disabled class="w-full rounded-xl px-4 py-2.5 text-sm opacity-60 cursor-not-allowed" style="border:1px solid var(--border);background:var(--bg-card2);color:var(--text-primary)" />
+        </div>
+        <div>
+          <label class="text-xs font-semibold block mb-1" style="color:var(--text-muted)">Phone</label>
+          <input id="acc-phone" type="tel" placeholder="+1 555 000 0000" class="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none" style="border:1px solid var(--border);background:var(--bg-card2);color:var(--text-primary)" />
+        </div>
+        <button onclick="savePersonalInfo()" class="w-full py-2.5 rounded-xl text-sm font-bold text-white mt-1" style="background:linear-gradient(135deg,#4f46e5,#7c3aed)">Save changes</button>
+      </div>
+    </div>
+
+    <!-- Payment Methods -->
+    <div class="section-card">
+      <p class="section-title">Payment Methods</p>
+      <div id="payment-list">
+        <div class="section-row"><span class="text-sm" style="color:var(--text-muted)">Loading...</span></div>
+      </div>
+    </div>
+
+    <!-- Settings -->
+    <div class="section-card">
+      <p class="section-title">Settings</p>
+      <div class="section-row" onclick="toggleTheme()">
+        <div class="flex items-center gap-3">
+          <span style="font-size:18px">🌙</span>
+          <span class="text-sm font-semibold" style="color:var(--text-primary)">Dark Mode</span>
+        </div>
+        <div id="theme-indicator" class="text-xs font-bold px-2 py-1 rounded-full" style="background:var(--bg-card2);color:var(--text-muted)">ON</div>
+      </div>
+      <div class="section-row" onclick="window.location='/'">
+        <div class="flex items-center gap-3">
+          <span style="font-size:18px">✈️</span>
+          <span class="text-sm font-semibold" style="color:var(--text-primary)">Search Flights</span>
+        </div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+      <div class="section-row" onclick="window.location='/'">
+        <div class="flex items-center gap-3">
+          <span style="font-size:18px">🏨</span>
+          <span class="text-sm font-semibold" style="color:var(--text-primary)">Search Hotels</span>
+        </div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+      <div class="section-row" onclick="window.location='/'">
+        <div class="flex items-center gap-3">
+          <span style="font-size:18px">🚗</span>
+          <span class="text-sm font-semibold" style="color:var(--text-primary)">Search Car Rentals</span>
+        </div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+    </div>
+
+    <!-- Security -->
+    <div class="section-card">
+      <p class="section-title">Security</p>
+      <div class="section-row" onclick="changePassword()">
+        <div class="flex items-center gap-3">
+          <span style="font-size:18px">🔒</span>
+          <span class="text-sm font-semibold" style="color:var(--text-primary)">Change Password</span>
+        </div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+      <div class="section-row" onclick="handleSignOut()">
+        <div class="flex items-center gap-3">
+          <span style="font-size:18px">🚪</span>
+          <span class="text-sm font-semibold text-red-400">Sign Out</span>
+        </div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl text-sm font-semibold text-white shadow-xl" style="background:linear-gradient(135deg,#4f46e5,#7c3aed)"></div>
+
+<script>
+const _sb = supabase.createClient(
+  'https://isrbbnxgjmlkcetwguom.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcmJibnhnam1sa2NldHdndW9tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5NTE5OTksImV4cCI6MjA5NDUyNzk5OX0.kHMPVimiZFtcD_liBiGRG3nglbHybSzim5isgp3hEcg'
+);
+
+let _user = null;
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.remove('hidden');
+  setTimeout(() => t.classList.add('hidden'), 3000);
+}
+
+function toggleTheme() {
+  const body = document.body;
+  const isDark = body.getAttribute('data-theme') === 'dark';
+  const next = isDark ? 'light' : 'dark';
+  body.setAttribute('data-theme', next);
+  localStorage.setItem('travaliz-theme', next);
+  document.getElementById('theme-indicator').textContent = next === 'dark' ? 'ON' : 'OFF';
+}
+
+async function handleSignOut() {
+  await _sb.auth.signOut();
+  window.location.href = '/';
+}
+
+async function savePersonalInfo() {
+  const name = document.getElementById('acc-name').value.trim();
+  const phone = document.getElementById('acc-phone').value.trim();
+  const { error } = await _sb.auth.updateUser({ data: { full_name: name, phone } });
+  if (error) { showToast('Error: ' + error.message); return; }
+  showToast('Profile updated.');
+}
+
+async function changePassword() {
+  if (!_user) return;
+  const { error } = await _sb.auth.resetPasswordForEmail(_user.email, { redirectTo: window.location.origin + '/account' });
+  if (error) { showToast('Error: ' + error.message); return; }
+  showToast('Password reset email sent.');
+}
+
+function renderBookings(bookings) {
+  const list = document.getElementById('bookings-list');
+  if (!bookings.length) {
+    list.innerHTML = '<div class="section-row"><span class="text-sm" style="color:var(--text-muted)">No bookings yet. Start searching!</span></div>';
+    return;
+  }
+  list.innerHTML = bookings.map(b => {
+    const isHotel = b.Type === 'hotel';
+    const isCar = b.Type === 'car';
+    const icon = isCar ? '🚗' : isHotel ? '🏨' : '✈️';
+    const title = isHotel ? (b.HotelName || 'Hotel') : isCar ? 'Car Rental' : (b.FromCode + ' → ' + b.ToCode);
+    const sub = isHotel
+      ? (b.Checkin + ' – ' + b.Checkout)
+      : isCar ? b.Checkin
+      : ((b.Airline || '') + (b.DepartTime ? ' · ' + b.DepartTime : ''));
+    const price = (b.Currency || 'USD') + ' ' + (b.Price || 0).toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0});
+    const date = b.CreatedAt ? new Date(b.CreatedAt).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '';
+    return `<div class="section-row">
+      <div class="flex items-center gap-3 flex-1 min-w-0">
+        <div class="text-2xl shrink-0">${icon}</div>
+        <div class="min-w-0">
+          <p class="text-sm font-bold truncate" style="color:var(--text-primary)">${title}</p>
+          <p class="text-xs truncate" style="color:var(--text-muted)">${sub}</p>
+          <p class="text-xs font-bold mt-0.5" style="color:#818cf8">${b.Ref}</p>
+        </div>
+      </div>
+      <div class="text-right shrink-0 ml-3">
+        <p class="text-sm font-bold" style="color:var(--text-primary)">${price}</p>
+        <p class="text-xs" style="color:var(--text-muted)">${date}</p>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderPayments(bookings) {
+  const list = document.getElementById('payment-list');
+  const seen = new Set();
+  const cards = bookings.filter(b => { if (seen.has(b.CardLast4)) return false; seen.add(b.CardLast4); return true; });
+  if (!cards.length) {
+    list.innerHTML = '<div class="section-row"><span class="text-sm" style="color:var(--text-muted)">No payment methods on file.</span></div>';
+    return;
+  }
+  list.innerHTML = cards.map(b => `<div class="section-row">
+    <div class="flex items-center gap-3">
+      <span style="font-size:20px">💳</span>
+      <div>
+        <p class="text-sm font-bold" style="color:var(--text-primary)">Card ending in ${b.CardLast4}</p>
+        <p class="text-xs" style="color:var(--text-muted)">Used for ${b.Ref}</p>
+      </div>
+    </div>
+  </div>`).join('');
+}
+
+async function loadPage(user) {
+  _user = user;
+
+  const name = user.user_metadata?.full_name || user.user_metadata?.name || '';
+  const photo = user.user_metadata?.avatar_url || user.user_metadata?.picture || '';
+  const phone = user.user_metadata?.phone || '';
+
+  document.getElementById('hero-name').textContent = name || user.email.split('@')[0];
+  document.getElementById('hero-email').textContent = user.email;
+  document.getElementById('acc-name').value = name;
+  document.getElementById('acc-email').value = user.email;
+  document.getElementById('acc-phone').value = phone;
+
+  if (photo) {
+    const av = document.getElementById('hero-avatar');
+    av.src = photo; av.classList.remove('hidden');
+    document.getElementById('hero-initials').classList.add('hidden');
+  } else {
+    document.getElementById('hero-initials').textContent = (name || user.email).charAt(0).toUpperCase();
+  }
+
+  const isDark = document.body.getAttribute('data-theme') === 'dark';
+  document.getElementById('theme-indicator').textContent = isDark ? 'ON' : 'OFF';
+
+  try {
+    const res = await fetch('/my-bookings?email=' + encodeURIComponent(user.email));
+    const bookings = await res.json();
+    const flights = bookings.filter(b => b.Type === 'flight').length;
+    const hotels  = bookings.filter(b => b.Type === 'hotel').length;
+    document.getElementById('stat-bookings').textContent = bookings.length;
+    document.getElementById('stat-flights').textContent = flights;
+    document.getElementById('stat-hotels').textContent = hotels;
+    renderBookings(bookings);
+    renderPayments(bookings);
+  } catch {
+    document.getElementById('bookings-list').innerHTML = '<div class="section-row"><span class="text-sm text-red-400">Failed to load bookings.</span></div>';
+  }
+}
+
+_sb.auth.getSession().then(({ data }) => {
+  if (!data.session?.user) { window.location.href = '/'; return; }
+  loadPage(data.session.user);
+});
+</script>
+</body>
+</html>

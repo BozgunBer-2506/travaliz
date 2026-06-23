@@ -57,6 +57,16 @@ type pageData struct {
 	Error        string
 }
 
+func (h *TravelHandler) AccountHandler(w http.ResponseWriter, r *http.Request) {
+	tmpl := h.Templates.Lookup("account.html")
+	if tmpl == nil {
+		http.Error(w, "template not found", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	tmpl.Execute(w, nil)
+}
+
 func HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"status": "OK"})

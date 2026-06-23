@@ -66,6 +66,7 @@ func main() {
 	mux.HandleFunc("/travel-data", travelHandler.GetTravelDataHandler)
 	mux.HandleFunc("/contact", travelHandler.ContactHandler)
 	mux.HandleFunc("/my-bookings", travelHandler.MyBookingsHandler)
+	mux.HandleFunc("/account", travelHandler.AccountHandler)
 	mux.HandleFunc("/status", handlers.HealthCheckHandler)
 
 	port := os.Getenv("PORT")
