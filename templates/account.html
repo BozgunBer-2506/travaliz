@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <style>
     :root {
       --bg-base: #f8fafc;
@@ -116,6 +117,39 @@
       <p class="section-title">My Trips & Bookings</p>
       <div id="bookings-list">
         <div class="section-row"><span class="text-sm" style="color:var(--text-muted)">Loading...</span></div>
+      </div>
+    </div>
+
+    <!-- Travel Analytics -->
+    <div class="md:col-span-2 section-card">
+      <p class="section-title">Travel Analytics</p>
+      <div class="grid md:grid-cols-3 gap-0 divide-y md:divide-y-0 md:divide-x" style="border-color:var(--border)">
+
+        <!-- Spending by type - donut -->
+        <div class="p-5 flex flex-col items-center">
+          <p class="text-xs font-bold mb-3 self-start" style="color:var(--text-muted)">SPEND BY TYPE</p>
+          <div style="position:relative;width:140px;height:140px">
+            <canvas id="chart-type"></canvas>
+            <div id="chart-type-center" class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              <p id="chart-total" class="text-base font-black" style="color:var(--text-primary)">€0</p>
+              <p class="text-xs" style="color:var(--text-muted)">total</p>
+            </div>
+          </div>
+          <div id="chart-type-legend" class="mt-3 space-y-1 self-start w-full"></div>
+        </div>
+
+        <!-- Top destinations -->
+        <div class="p-5">
+          <p class="text-xs font-bold mb-3" style="color:var(--text-muted)">TOP DESTINATIONS</p>
+          <div id="top-destinations" class="space-y-2"></div>
+        </div>
+
+        <!-- Monthly spend bar -->
+        <div class="p-5">
+          <p class="text-xs font-bold mb-3" style="color:var(--text-muted)">MONTHLY SPEND</p>
+          <canvas id="chart-monthly" height="150"></canvas>
+        </div>
+
       </div>
     </div>
 
@@ -283,6 +317,85 @@ function renderBookings(bookings) {
   }).join('');
 }
 
+function renderAnalytics(bookings) {
+  if (!bookings.length) return;
+
+  const isDark = document.body.getAttribute('data-theme') === 'dark';
+  const textColor = isDark ? '#94a3b8' : '#64748b';
+  const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+
+  // Spend by type
+  const byType = { flight: 0, hotel: 0, car: 0 };
+  bookings.forEach(b => { byType[b.Type] = (byType[b.Type] || 0) + (b.Price || 0); });
+  const total = Object.values(byType).reduce((a, v) => a + v, 0);
+  document.getElementById('chart-total').textContent = (bookings[0]?.Currency || 'USD') + ' ' + Math.round(total).toLocaleString();
+
+  new Chart(document.getElementById('chart-type'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Flights', 'Hotels', 'Cars'],
+      datasets: [{ data: [byType.flight, byType.hotel, byType.car], backgroundColor: ['#818cf8','#a78bfa','#c4b5fd'], borderWidth: 0, hoverOffset: 4 }]
+    },
+    options: { cutout: '70%', plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ' ' + Math.round(ctx.parsed).toLocaleString() } } } }
+  });
+
+  const typeLabels = [['✈️','Flights','#818cf8'],['🏨','Hotels','#a78bfa'],['🚗','Cars','#c4b5fd']];
+  const typeKeys   = ['flight','hotel','car'];
+  document.getElementById('chart-type-legend').innerHTML = typeLabels.map((l,i) => {
+    const pct = total ? Math.round(byType[typeKeys[i]] / total * 100) : 0;
+    return `<div class="flex items-center justify-between gap-2">
+      <div class="flex items-center gap-1.5">
+        <div class="w-2.5 h-2.5 rounded-full" style="background:${l[2]}"></div>
+        <span class="text-xs" style="color:var(--text-muted)">${l[0]} ${l[1]}</span>
+      </div>
+      <span class="text-xs font-bold" style="color:var(--text-primary)">${pct}%</span>
+    </div>`;
+  }).join('');
+
+  // Top destinations
+  const destCount = {};
+  bookings.forEach(b => {
+    const dest = b.Type === 'hotel' ? (b.HotelName ? b.HotelName.split(' ').slice(-1)[0] : '?') : (b.ToCode || '?');
+    destCount[dest] = (destCount[dest] || 0) + 1;
+  });
+  const topDests = Object.entries(destCount).sort((a,b) => b[1]-a[1]).slice(0,5);
+  const maxCount = topDests[0]?.[1] || 1;
+  document.getElementById('top-destinations').innerHTML = topDests.map(([dest, count]) => `
+    <div>
+      <div class="flex justify-between text-xs mb-1">
+        <span class="font-semibold" style="color:var(--text-primary)">${dest}</span>
+        <span style="color:var(--text-muted)">${count} trip${count>1?'s':''}</span>
+      </div>
+      <div class="rounded-full h-1.5 overflow-hidden" style="background:var(--bg-card2)">
+        <div class="h-full rounded-full" style="width:${Math.round(count/maxCount*100)}%;background:linear-gradient(90deg,#818cf8,#a78bfa)"></div>
+      </div>
+    </div>
+  `).join('');
+
+  // Monthly spend
+  const monthly = {};
+  bookings.forEach(b => {
+    if (!b.CreatedAt) return;
+    const key = new Date(b.CreatedAt).toLocaleDateString('en-GB',{month:'short',year:'2-digit'});
+    monthly[key] = (monthly[key] || 0) + (b.Price || 0);
+  });
+  const months = Object.keys(monthly).slice(-6);
+  new Chart(document.getElementById('chart-monthly'), {
+    type: 'bar',
+    data: {
+      labels: months,
+      datasets: [{ data: months.map(m => Math.round(monthly[m])), backgroundColor: '#818cf8', borderRadius: 6, borderSkipped: false }]
+    },
+    options: {
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ' ' + ctx.parsed.y.toLocaleString() } } },
+      scales: {
+        x: { ticks: { color: textColor, font: { size: 10 } }, grid: { display: false } },
+        y: { ticks: { color: textColor, font: { size: 10 } }, grid: { color: gridColor } }
+      }
+    }
+  });
+}
+
 function renderPayments(bookings) {
   const list = document.getElementById('payment-list');
   const seen = new Set();
@@ -335,6 +448,7 @@ async function loadPage(user) {
     document.getElementById('stat-flights').textContent = flights;
     document.getElementById('stat-hotels').textContent = hotels;
     renderBookings(bookings);
+    renderAnalytics(bookings);
     renderPayments(bookings);
   } catch {
     document.getElementById('bookings-list').innerHTML = '<div class="section-row"><span class="text-sm text-red-400">Failed to load bookings.</span></div>';
