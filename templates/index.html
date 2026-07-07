@@ -611,7 +611,7 @@
         </div>
       </div>
       <div class="flex justify-end mb-5">
-        <button class="text-xs text-indigo-400 hover:underline">Forgot password?</button>
+        <button class="text-xs text-indigo-400 hover:underline" onclick="forgotPassword()">Forgot password?</button>
       </div>
       <p id="si-error" class="text-red-400 text-xs mb-3 hidden"></p>
       <button onclick="submitSignIn()" class="w-full py-3 rounded-xl text-sm font-bold text-white mb-4 transition-all hover:-translate-y-0.5" style="background:linear-gradient(135deg,#4f46e5,#7c3aed);box-shadow:0 4px 16px rgba(79,70,229,.3)">Sign In</button>
@@ -715,7 +715,7 @@
       </div>
       <!-- Bookings Tab -->
       <div id="tab-bookings" class="hidden">
-        <div id="bookings-list" class="space-y-3 max-h-80 overflow-y-auto pr-1">
+        <div id="profile-bookings-list" class="space-y-3 max-h-80 overflow-y-auto pr-1">
           <p class="text-sm text-center py-6" style="color:var(--text-muted)">Loading...</p>
         </div>
       </div>
@@ -1989,8 +1989,9 @@
       <section>
         <h3 class="font-semibold text-gray-800 mb-2">4. Third-Party Services</h3>
         <ul class="list-disc list-inside space-y-1 text-gray-500">
-          <li><strong class="text-gray-700">Amadeus API:</strong> travel data is fetched from the Amadeus Self-Service API. Their privacy policy applies to data transmitted during API calls.</li>
-          <li><strong class="text-gray-700">Vercel:</strong> the application is hosted on Vercel. Server logs and request metadata may be retained per Vercel's data processing terms.</li>
+          <li><strong class="text-gray-700">RapidAPI:</strong> flight, hotel and car rental data is fetched via RapidAPI (Skyscanner, Google Flights, Hotels.com, Booking.com). Their privacy policies apply to data transmitted during API calls.</li>
+          <li><strong class="text-gray-700">Railway:</strong> the application is hosted on Railway. Server logs and request metadata may be retained per Railway's data processing terms.</li>
+          <li><strong class="text-gray-700">Supabase:</strong> user authentication is handled by Supabase. Their privacy policy applies to authentication data.</li>
         </ul>
       </section>
 
@@ -2630,6 +2631,14 @@ async function submitSignIn() {
   showToast('Welcome back!');
 }
 
+async function forgotPassword() {
+  const email = document.getElementById('si-email').value.trim();
+  if (!email.includes('@')) { showToast('Enter your email address first.', true); return; }
+  const { error } = await _sb.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin });
+  if (error) { showToast('Error: ' + error.message, true); return; }
+  showToast('Password reset email sent. Check your inbox.');
+}
+
 async function submitRegister() {
   const first = document.getElementById('reg-first').value.trim();
   const last  = document.getElementById('reg-last').value.trim();
@@ -2696,7 +2705,7 @@ function switchProfileTab(tab) {
 }
 
 async function loadMyBookings() {
-  const list = document.getElementById('bookings-list');
+  const list = document.getElementById('profile-bookings-list');
   if (!_currentUser) return;
   list.innerHTML = '<p class="text-sm text-center py-6" style="color:var(--text-muted)">Loading...</p>';
   try {
@@ -2815,11 +2824,26 @@ function _doOpenBookingModal(booking) {
   document.getElementById('modal-total-amount').textContent = `$${displayTotal}`;
   // Reset to step 1
   showStep(1);
-  // Clear inputs
-  ['b-first-name','b-last-name','b-email','b-phone','b-card-number','b-card-name','b-card-expiry','b-card-cvv'].forEach(id => {
+  // Clear payment fields only (passenger fields get pre-filled below)
+  ['b-card-number','b-card-name','b-card-expiry','b-card-cvv'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
+  // Pre-fill passenger details from logged-in user
+  ['b-first-name','b-last-name','b-email','b-phone'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  if (_currentUser) {
+    const u = _currentUser;
+    const fullName = u.user_metadata?.full_name || u.user_metadata?.name || '';
+    const parts = fullName.split(' ');
+    const el = (id) => document.getElementById(id);
+    if (el('b-first-name')) el('b-first-name').value = parts[0] || '';
+    if (el('b-last-name'))  el('b-last-name').value  = parts.slice(1).join(' ') || '';
+    if (el('b-email'))      el('b-email').value      = u.email || '';
+    if (el('b-phone'))      el('b-phone').value      = u.user_metadata?.phone || '';
+  }
   hideError('step1-error');
   hideError('step2-error');
   document.getElementById('booking-modal').classList.remove('hidden');
