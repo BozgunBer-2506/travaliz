@@ -872,10 +872,14 @@ func (pc *ProxyClient) FetchFlights(fromSkyID, fromEntityID, toSkyID, toEntityID
 	}
 
 	resp, err := pc.doGet(skyBase, skyHost, endpoint, params)
-	if err == nil {
+	if err != nil {
+		log.Printf("[SKY] http error: %v", err)
+	} else {
 		defer resp.Body.Close()
+		skyBody, _ := io.ReadAll(resp.Body)
+		log.Printf("[SKY] status=%d body_prefix=%.300s", resp.StatusCode, string(skyBody))
 		var payload skyFlightResponse
-		if json.NewDecoder(resp.Body).Decode(&payload) == nil && payload.Status && len(payload.Data.Itineraries) > 0 {
+		if json.Unmarshal(skyBody, &payload) == nil && payload.Status && len(payload.Data.Itineraries) > 0 {
 			its := payload.Data.Itineraries
 			sort.Slice(its, func(i, j int) bool { return its[i].Price.Raw < its[j].Price.Raw })
 			flights := make([]FlightData, 0, len(its))
@@ -904,7 +908,7 @@ func (pc *ProxyClient) FetchFlights(fromSkyID, fromEntityID, toSkyID, toEntityID
 	}
 
 	// Fallback: Google Flights
-	log.Printf("skyscanner failed, falling back to google flights for %s→%s", fromSkyID, toSkyID)
+	log.Printf("[SKY] failed for %s→%s, trying google flights", fromSkyID, toSkyID)
 	return pc.fetchFlightsGF(fromSkyID, toSkyID, date, returnDate, adults, children, cabinClass)
 }
 
