@@ -763,16 +763,29 @@ func (pc *ProxyClient) FetchTravelData() ([]HotelData, error) {
 	return pc.fetchMockHotels("London")
 }
 
+// gfTravelClass converts cabin class string to the GF API numeric code.
+func gfTravelClass(cabinClass string) string {
+	switch strings.ToLower(cabinClass) {
+	case "premium_economy", "premium economy":
+		return "2"
+	case "business":
+		return "3"
+	case "first":
+		return "4"
+	default:
+		return "1" // economy
+	}
+}
+
 // fetchFlightsGF searches flights via Google Flights (fallback).
 func (pc *ProxyClient) fetchFlightsGF(fromSkyID, toSkyID, date, returnDate, adults, children, cabinClass string) ([]FlightData, error) {
 	params := map[string]string{
 		"departure_id":  fromSkyID,
 		"arrival_id":    toSkyID,
 		"outbound_date": date,
-		"travel_class":  strings.ToUpper(cabinClass),
+		"travel_class":  gfTravelClass(cabinClass),
 		"adults":        adults,
 		"currency":      "USD",
-		"search_type":   "cheap",
 		"language_code": "en-US",
 		"country_code":  "US",
 	}
@@ -830,6 +843,79 @@ func (pc *ProxyClient) fetchFlightsGF(fromSkyID, toSkyID, date, returnDate, adul
 			Stops:           len(it.Layovers),
 		})
 	}
+	return flights, nil
+}
+
+var mockAirlines = []struct {
+	name string
+	logo string
+}{
+	{"Turkish Airlines", "https://www.turkishairlines.com/favicon.ico"},
+	{"Lufthansa", "https://www.lufthansa.com/favicon.ico"},
+	{"Air France", "https://www.airfrance.com/favicon.ico"},
+	{"British Airways", "https://www.britishairways.com/favicon.ico"},
+	{"Emirates", "https://www.emirates.com/favicon.ico"},
+	{"Ryanair", "https://www.ryanair.com/favicon.ico"},
+	{"easyJet", "https://www.easyjet.com/favicon.ico"},
+	{"Wizz Air", "https://wizzair.com/favicon.ico"},
+}
+
+// fetchMockFlights returns deterministic mock flights seeded by route.
+func (pc *ProxyClient) fetchMockFlights(fromSkyID, toSkyID, cabinClass string) ([]FlightData, error) {
+	seed := int64(0)
+	for _, c := range fromSkyID + toSkyID {
+		seed = seed*31 + int64(c)
+	}
+	if seed < 0 {
+		seed = -seed
+	}
+
+	basePrice := 120.0
+	switch strings.ToLower(cabinClass) {
+	case "business":
+		basePrice = 620.0
+	case "first":
+		basePrice = 1400.0
+	case "premium_economy", "premium economy":
+		basePrice = 280.0
+	}
+
+	depHours := []int{6, 8, 10, 13, 16, 18, 20}
+	durations := []int{90, 120, 150, 180, 240, 300, 360}
+
+	flights := make([]FlightData, 0, 5)
+	for i := 0; i < 5; i++ {
+		idx := (int(seed) + i*7) % len(mockAirlines)
+		al := mockAirlines[idx]
+		depH := depHours[(int(seed)+i*3)%len(depHours)]
+		depM := (int(seed)+i*11)%4 * 15 // 0,15,30,45
+		durMin := durations[(int(seed)+i*5)%len(durations)]
+		arrH := (depH*60 + depM + durMin) / 60 % 24
+		arrM := (depH*60 + depM + durMin) % 60
+		stops := 0
+		if i >= 3 {
+			stops = 1
+		}
+		variation := 1.0 + float64((int(seed)+i*13)%40-20)/100.0
+		price := math.Round(basePrice * variation * (1.0 + float64(stops)*0.15))
+		if stops > 0 && i < 3 {
+			price = math.Round(basePrice * variation * 0.88)
+		}
+		flights = append(flights, FlightData{
+			FromCode:        fromSkyID,
+			ToCode:          toSkyID,
+			DepartTime:      fmt.Sprintf("%02d:%02d", depH, depM),
+			ArriveTime:      fmt.Sprintf("%02d:%02d", arrH, arrM),
+			DurationHours:   durMin / 60,
+			DurationMinutes: durMin % 60,
+			Airline:         al.name,
+			AirlineLogo:     al.logo,
+			Price:           price,
+			Currency:        "USD",
+			Stops:           stops,
+		})
+	}
+	sort.Slice(flights, func(i, j int) bool { return flights[i].Price < flights[j].Price })
 	return flights, nil
 }
 
@@ -913,7 +999,12 @@ func (pc *ProxyClient) FetchFlights(fromSkyID, fromEntityID, toSkyID, toEntityID
 
 	// Fallback: Google Flights
 	log.Printf("[SKY] failed for %s→%s, trying google flights", fromSkyID, toSkyID)
-	return pc.fetchFlightsGF(fromSkyID, toSkyID, date, returnDate, adults, children, cabinClass)
+	flights, err := pc.fetchFlightsGF(fromSkyID, toSkyID, date, returnDate, adults, children, cabinClass)
+	if err != nil {
+		log.Printf("[GF] failed for %s→%s (%v), using mock", fromSkyID, toSkyID, err)
+		return pc.fetchMockFlights(fromSkyID, toSkyID, cabinClass)
+	}
+	return flights, nil
 }
 
 // extractISOTime pulls HH:MM from a Skyscanner ISO timestamp like "2026-06-15T11:25:00".
