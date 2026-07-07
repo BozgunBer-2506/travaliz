@@ -429,9 +429,13 @@ func (pc *ProxyClient) SearchAirports(query string) ([]FlightDestSuggestion, err
 	return results, nil
 }
 
-// resolveSkyscannerEntityID resolves an IATA code to a Skyscanner entity ID via autocomplete.
+// resolveSkyscannerEntityID resolves an IATA code to a Skyscanner entity ID via airport search.
 func (pc *ProxyClient) resolveSkyscannerEntityID(iata string) string {
-	resp, err := pc.doGet(skyBase, skyHost, "/flights/auto-complete", map[string]string{"query": iata})
+	resp, err := pc.doGet(skyBase, skyHost, "/flights/searchAirport", map[string]string{
+		"query":  iata,
+		"market": "US",
+		"locale": "en-US",
+	})
 	if err != nil {
 		log.Printf("[SKY-AC] iata=%s http_err=%v", iata, err)
 		return iata
@@ -939,9 +943,9 @@ func (pc *ProxyClient) FetchFlights(fromSkyID, fromEntityID, toSkyID, toEntityID
 	}
 	log.Printf("[FLY] from=%s(%s) to=%s(%s) date=%s return=%s", fromSkyID, fromID, toSkyID, toID, date, returnDate)
 
-	endpoint := "/flights/search-one-way"
+	endpoint := "/flights/getCheapestOneway"
 	if returnDate != "" {
-		endpoint = "/flights/search-roundtrip"
+		endpoint = "/flights/searchFlights"
 	}
 
 	params := map[string]string{
