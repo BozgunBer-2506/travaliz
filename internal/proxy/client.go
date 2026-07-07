@@ -433,11 +433,14 @@ func (pc *ProxyClient) SearchAirports(query string) ([]FlightDestSuggestion, err
 func (pc *ProxyClient) resolveSkyscannerEntityID(iata string) string {
 	resp, err := pc.doGet(skyBase, skyHost, "/flights/auto-complete", map[string]string{"query": iata})
 	if err != nil {
+		log.Printf("[SKY-AC] iata=%s http_err=%v", iata, err)
 		return iata
 	}
 	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+	log.Printf("[SKY-AC] iata=%s status=%d body_prefix=%.200s", iata, resp.StatusCode, string(body))
 	var payload skyAirportResponse
-	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+	if err := json.Unmarshal(body, &payload); err != nil {
 		return iata
 	}
 	for _, a := range payload.Data {
@@ -848,6 +851,7 @@ func (pc *ProxyClient) FetchFlights(fromSkyID, fromEntityID, toSkyID, toEntityID
 	if toID == "" || toID == toSkyID {
 		toID = pc.resolveSkyscannerEntityID(toSkyID)
 	}
+	log.Printf("[FLY] from=%s(%s) to=%s(%s) date=%s return=%s", fromSkyID, fromID, toSkyID, toID, date, returnDate)
 
 	endpoint := "/flights/search-one-way"
 	if returnDate != "" {
