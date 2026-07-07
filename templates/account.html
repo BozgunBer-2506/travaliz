@@ -236,6 +236,49 @@
   </div>
 </div>
 
+<!-- Booking Detail Modal -->
+<div id="booking-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(0,0,0,0.6);backdrop-filter:blur(4px)">
+  <div class="section-card w-full max-w-md" style="max-height:90vh;overflow-y:auto">
+    <div class="flex items-center justify-between px-5 py-4" style="border-bottom:1px solid var(--border)">
+      <div class="flex items-center gap-3">
+        <span id="bmodal-icon" class="text-2xl"></span>
+        <div>
+          <p id="bmodal-ref" class="text-sm font-black" style="color:#818cf8"></p>
+          <p id="bmodal-date" class="text-xs" style="color:var(--text-muted)"></p>
+        </div>
+      </div>
+      <button onclick="closeBookingModal()" class="text-2xl leading-none" style="color:var(--text-muted)">&times;</button>
+    </div>
+    <div class="px-5 py-4">
+      <p class="text-xs font-bold mb-2" style="color:var(--text-muted)">BOOKING DETAILS</p>
+      <style>
+        .detail-label { font-size:12px; color:var(--text-muted); padding:5px 0; width:40%; }
+        .detail-val   { font-size:13px; font-weight:600; color:var(--text-primary); padding:5px 0; }
+      </style>
+      <table class="w-full">
+        <tbody id="bmodal-rows"></tbody>
+      </table>
+    </div>
+    <div class="px-5 py-4" style="border-top:1px solid var(--border)">
+      <p class="text-xs font-bold mb-2" style="color:var(--text-muted)">PASSENGER</p>
+      <p id="bmodal-name" class="text-sm font-bold" style="color:var(--text-primary)"></p>
+      <p id="bmodal-email" class="text-xs mt-0.5" style="color:var(--text-muted)"></p>
+    </div>
+    <div class="px-5 py-4" style="border-top:1px solid var(--border)">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs font-bold" style="color:var(--text-muted)">PAYMENT</p>
+          <p id="bmodal-card" class="text-sm font-semibold mt-0.5" style="color:var(--text-primary)"></p>
+        </div>
+        <div class="text-right">
+          <p class="text-xs font-bold" style="color:var(--text-muted)">TOTAL</p>
+          <p id="bmodal-price" class="text-lg font-black mt-0.5" style="color:#818cf8"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Toast -->
 <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl text-sm font-semibold text-white shadow-xl" style="background:linear-gradient(135deg,#4f46e5,#7c3aed)"></div>
 
@@ -283,7 +326,55 @@ async function changePassword() {
   showToast('Password reset email sent.');
 }
 
+let _allBookings = [];
+
+function openBookingModal(ref) {
+  const b = _allBookings.find(x => x.Ref === ref);
+  if (!b) return;
+  const isHotel = b.Type === 'hotel';
+  const isCar   = b.Type === 'car';
+  const icon  = isCar ? '🚗' : isHotel ? '🏨' : '✈️';
+  const price = (b.Currency || 'USD') + ' ' + (b.Price || 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+  const date  = b.CreatedAt ? new Date(b.CreatedAt).toLocaleString('en-GB', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+
+  let rows = '';
+  if (isHotel) {
+    rows = `
+      <tr><td class="detail-label">Hotel</td><td class="detail-val">${b.HotelName || '-'}</td></tr>
+      <tr><td class="detail-label">Check-in</td><td class="detail-val">${b.Checkin || '-'}</td></tr>
+      <tr><td class="detail-label">Check-out</td><td class="detail-val">${b.Checkout || '-'}</td></tr>`;
+  } else if (isCar) {
+    rows = `
+      <tr><td class="detail-label">Pick-up</td><td class="detail-val">${b.FromCode || '-'}</td></tr>
+      <tr><td class="detail-label">Date</td><td class="detail-val">${b.Checkin || '-'}</td></tr>`;
+  } else {
+    rows = `
+      <tr><td class="detail-label">From</td><td class="detail-val">${b.FromCode || '-'}</td></tr>
+      <tr><td class="detail-label">To</td><td class="detail-val">${b.ToCode || '-'}</td></tr>
+      <tr><td class="detail-label">Airline</td><td class="detail-val">${b.Airline || '-'}</td></tr>
+      <tr><td class="detail-label">Departure</td><td class="detail-val">${b.DepartTime || '-'}</td></tr>
+      <tr><td class="detail-label">Arrival</td><td class="detail-val">${b.ArriveTime || '-'}</td></tr>
+      <tr><td class="detail-label">Duration</td><td class="detail-val">${b.Duration || '-'}</td></tr>
+      <tr><td class="detail-label">Stops</td><td class="detail-val">${b.Stops === 0 ? 'Non-stop' : b.Stops + ' stop(s)'}</td></tr>`;
+  }
+
+  document.getElementById('bmodal-icon').textContent  = icon;
+  document.getElementById('bmodal-ref').textContent   = b.Ref;
+  document.getElementById('bmodal-date').textContent  = date;
+  document.getElementById('bmodal-price').textContent = price;
+  document.getElementById('bmodal-name').textContent  = (b.FirstName || '') + ' ' + (b.LastName || '');
+  document.getElementById('bmodal-email').textContent = b.Email || '';
+  document.getElementById('bmodal-card').textContent  = '•••• ' + (b.CardLast4 || '****');
+  document.getElementById('bmodal-rows').innerHTML    = rows;
+  document.getElementById('booking-modal').classList.remove('hidden');
+}
+
+function closeBookingModal() {
+  document.getElementById('booking-modal').classList.add('hidden');
+}
+
 function renderBookings(bookings) {
+  _allBookings = bookings;
   const list = document.getElementById('bookings-list');
   if (!bookings.length) {
     list.innerHTML = '<div class="section-row"><span class="text-sm" style="color:var(--text-muted)">No bookings yet. Start searching!</span></div>';
@@ -300,7 +391,7 @@ function renderBookings(bookings) {
       : ((b.Airline || '') + (b.DepartTime ? ' · ' + b.DepartTime : ''));
     const price = (b.Currency || 'USD') + ' ' + (b.Price || 0).toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0});
     const date = b.CreatedAt ? new Date(b.CreatedAt).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '';
-    return `<div class="section-row">
+    return `<div class="section-row" onclick="openBookingModal('${b.Ref}')">
       <div class="flex items-center gap-3 flex-1 min-w-0">
         <div class="text-2xl shrink-0">${icon}</div>
         <div class="min-w-0">
@@ -312,6 +403,7 @@ function renderBookings(bookings) {
       <div class="text-right shrink-0 ml-3">
         <p class="text-sm font-bold" style="color:var(--text-primary)">${price}</p>
         <p class="text-xs" style="color:var(--text-muted)">${date}</p>
+        <p class="text-xs mt-0.5" style="color:var(--text-muted)">View →</p>
       </div>
     </div>`;
   }).join('');
