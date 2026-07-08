@@ -166,35 +166,24 @@ type skyAirportResponse struct {
 	Data   []skyAirportEntry `json:"data"`
 }
 
-type skyPrice struct {
-	Raw       float64 `json:"raw"`
-	Formatted string  `json:"formatted"`
-}
-
-type skyPlace struct {
-	ID          string `json:"id"`
-	City        string `json:"city"`
-	Country     string `json:"country"`
-	DisplayCode string `json:"displayCode"`
-}
-
-type skyCarrierInfo struct {
-	ID      int    `json:"id"`
-	LogoURL string `json:"logoUrl"`
+type skyCarrier struct {
 	Name    string `json:"name"`
+	LogoURL string `json:"logoUrl"`
 }
 
 type skyLeg struct {
-	ID                string   `json:"id"`
-	Origin            skyPlace `json:"origin"`
-	Destination       skyPlace `json:"destination"`
-	DurationInMinutes int      `json:"durationInMinutes"`
-	StopCount         int      `json:"stopCount"`
-	Departure         string   `json:"departure"`
-	Arrival           string   `json:"arrival"`
-	Carriers          struct {
-		Marketing []skyCarrierInfo `json:"marketing"`
-	} `json:"carriers"`
+	Origin          string       `json:"origin"`
+	Destination     string       `json:"destination"`
+	Departure       string       `json:"departure"`
+	Arrival         string       `json:"arrival"`
+	DurationMinutes int          `json:"durationMinutes"`
+	StopCount       int          `json:"stopCount"`
+	Carriers        []skyCarrier `json:"carriers"`
+}
+
+type skyPrice struct {
+	Amount   float64 `json:"amount"`
+	Currency string  `json:"currency"`
 }
 
 type skyItinerary struct {
@@ -203,13 +192,9 @@ type skyItinerary struct {
 	Legs  []skyLeg `json:"legs"`
 }
 
-type skyFlightData struct {
-	Itineraries []skyItinerary `json:"itineraries"`
-}
-
 type skyFlightResponse struct {
-	Status bool          `json:"status"`
-	Data   skyFlightData `json:"data"`
+	Status      string         `json:"status"`
+	Itineraries []skyItinerary `json:"itineraries"`
 }
 
 // --- Hotels.com regions internal structs ---
@@ -943,29 +928,25 @@ func (pc *ProxyClient) FetchFlights(fromSkyID, fromEntityID, toSkyID, toEntityID
 	}
 	log.Printf("[FLY] from=%s(%s) to=%s(%s) date=%s return=%s", fromSkyID, fromID, toSkyID, toID, date, returnDate)
 
-	endpoint := "/flights/getCheapestOneway"
-	if returnDate != "" {
-		endpoint = "/flights/searchFlights"
-	}
-
 	params := map[string]string{
-		"fromEntityId": fromID,
-		"toEntityId":   toID,
-		"departDate":   date,
-		"market":       "US",
-		"locale":       "en-US",
-		"currency":     "USD",
-		"adults":       adults,
-		"cabinClass":   cabinClass,
+		"originSkyId":       fromSkyID,
+		"destinationSkyId":  toSkyID,
+		"originEntityId":    fromID,
+		"destinationEntityId": toID,
+		"date":              date,
+		"countryCode":       "US",
+		"currency":          "USD",
+		"adults":            adults,
+		"cabinClass":        cabinClass,
 	}
 	if returnDate != "" {
 		params["returnDate"] = returnDate
 	}
 	if children != "" && children != "0" {
-		params["children"] = children
+		params["childrens"] = children
 	}
 
-	resp, err := pc.doGet(skyBase, skyHost, endpoint, params)
+	resp, err := pc.doGet(skyBase, skyHost, "/flights/searchFlights", params)
 	if err != nil {
 		log.Printf("[SKY] http error: %v", err)
 	} else {
@@ -973,9 +954,9 @@ func (pc *ProxyClient) FetchFlights(fromSkyID, fromEntityID, toSkyID, toEntityID
 		skyBody, _ := io.ReadAll(resp.Body)
 		log.Printf("[SKY] status=%d body_prefix=%.300s", resp.StatusCode, string(skyBody))
 		var payload skyFlightResponse
-		if json.Unmarshal(skyBody, &payload) == nil && payload.Status && len(payload.Data.Itineraries) > 0 {
-			its := payload.Data.Itineraries
-			sort.Slice(its, func(i, j int) bool { return its[i].Price.Raw < its[j].Price.Raw })
+		if json.Unmarshal(skyBody, &payload) == nil && payload.Status == "RESULT_STATUS_COMPLETE" && len(payload.Itineraries) > 0 {
+			its := payload.Itineraries
+			sort.Slice(its, func(i, j int) bool { return its[i].Price.Amount < its[j].Price.Amount })
 			flights := make([]FlightData, 0, len(its))
 			for _, it := range its {
 				if len(it.Legs) == 0 {
@@ -983,16 +964,22 @@ func (pc *ProxyClient) FetchFlights(fromSkyID, fromEntityID, toSkyID, toEntityID
 				}
 				leg := it.Legs[0]
 				airline, logo := "", ""
-				if len(leg.Carriers.Marketing) > 0 {
-					airline = leg.Carriers.Marketing[0].Name
-					logo = leg.Carriers.Marketing[0].LogoURL
+				if len(leg.Carriers) > 0 {
+					airline = leg.Carriers[0].Name
+					logo = leg.Carriers[0].LogoURL
 				}
 				flights = append(flights, FlightData{
-					FromCode: leg.Origin.DisplayCode, ToCode: leg.Destination.DisplayCode,
-					DepartTime: extractISOTime(leg.Departure), ArriveTime: extractISOTime(leg.Arrival),
-					DurationHours: leg.DurationInMinutes / 60, DurationMinutes: leg.DurationInMinutes % 60,
-					Airline: airline, AirlineLogo: logo,
-					Price: it.Price.Raw, Currency: "USD", Stops: leg.StopCount,
+					FromCode:        leg.Origin,
+					ToCode:          leg.Destination,
+					DepartTime:      extractISOTime(leg.Departure),
+					ArriveTime:      extractISOTime(leg.Arrival),
+					DurationHours:   leg.DurationMinutes / 60,
+					DurationMinutes: leg.DurationMinutes % 60,
+					Airline:         airline,
+					AirlineLogo:     logo,
+					Price:           it.Price.Amount,
+					Currency:        "USD",
+					Stops:           leg.StopCount,
 				})
 			}
 			if len(flights) > 0 {
