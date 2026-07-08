@@ -1,94 +1,92 @@
 package db
 
 import (
-	"database/sql"
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
 	"math/rand"
+	"net/http"
+	"net/url"
 	"strings"
 	"time"
-
-	_ "modernc.org/sqlite"
 )
 
 type DB struct {
-	conn *sql.DB
+	base   string
+	apiKey string
+	client *http.Client
 }
 
 type Booking struct {
-	ID         int64
-	Ref        string
-	Type       string
-	FirstName  string
-	LastName   string
-	Email      string
-	Phone      string
-	FromCode   string
-	ToCode     string
-	Airline    string
-	DepartTime string
-	ArriveTime string
-	Duration   string
-	Stops      int
-	HotelName  string
-	Checkin    string
-	Checkout   string
-	Price      float64
-	Currency   string
-	CardLast4  string
-	CreatedAt  time.Time
+	ID         int64     `json:"id,omitempty"`
+	Ref        string    `json:"ref"`
+	Type       string    `json:"type"`
+	FirstName  string    `json:"first_name"`
+	LastName   string    `json:"last_name"`
+	Email      string    `json:"email"`
+	Phone      string    `json:"phone"`
+	FromCode   string    `json:"from_code"`
+	ToCode     string    `json:"to_code"`
+	Airline    string    `json:"airline"`
+	DepartTime string    `json:"depart_time"`
+	ArriveTime string    `json:"arrive_time"`
+	Duration   string    `json:"duration"`
+	Stops      int       `json:"stops"`
+	HotelName  string    `json:"hotel_name"`
+	Checkin    string    `json:"checkin"`
+	Checkout   string    `json:"checkout"`
+	Price      float64   `json:"price"`
+	Currency   string    `json:"currency"`
+	CardLast4  string    `json:"card_last4"`
+	CreatedAt  time.Time `json:"created_at,omitempty"`
 }
 
-func Open(path string) (*DB, error) {
-	conn, err := sql.Open("sqlite", path)
+func Open(supabaseURL, apiKey string) (*DB, error) {
+	if supabaseURL == "" || apiKey == "" {
+		return nil, fmt.Errorf("SUPABASE_URL and SUPABASE_ANON_KEY are required")
+	}
+	return &DB{
+		base:   strings.TrimRight(supabaseURL, "/") + "/rest/v1",
+		apiKey: apiKey,
+		client: &http.Client{Timeout: 10 * time.Second},
+	}, nil
+}
+
+func (d *DB) do(method, path string, body interface{}) ([]byte, error) {
+	var r io.Reader
+	if body != nil {
+		data, err := json.Marshal(body)
+		if err != nil {
+			return nil, err
+		}
+		r = bytes.NewReader(data)
+	}
+	req, err := http.NewRequest(method, d.base+path, r)
 	if err != nil {
-		return nil, fmt.Errorf("open db: %w", err)
+		return nil, err
 	}
-	if err := migrate(conn); err != nil {
-		return nil, fmt.Errorf("migrate: %w", err)
+	req.Header.Set("apikey", d.apiKey)
+	req.Header.Set("Authorization", "Bearer "+d.apiKey)
+	req.Header.Set("Content-Type", "application/json")
+	if method == http.MethodPost {
+		req.Header.Set("Prefer", "return=representation")
 	}
-	return &DB{conn: conn}, nil
-}
-
-func migrate(conn *sql.DB) error {
-	_, err := conn.Exec(`
-CREATE TABLE IF NOT EXISTS bookings (
-  id          INTEGER PRIMARY KEY AUTOINCREMENT,
-  ref         TEXT    UNIQUE NOT NULL,
-  type        TEXT    NOT NULL,
-  first_name  TEXT    NOT NULL,
-  last_name   TEXT    NOT NULL,
-  email       TEXT    NOT NULL,
-  phone       TEXT    NOT NULL,
-  from_code   TEXT,
-  to_code     TEXT,
-  airline     TEXT,
-  depart_time TEXT,
-  arrive_time TEXT,
-  duration    TEXT,
-  stops       INTEGER DEFAULT 0,
-  hotel_name  TEXT,
-  checkin     TEXT,
-  checkout    TEXT,
-  price       REAL    NOT NULL,
-  currency    TEXT    NOT NULL DEFAULT 'USD',
-  card_last4  TEXT    NOT NULL,
-  created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
-)`)
-	return err
+	resp, err := d.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	data, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode >= 400 {
+		return nil, fmt.Errorf("supabase %d: %s", resp.StatusCode, string(data))
+	}
+	return data, nil
 }
 
 func (d *DB) CreateBooking(b *Booking) (string, error) {
 	b.Ref = generateRef()
-	_, err := d.conn.Exec(`
-INSERT INTO bookings
-  (ref, type, first_name, last_name, email, phone,
-   from_code, to_code, airline, depart_time, arrive_time, duration, stops,
-   hotel_name, checkin, checkout, price, currency, card_last4)
-VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-		b.Ref, b.Type, b.FirstName, b.LastName, b.Email, b.Phone,
-		b.FromCode, b.ToCode, b.Airline, b.DepartTime, b.ArriveTime, b.Duration, b.Stops,
-		b.HotelName, b.Checkin, b.Checkout, b.Price, b.Currency, b.CardLast4,
-	)
+	_, err := d.do(http.MethodPost, "/bookings", b)
 	if err != nil {
 		return "", fmt.Errorf("insert booking: %w", err)
 	}
@@ -96,40 +94,35 @@ VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 }
 
 func (d *DB) GetBookingsByEmail(email string) ([]*Booking, error) {
-	rows, err := d.conn.Query(`SELECT id,ref,type,first_name,last_name,email,phone,
-	  from_code,to_code,airline,depart_time,arrive_time,duration,stops,
-	  hotel_name,checkin,checkout,price,currency,card_last4,created_at
-	FROM bookings WHERE email=? ORDER BY created_at DESC`, email)
+	path := "/bookings?email=eq." + url.QueryEscape(email) + "&order=created_at.desc"
+	data, err := d.do(http.MethodGet, path, nil)
 	if err != nil {
 		return nil, fmt.Errorf("query bookings: %w", err)
 	}
-	defer rows.Close()
 	var bookings []*Booking
-	for rows.Next() {
-		b := &Booking{}
-		if err := rows.Scan(
-			&b.ID, &b.Ref, &b.Type, &b.FirstName, &b.LastName, &b.Email, &b.Phone,
-			&b.FromCode, &b.ToCode, &b.Airline, &b.DepartTime, &b.ArriveTime, &b.Duration, &b.Stops,
-			&b.HotelName, &b.Checkin, &b.Checkout, &b.Price, &b.Currency, &b.CardLast4, &b.CreatedAt,
-		); err != nil {
-			return nil, err
-		}
-		bookings = append(bookings, b)
+	if err := json.Unmarshal(data, &bookings); err != nil {
+		return nil, err
 	}
-	return bookings, rows.Err()
+	if bookings == nil {
+		bookings = []*Booking{}
+	}
+	return bookings, nil
 }
 
 func (d *DB) GetBookingByRef(ref string) (*Booking, error) {
-	row := d.conn.QueryRow(`SELECT id,ref,type,first_name,last_name,email,phone,
-	  from_code,to_code,airline,depart_time,arrive_time,duration,stops,
-	  hotel_name,checkin,checkout,price,currency,card_last4,created_at
-	FROM bookings WHERE ref=?`, ref)
-	b := &Booking{}
-	return b, row.Scan(
-		&b.ID, &b.Ref, &b.Type, &b.FirstName, &b.LastName, &b.Email, &b.Phone,
-		&b.FromCode, &b.ToCode, &b.Airline, &b.DepartTime, &b.ArriveTime, &b.Duration, &b.Stops,
-		&b.HotelName, &b.Checkin, &b.Checkout, &b.Price, &b.Currency, &b.CardLast4, &b.CreatedAt,
-	)
+	path := "/bookings?ref=eq." + url.QueryEscape(ref) + "&limit=1"
+	data, err := d.do(http.MethodGet, path, nil)
+	if err != nil {
+		return nil, fmt.Errorf("query booking: %w", err)
+	}
+	var list []*Booking
+	if err := json.Unmarshal(data, &list); err != nil {
+		return nil, err
+	}
+	if len(list) == 0 {
+		return nil, fmt.Errorf("booking not found")
+	}
+	return list[0], nil
 }
 
 func generateRef() string {

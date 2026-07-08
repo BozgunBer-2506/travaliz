@@ -28,11 +28,7 @@ func main() {
 		log.Fatalf("failed to parse templates: %v", err)
 	}
 
-	dbPath := os.Getenv("DB_PATH")
-	if dbPath == "" {
-		dbPath = "bookings.db"
-	}
-	database, err := db.Open(dbPath)
+	database, err := db.Open(os.Getenv("SUPABASE_URL"), os.Getenv("SUPABASE_ANON_KEY"))
 	if err != nil {
 		log.Fatalf("failed to open database: %v", err)
 	}
