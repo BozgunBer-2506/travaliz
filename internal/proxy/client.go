@@ -407,40 +407,47 @@ func (pc *ProxyClient) SearchHotelDestination(query string) (string, error) {
 	return results[0].EntityID, nil
 }
 
-// SearchAirports returns airport suggestions using Skyscanner airport search.
+// SearchAirports returns airport suggestions using Google Flights airport search.
 func (pc *ProxyClient) SearchAirports(query string) ([]FlightDestSuggestion, error) {
-	resp, err := pc.doGet(skyBase, skyHost, "/flights/searchAirport", map[string]string{
-		"query":  query,
-		"market": "US",
-		"locale": "en-US",
-	})
+	resp, err := pc.doGet(gfBase, gfHost, "/api/v1/searchAirport", map[string]string{"query": query})
 	if err != nil {
 		return nil, fmt.Errorf("airport search failed: %w", err)
 	}
 	defer resp.Body.Close()
-	body, _ := io.ReadAll(resp.Body)
-	log.Printf("[SKY-AIRPORT] query=%s status=%d body=%.300s", query, resp.StatusCode, string(body))
 
-	var payload skyAirportResponse
-	if err := json.Unmarshal(body, &payload); err != nil {
+	var payload gfAirportResponse
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
 		return nil, fmt.Errorf("failed to decode airport response: %w", err)
 	}
 
 	var results []FlightDestSuggestion
-	for _, a := range payload.Data {
-		sid := a.skyID()
-		eid := a.entityID()
-		if sid == "" || eid == "" {
-			continue
+	addResult := func(id, name, city, country string) {
+		if len(id) != 3 {
+			return
+		}
+		for _, r := range results {
+			if r.SkyID == id {
+				return
+			}
 		}
 		results = append(results, FlightDestSuggestion{
-			SkyID:       sid,
-			EntityID:    eid,
-			Name:        a.displayName(),
-			CityName:    a.Presentation.Title,
-			CountryName: a.Presentation.Subtitle,
-			PlaceType:   strings.ToLower(a.EntityType),
+			SkyID:       id,
+			EntityID:    id,
+			Name:        name,
+			CityName:    city,
+			CountryName: country,
+			PlaceType:   "airport",
 		})
+	}
+	for _, group := range payload.Data {
+		country := ""
+		if idx := strings.LastIndex(group.Name, ", "); idx >= 0 {
+			country = group.Name[idx+2:]
+		}
+		addResult(group.ID, group.Name, group.City, country)
+		for _, a := range group.List {
+			addResult(a.ID, a.Name, a.City, country)
+		}
 		if len(results) >= 8 {
 			break
 		}
