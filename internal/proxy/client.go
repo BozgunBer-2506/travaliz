@@ -364,49 +364,37 @@ func (pc *ProxyClient) SearchHotelDestination(query string) (string, error) {
 	return results[0].EntityID, nil
 }
 
-// SearchAirports returns airport suggestions using Google Flights airport search.
+// SearchAirports returns airport suggestions using Skyscanner airport search.
 func (pc *ProxyClient) SearchAirports(query string) ([]FlightDestSuggestion, error) {
-	resp, err := pc.doGet(gfBase, gfHost, "/api/v1/searchAirport", map[string]string{"query": query})
+	resp, err := pc.doGet(skyBase, skyHost, "/flights/searchAirport", map[string]string{
+		"query":  query,
+		"market": "US",
+		"locale": "en-US",
+	})
 	if err != nil {
 		return nil, fmt.Errorf("airport search failed: %w", err)
 	}
 	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
 
-	var payload gfAirportResponse
-	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+	var payload skyAirportResponse
+	if err := json.Unmarshal(body, &payload); err != nil {
 		return nil, fmt.Errorf("failed to decode airport response: %w", err)
 	}
 
 	var results []FlightDestSuggestion
-	addResult := func(id, name, city, country string) {
-		if len(id) != 3 {
-			return
-		}
-		for _, r := range results {
-			if r.SkyID == id {
-				return // deduplicate
-			}
+	for _, a := range payload.Data {
+		if a.IataCode == "" || a.EntityID == "" {
+			continue
 		}
 		results = append(results, FlightDestSuggestion{
-			SkyID:       id,
-			EntityID:    id,
-			Name:        name,
-			CityName:    city,
-			CountryName: country,
-			PlaceType:   "airport",
+			SkyID:       a.IataCode,
+			EntityID:    a.EntityID,
+			Name:        a.Name,
+			CityName:    a.Name,
+			CountryName: a.Location,
+			PlaceType:   strings.ToLower(a.EntityType),
 		})
-	}
-	for _, group := range payload.Data {
-		country := ""
-		if idx := strings.LastIndex(group.Name, ", "); idx >= 0 {
-			country = group.Name[idx+2:]
-		}
-		// group itself may be an airport entry (e.g. direct IATA code search)
-		addResult(group.ID, group.Name, group.City, country)
-		// nested list items
-		for _, a := range group.List {
-			addResult(a.ID, a.Name, a.City, country)
-		}
 		if len(results) >= 8 {
 			break
 		}

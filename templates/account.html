@@ -329,42 +329,42 @@ async function changePassword() {
 let _allBookings = [];
 
 function openBookingModal(ref) {
-  const b = _allBookings.find(x => x.Ref === ref);
+  const b = _allBookings.find(x => x.ref === ref);
   if (!b) return;
-  const isHotel = b.Type === 'hotel';
-  const isCar   = b.Type === 'car';
+  const isHotel = b.type === 'hotel';
+  const isCar   = b.type === 'car';
   const icon  = isCar ? '🚗' : isHotel ? '🏨' : '✈️';
-  const price = (b.Currency || 'USD') + ' ' + (b.Price || 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
-  const date  = b.CreatedAt ? new Date(b.CreatedAt).toLocaleString('en-GB', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+  const price = (b.currency || 'USD') + ' ' + (b.price || 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+  const date  = b.created_at ? new Date(b.created_at).toLocaleString('en-GB', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
 
   let rows = '';
   if (isHotel) {
     rows = `
-      <tr><td class="detail-label">Hotel</td><td class="detail-val">${b.HotelName || '-'}</td></tr>
-      <tr><td class="detail-label">Check-in</td><td class="detail-val">${b.Checkin || '-'}</td></tr>
-      <tr><td class="detail-label">Check-out</td><td class="detail-val">${b.Checkout || '-'}</td></tr>`;
+      <tr><td class="detail-label">Hotel</td><td class="detail-val">${b.hotel_name || '-'}</td></tr>
+      <tr><td class="detail-label">Check-in</td><td class="detail-val">${b.checkin || '-'}</td></tr>
+      <tr><td class="detail-label">Check-out</td><td class="detail-val">${b.checkout || '-'}</td></tr>`;
   } else if (isCar) {
     rows = `
-      <tr><td class="detail-label">Pick-up</td><td class="detail-val">${b.FromCode || '-'}</td></tr>
-      <tr><td class="detail-label">Date</td><td class="detail-val">${b.Checkin || '-'}</td></tr>`;
+      <tr><td class="detail-label">Pick-up</td><td class="detail-val">${b.from_code || '-'}</td></tr>
+      <tr><td class="detail-label">Date</td><td class="detail-val">${b.checkin || '-'}</td></tr>`;
   } else {
     rows = `
-      <tr><td class="detail-label">From</td><td class="detail-val">${b.FromCode || '-'}</td></tr>
-      <tr><td class="detail-label">To</td><td class="detail-val">${b.ToCode || '-'}</td></tr>
-      <tr><td class="detail-label">Airline</td><td class="detail-val">${b.Airline || '-'}</td></tr>
-      <tr><td class="detail-label">Departure</td><td class="detail-val">${b.DepartTime || '-'}</td></tr>
-      <tr><td class="detail-label">Arrival</td><td class="detail-val">${b.ArriveTime || '-'}</td></tr>
-      <tr><td class="detail-label">Duration</td><td class="detail-val">${b.Duration || '-'}</td></tr>
-      <tr><td class="detail-label">Stops</td><td class="detail-val">${b.Stops === 0 ? 'Non-stop' : b.Stops + ' stop(s)'}</td></tr>`;
+      <tr><td class="detail-label">From</td><td class="detail-val">${b.from_code || '-'}</td></tr>
+      <tr><td class="detail-label">To</td><td class="detail-val">${b.to_code || '-'}</td></tr>
+      <tr><td class="detail-label">Airline</td><td class="detail-val">${b.airline || '-'}</td></tr>
+      <tr><td class="detail-label">Departure</td><td class="detail-val">${b.depart_time || '-'}</td></tr>
+      <tr><td class="detail-label">Arrival</td><td class="detail-val">${b.arrive_time || '-'}</td></tr>
+      <tr><td class="detail-label">Duration</td><td class="detail-val">${b.duration || '-'}</td></tr>
+      <tr><td class="detail-label">Stops</td><td class="detail-val">${b.stops === 0 ? 'Non-stop' : (b.stops || 0) + ' stop(s)'}</td></tr>`;
   }
 
   document.getElementById('bmodal-icon').textContent  = icon;
-  document.getElementById('bmodal-ref').textContent   = b.Ref;
+  document.getElementById('bmodal-ref').textContent   = b.ref;
   document.getElementById('bmodal-date').textContent  = date;
   document.getElementById('bmodal-price').textContent = price;
-  document.getElementById('bmodal-name').textContent  = (b.FirstName || '') + ' ' + (b.LastName || '');
-  document.getElementById('bmodal-email').textContent = b.Email || '';
-  document.getElementById('bmodal-card').textContent  = '•••• ' + (b.CardLast4 || '****');
+  document.getElementById('bmodal-name').textContent  = (b.first_name || '') + ' ' + (b.last_name || '');
+  document.getElementById('bmodal-email').textContent = b.email || '';
+  document.getElementById('bmodal-card').textContent  = '•••• ' + (b.card_last4 || '****');
   document.getElementById('bmodal-rows').innerHTML    = rows;
   document.getElementById('booking-modal').classList.remove('hidden');
 }
@@ -381,23 +381,23 @@ function renderBookings(bookings) {
     return;
   }
   list.innerHTML = bookings.map(b => {
-    const isHotel = b.Type === 'hotel';
-    const isCar = b.Type === 'car';
+    const isHotel = b.type === 'hotel';
+    const isCar = b.type === 'car';
     const icon = isCar ? '🚗' : isHotel ? '🏨' : '✈️';
-    const title = isHotel ? (b.HotelName || 'Hotel') : isCar ? 'Car Rental' : (b.FromCode + ' → ' + b.ToCode);
+    const title = isHotel ? (b.hotel_name || 'Hotel') : isCar ? 'Car Rental' : ((b.from_code || '?') + ' → ' + (b.to_code || '?'));
     const sub = isHotel
-      ? (b.Checkin + ' – ' + b.Checkout)
-      : isCar ? b.Checkin
-      : ((b.Airline || '') + (b.DepartTime ? ' · ' + b.DepartTime : ''));
-    const price = (b.Currency || 'USD') + ' ' + (b.Price || 0).toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0});
-    const date = b.CreatedAt ? new Date(b.CreatedAt).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '';
-    return `<div class="section-row" onclick="openBookingModal('${b.Ref}')">
+      ? ((b.checkin || '') + ' – ' + (b.checkout || ''))
+      : isCar ? (b.checkin || '')
+      : ((b.airline || '') + (b.depart_time ? ' · ' + b.depart_time : ''));
+    const price = (b.currency || 'USD') + ' ' + (b.price || 0).toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0});
+    const date = b.created_at ? new Date(b.created_at).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '';
+    return `<div class="section-row" onclick="openBookingModal('${b.ref}')">
       <div class="flex items-center gap-3 flex-1 min-w-0">
         <div class="text-2xl shrink-0">${icon}</div>
         <div class="min-w-0">
           <p class="text-sm font-bold truncate" style="color:var(--text-primary)">${title}</p>
           <p class="text-xs truncate" style="color:var(--text-muted)">${sub}</p>
-          <p class="text-xs font-bold mt-0.5" style="color:#818cf8">${b.Ref}</p>
+          <p class="text-xs font-bold mt-0.5" style="color:#818cf8">${b.ref}</p>
         </div>
       </div>
       <div class="text-right shrink-0 ml-3">
@@ -418,9 +418,9 @@ function renderAnalytics(bookings) {
 
   // Spend by type
   const byType = { flight: 0, hotel: 0, car: 0 };
-  bookings.forEach(b => { byType[b.Type] = (byType[b.Type] || 0) + (b.Price || 0); });
+  bookings.forEach(b => { byType[b.type] = (byType[b.type] || 0) + (b.price || 0); });
   const total = Object.values(byType).reduce((a, v) => a + v, 0);
-  document.getElementById('chart-total').textContent = (bookings[0]?.Currency || 'USD') + ' ' + Math.round(total).toLocaleString();
+  document.getElementById('chart-total').textContent = (bookings[0]?.currency || 'USD') + ' ' + Math.round(total).toLocaleString();
 
   new Chart(document.getElementById('chart-type'), {
     type: 'doughnut',
@@ -447,7 +447,7 @@ function renderAnalytics(bookings) {
   // Top destinations
   const destCount = {};
   bookings.forEach(b => {
-    const dest = b.Type === 'hotel' ? (b.HotelName ? b.HotelName.split(' ').slice(-1)[0] : '?') : (b.ToCode || '?');
+    const dest = b.type === 'hotel' ? (b.hotel_name ? b.hotel_name.split(' ').slice(-1)[0] : '?') : (b.to_code || '?');
     destCount[dest] = (destCount[dest] || 0) + 1;
   });
   const topDests = Object.entries(destCount).sort((a,b) => b[1]-a[1]).slice(0,5);
@@ -467,9 +467,9 @@ function renderAnalytics(bookings) {
   // Monthly spend
   const monthly = {};
   bookings.forEach(b => {
-    if (!b.CreatedAt) return;
-    const key = new Date(b.CreatedAt).toLocaleDateString('en-GB',{month:'short',year:'2-digit'});
-    monthly[key] = (monthly[key] || 0) + (b.Price || 0);
+    if (!b.created_at) return;
+    const key = new Date(b.created_at).toLocaleDateString('en-GB',{month:'short',year:'2-digit'});
+    monthly[key] = (monthly[key] || 0) + (b.price || 0);
   });
   const months = Object.keys(monthly).slice(-6);
   new Chart(document.getElementById('chart-monthly'), {
@@ -491,7 +491,7 @@ function renderAnalytics(bookings) {
 function renderPayments(bookings) {
   const list = document.getElementById('payment-list');
   const seen = new Set();
-  const cards = bookings.filter(b => { if (seen.has(b.CardLast4)) return false; seen.add(b.CardLast4); return true; });
+  const cards = bookings.filter(b => { if (seen.has(b.card_last4)) return false; seen.add(b.card_last4); return true; });
   if (!cards.length) {
     list.innerHTML = '<div class="section-row"><span class="text-sm" style="color:var(--text-muted)">No payment methods on file.</span></div>';
     return;
@@ -500,8 +500,8 @@ function renderPayments(bookings) {
     <div class="flex items-center gap-3">
       <span style="font-size:20px">💳</span>
       <div>
-        <p class="text-sm font-bold" style="color:var(--text-primary)">Card ending in ${b.CardLast4}</p>
-        <p class="text-xs" style="color:var(--text-muted)">Used for ${b.Ref}</p>
+        <p class="text-sm font-bold" style="color:var(--text-primary)">Card ending in ${b.card_last4}</p>
+        <p class="text-xs" style="color:var(--text-muted)">Used for ${b.ref}</p>
       </div>
     </div>
   </div>`).join('');
@@ -534,8 +534,8 @@ async function loadPage(user) {
   try {
     const res = await fetch('/my-bookings?email=' + encodeURIComponent(user.email));
     const bookings = await res.json();
-    const flights = bookings.filter(b => b.Type === 'flight').length;
-    const hotels  = bookings.filter(b => b.Type === 'hotel').length;
+    const flights = bookings.filter(b => b.type === 'flight').length;
+    const hotels  = bookings.filter(b => b.type === 'hotel').length;
     document.getElementById('stat-bookings').textContent = bookings.length;
     document.getElementById('stat-flights').textContent = flights;
     document.getElementById('stat-hotels').textContent = hotels;
