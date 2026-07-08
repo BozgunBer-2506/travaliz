@@ -153,17 +153,60 @@ type gfFlightResponse struct {
 
 // --- Skyscanner internal structs ---
 
-type skyAirportEntry struct {
+type skyAirportPresentation struct {
+	Title           string `json:"title"`
+	Subtitle        string `json:"subtitle"`
+	SuggestionTitle string `json:"suggestionTitle"`
+}
+
+type skyAirportNavigation struct {
 	EntityID   string `json:"entityId"`
 	EntityType string `json:"entityType"`
-	Name       string `json:"name"`
-	IataCode   string `json:"iataCode"`
-	Location   string `json:"location"`
+	LocalID    string `json:"localId"`
+}
+
+type skyAirportEntry struct {
+	SkyID        string                `json:"skyId"`
+	EntityID     string                `json:"entityId"`
+	IataCode     string                `json:"iataCode"`
+	EntityType   string                `json:"entityType"`
+	Name         string                `json:"name"`
+	Location     string                `json:"location"`
+	Presentation skyAirportPresentation `json:"presentation"`
+	Navigation   skyAirportNavigation   `json:"navigation"`
 }
 
 type skyAirportResponse struct {
 	Status bool              `json:"status"`
 	Data   []skyAirportEntry `json:"data"`
+}
+
+func (a *skyAirportEntry) skyID() string {
+	if a.SkyID != "" {
+		return a.SkyID
+	}
+	if a.IataCode != "" {
+		return a.IataCode
+	}
+	return a.Navigation.LocalID
+}
+
+func (a *skyAirportEntry) entityID() string {
+	if a.EntityID != "" {
+		return a.EntityID
+	}
+	return a.Navigation.EntityID
+}
+
+func (a *skyAirportEntry) displayName() string {
+	if a.Presentation.Title != "" {
+		sub := a.Presentation.Subtitle
+		if sub != "" {
+			return a.Presentation.Title + ", " + sub
+		}
+		return a.Presentation.Title
+	}
+	return a.Name
 }
 
 type skyCarrier struct {
@@ -376,6 +419,7 @@ func (pc *ProxyClient) SearchAirports(query string) ([]FlightDestSuggestion, err
 	}
 	defer resp.Body.Close()
 	body, _ := io.ReadAll(resp.Body)
+	log.Printf("[SKY-AIRPORT] query=%s status=%d body=%.300s", query, resp.StatusCode, string(body))
 
 	var payload skyAirportResponse
 	if err := json.Unmarshal(body, &payload); err != nil {
@@ -384,15 +428,17 @@ func (pc *ProxyClient) SearchAirports(query string) ([]FlightDestSuggestion, err
 
 	var results []FlightDestSuggestion
 	for _, a := range payload.Data {
-		if a.IataCode == "" || a.EntityID == "" {
+		sid := a.skyID()
+		eid := a.entityID()
+		if sid == "" || eid == "" {
 			continue
 		}
 		results = append(results, FlightDestSuggestion{
-			SkyID:       a.IataCode,
-			EntityID:    a.EntityID,
-			Name:        a.Name,
-			CityName:    a.Name,
-			CountryName: a.Location,
+			SkyID:       sid,
+			EntityID:    eid,
+			Name:        a.displayName(),
+			CityName:    a.Presentation.Title,
+			CountryName: a.Presentation.Subtitle,
 			PlaceType:   strings.ToLower(a.EntityType),
 		})
 		if len(results) >= 8 {
@@ -421,12 +467,15 @@ func (pc *ProxyClient) resolveSkyscannerEntityID(iata string) string {
 		return iata
 	}
 	for _, a := range payload.Data {
-		if a.IataCode == iata {
-			return a.EntityID
+		if strings.EqualFold(a.skyID(), iata) {
+			eid := a.entityID()
+			if eid != "" {
+				return eid
+			}
 		}
 	}
-	if len(payload.Data) > 0 && payload.Data[0].EntityID != "" {
-		return payload.Data[0].EntityID
+	if len(payload.Data) > 0 && payload.Data[0].entityID() != "" {
+		return payload.Data[0].entityID()
 	}
 	return iata
 }
