@@ -532,7 +532,11 @@ async function loadPage(user) {
   document.getElementById('theme-indicator').textContent = isDark ? 'ON' : 'OFF';
 
   try {
-    const res = await fetch('/my-bookings?email=' + encodeURIComponent(user.email));
+    const { data: { session } } = await _sb.auth.getSession();
+    if (!session) { window.location.href = '/'; return; }
+    const res = await fetch('/my-bookings', {
+      headers: { 'Authorization': 'Bearer ' + session.access_token }
+    });
     const bookings = await res.json();
     const flights = bookings.filter(b => b.type === 'flight').length;
     const hotels  = bookings.filter(b => b.type === 'hotel').length;

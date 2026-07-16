@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 
+	"travel-proxy-service/internal/auth"
 	"travel-proxy-service/internal/db"
 )
 
@@ -48,12 +49,21 @@ func (h *TravelHandler) BookHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	jwtEmail, authErr := auth.EmailFromRequest(r)
+	if authErr != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(BookingResponse{Error: "unauthorized"})
+		return
+	}
+
 	var req BookingRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(BookingResponse{Error: "invalid request body"})
 		return
 	}
+
+	req.Email = jwtEmail
 
 	if err := validateBooking(&req); err != nil {
 		w.WriteHeader(http.StatusUnprocessableEntity)
@@ -98,14 +108,16 @@ func (h *TravelHandler) BookHandler(w http.ResponseWriter, r *http.Request) {
 
 func (h *TravelHandler) MyBookingsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	email := r.URL.Query().Get("email")
-	if email == "" || !strings.Contains(email, "@") {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"error": "valid email required"})
+
+	email, err := auth.EmailFromRequest(r)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]string{"error": "unauthorized"})
 		return
 	}
-	bookings, err := h.DB.GetBookingsByEmail(strings.ToLower(strings.TrimSpace(email)))
-	if err != nil {
+
+	bookings, dbErr := h.DB.GetBookingsByEmail(email)
+	if dbErr != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(map[string]string{"error": "failed to fetch bookings"})
 		return

@@ -2709,7 +2709,11 @@ async function loadMyBookings() {
   if (!_currentUser) return;
   list.innerHTML = '<p class="text-sm text-center py-6" style="color:var(--text-muted)">Loading...</p>';
   try {
-    const res = await fetch('/my-bookings?email=' + encodeURIComponent(_currentUser.email));
+    const { data: { session } } = await _sb.auth.getSession();
+    if (!session) { list.innerHTML = '<p class="text-sm text-center py-6" style="color:var(--text-muted)">Please sign in.</p>'; return; }
+    const res = await fetch('/my-bookings', {
+      headers: { 'Authorization': 'Bearer ' + session.access_token }
+    });
     const data = await res.json();
     if (!data.length) {
       list.innerHTML = '<p class="text-sm text-center py-6" style="color:var(--text-muted)">No bookings yet.</p>';
@@ -2955,9 +2959,16 @@ async function submitBooking() {
   };
 
   try {
+    const { data: { session } } = await _sb.auth.getSession();
+    if (!session) {
+      showError('step2-error', 'Your session has expired. Please sign in again.');
+      btn.disabled = false;
+      btn.innerHTML = 'Pay & Confirm';
+      return;
+    }
     const res = await fetch('/book', {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
       body: JSON.stringify(payload),
     });
     const data = await res.json();

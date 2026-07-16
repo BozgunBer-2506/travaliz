@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"embed"
 	"html/template"
 	"log"
 	"net/http"
 	"os"
 
+	"travel-proxy-service/internal/auth"
 	"travel-proxy-service/internal/db"
 	"travel-proxy-service/internal/handlers"
 	"travel-proxy-service/internal/middleware"
@@ -26,6 +28,10 @@ func main() {
 	tmpl, err := template.ParseFS(templateFiles, "templates/*.html")
 	if err != nil {
 		log.Fatalf("failed to parse templates: %v", err)
+	}
+
+	if err := auth.Init(context.Background()); err != nil {
+		log.Fatalf("failed to initialize auth: %v", err)
 	}
 
 	database, err := db.Open(os.Getenv("SUPABASE_URL"), os.Getenv("SUPABASE_ANON_KEY"))
