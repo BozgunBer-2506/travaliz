@@ -34,7 +34,7 @@ func main() {
 		log.Fatalf("failed to initialize auth: %v", err)
 	}
 
-	database, err := db.Open(os.Getenv("SUPABASE_URL"), os.Getenv("SUPABASE_ANON_KEY"))
+	database, err := db.Open(os.Getenv("SUPABASE_URL"), os.Getenv("SUPABASE_SECRET_KEY"))
 	if err != nil {
 		log.Fatalf("failed to open database: %v", err)
 	}

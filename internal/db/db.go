@@ -44,7 +44,7 @@ type Booking struct {
 
 func Open(supabaseURL, apiKey string) (*DB, error) {
 	if supabaseURL == "" || apiKey == "" {
-		return nil, fmt.Errorf("SUPABASE_URL and SUPABASE_ANON_KEY are required")
+		return nil, fmt.Errorf("SUPABASE_URL and SUPABASE_SECRET_KEY are required")
 	}
 	return &DB{
 		base:   strings.TrimRight(supabaseURL, "/") + "/rest/v1",
@@ -67,7 +67,6 @@ func (d *DB) do(method, path string, body interface{}) ([]byte, error) {
 		return nil, err
 	}
 	req.Header.Set("apikey", d.apiKey)
-	req.Header.Set("Authorization", "Bearer "+d.apiKey)
 	req.Header.Set("Content-Type", "application/json")
 	if method == http.MethodPost {
 		req.Header.Set("Prefer", "return=representation")
