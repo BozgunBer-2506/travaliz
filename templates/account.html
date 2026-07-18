@@ -470,7 +470,7 @@ async function confirmCancelBooking(ref) {
       document.getElementById('cancel-modal').classList.add('hidden');
       closeBookingModal();
       showToast('Booking cancelled. Refund processed within 5-7 business days.');
-      loadPage(_user);
+      setTimeout(() => location.reload(), 1500);
     } else {
       showToast('Cancellation failed. Please try again.');
       btn.disabled = false;
