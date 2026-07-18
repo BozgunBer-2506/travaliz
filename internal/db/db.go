@@ -39,7 +39,7 @@ type Booking struct {
 	Price      float64   `json:"price"`
 	Currency   string    `json:"currency"`
 	CardLast4  string    `json:"card_last4"`
-	CreatedAt  time.Time `json:"created_at,omitempty"`
+	CreatedAt  *time.Time `json:"created_at,omitempty"`
 }
 
 func Open(supabaseURL, apiKey string) (*DB, error) {
@@ -122,6 +122,12 @@ func (d *DB) GetBookingByRef(ref string) (*Booking, error) {
 		return nil, fmt.Errorf("booking not found")
 	}
 	return list[0], nil
+}
+
+func (d *DB) DeleteBooking(ref, email string) error {
+	path := "/bookings?ref=eq." + url.QueryEscape(ref) + "&email=eq." + url.QueryEscape(email)
+	_, err := d.do(http.MethodDelete, path, nil)
+	return err
 }
 
 func generateRef() string {

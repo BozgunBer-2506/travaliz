@@ -128,6 +128,38 @@ func (h *TravelHandler) MyBookingsHandler(w http.ResponseWriter, r *http.Request
 	json.NewEncoder(w).Encode(bookings)
 }
 
+func (h *TravelHandler) CancelBookingHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	email, err := auth.EmailFromRequest(r)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]string{"error": "unauthorized"})
+		return
+	}
+
+	var req struct {
+		Ref string `json:"ref"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Ref == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "ref required"})
+		return
+	}
+
+	if err := h.DB.DeleteBooking(req.Ref, email); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": "cancellation failed"})
+		return
+	}
+
+	json.NewEncoder(w).Encode(map[string]string{"status": "cancelled"})
+}
+
 func sendB2BWebhook(b *db.Booking, ref string) {
 	webhookURL := os.Getenv("B2B_WEBHOOK_URL")
 	secret := os.Getenv("B2B_WEBHOOK_SECRET")
