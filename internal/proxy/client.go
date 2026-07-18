@@ -64,6 +64,7 @@ type FlightData struct {
 	ToCity          string  `json:"to_city"`
 	FromCode        string  `json:"from_code"`
 	ToCode          string  `json:"to_code"`
+	DepartDate      string  `json:"depart_date"`
 	DepartTime      string  `json:"depart_time"`
 	ArriveTime      string  `json:"arrive_time"`
 	DurationHours   int     `json:"duration_hours"`
@@ -856,6 +857,7 @@ func (pc *ProxyClient) fetchFlightsGF(fromSkyID, toSkyID, date, returnDate, adul
 		last := it.Flights[len(it.Flights)-1]
 		dep := it.DepartureTime
 		arr := it.ArrivalTime
+		depDate := extractISODate(dep)
 		if len(dep) >= 16 {
 			dep = dep[11:16]
 		}
@@ -865,6 +867,7 @@ func (pc *ProxyClient) fetchFlightsGF(fromSkyID, toSkyID, date, returnDate, adul
 		flights = append(flights, FlightData{
 			FromCode:        first.DepartureAirport.AirportCode,
 			ToCode:          last.ArrivalAirport.AirportCode,
+			DepartDate:      depDate,
 			DepartTime:      dep,
 			ArriveTime:      arr,
 			DurationHours:   it.Duration.Raw / 60,
@@ -894,7 +897,7 @@ var mockAirlines = []struct {
 }
 
 // fetchMockFlights returns deterministic mock flights seeded by route.
-func (pc *ProxyClient) fetchMockFlights(fromSkyID, toSkyID, cabinClass string) ([]FlightData, error) {
+func (pc *ProxyClient) fetchMockFlights(fromSkyID, toSkyID, date, cabinClass string) ([]FlightData, error) {
 	seed := int64(0)
 	for _, c := range fromSkyID + toSkyID {
 		seed = seed*31 + int64(c)
@@ -937,6 +940,7 @@ func (pc *ProxyClient) fetchMockFlights(fromSkyID, toSkyID, cabinClass string) (
 		flights = append(flights, FlightData{
 			FromCode:        fromSkyID,
 			ToCode:          toSkyID,
+			DepartDate:      date,
 			DepartTime:      fmt.Sprintf("%02d:%02d", depH, depM),
 			ArriveTime:      fmt.Sprintf("%02d:%02d", arrH, arrM),
 			DurationHours:   durMin / 60,
@@ -1015,6 +1019,7 @@ func (pc *ProxyClient) FetchFlights(fromSkyID, fromEntityID, toSkyID, toEntityID
 				flights = append(flights, FlightData{
 					FromCode:        leg.Origin,
 					ToCode:          leg.Destination,
+					DepartDate:      extractISODate(leg.Departure),
 					DepartTime:      extractISOTime(leg.Departure),
 					ArriveTime:      extractISOTime(leg.Arrival),
 					DurationHours:   leg.DurationMinutes / 60,
@@ -1037,15 +1042,26 @@ func (pc *ProxyClient) FetchFlights(fromSkyID, fromEntityID, toSkyID, toEntityID
 	flights, err := pc.fetchFlightsGF(fromSkyID, toSkyID, date, returnDate, adults, children, cabinClass)
 	if err != nil {
 		log.Printf("[GF] failed for %s→%s (%v), using mock", fromSkyID, toSkyID, err)
-		return pc.fetchMockFlights(fromSkyID, toSkyID, cabinClass)
+		return pc.fetchMockFlights(fromSkyID, toSkyID, date, cabinClass)
 	}
 	return flights, nil
 }
 
-// extractISOTime pulls HH:MM from a Skyscanner ISO timestamp like "2026-06-15T11:25:00".
+// extractISOTime pulls HH:MM from an ISO timestamp like "2026-06-15T11:25:00".
 func extractISOTime(s string) string {
 	if idx := strings.Index(s, "T"); idx >= 0 && len(s) > idx+6 {
 		return s[idx+1 : idx+6]
 	}
 	return s
+}
+
+// extractISODate pulls YYYY-MM-DD from an ISO timestamp like "2026-06-15T11:25:00".
+func extractISODate(s string) string {
+	if idx := strings.Index(s, "T"); idx >= 10 {
+		return s[:10]
+	}
+	if len(s) >= 10 {
+		return s[:10]
+	}
+	return ""
 }

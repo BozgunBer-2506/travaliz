@@ -413,31 +413,32 @@ function initiateCancelBooking() {
   let penaltyPct = 0;
   let policyText = '';
 
-  const travelDateStr = (b.type === 'hotel' || b.type === 'car') ? b.checkin : null;
+  const travelDateStr = b.checkin || null;
   if (travelDateStr) {
     const travelDate = new Date(travelDateStr);
     travelDate.setHours(0, 0, 0, 0);
     const daysUntil = Math.round((travelDate - today) / 86400000);
+    const label = b.type === 'flight' ? 'days until departure' : 'days until travel';
 
     if (daysUntil >= 14) {
       penaltyPct = 0;
-      policyText = daysUntil + ' days until travel — Full refund.';
+      policyText = daysUntil + ' ' + label + ' — Full refund.';
     } else if (daysUntil >= 7) {
       penaltyPct = 25;
-      policyText = daysUntil + ' days until travel — 25% cancellation fee applies.';
+      policyText = daysUntil + ' ' + label + ' — 25% cancellation fee applies.';
     } else if (daysUntil >= 3) {
       penaltyPct = 50;
-      policyText = daysUntil + ' days until travel — 50% cancellation fee applies.';
+      policyText = daysUntil + ' ' + label + ' — 50% cancellation fee applies.';
     } else if (daysUntil >= 0) {
       penaltyPct = 100;
-      policyText = daysUntil + ' day(s) until travel — No refund.';
+      policyText = daysUntil + ' day(s) until departure — No refund.';
     } else {
       penaltyPct = 100;
       policyText = 'Travel date has passed — No refund.';
     }
   } else {
     penaltyPct = 0;
-    policyText = 'Flight cancellations: full refund (demo policy).';
+    policyText = 'No departure date on record — Full refund (demo policy).';
   }
 
   const penalty = +(b.price * penaltyPct / 100).toFixed(2);

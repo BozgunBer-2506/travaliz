@@ -1942,6 +1942,7 @@
       data-from="{{.FromCode}}" data-to="{{.ToCode}}"
       data-airline="{{.Airline}}" data-price="{{printf "%.0f" .Price}}"
       data-depart="{{.DepartTime}}" data-arrive="{{.ArriveTime}}"
+      data-depart-date="{{.DepartDate}}"
       data-duration="{{.DurationHours}}h {{.DurationMinutes}}m"
       data-stops="{{.Stops}}">
       Book Now
@@ -3041,6 +3042,7 @@ document.querySelectorAll('.flight-book-btn').forEach(btn => {
       from: btn.dataset.from, to: btn.dataset.to,
       airline: btn.dataset.airline, price: btn.dataset.price,
       depart: btn.dataset.depart, arrive: btn.dataset.arrive,
+      checkin: btn.dataset.departDate,
       duration: btn.dataset.duration, stops: btn.dataset.stops,
       _btn: btn,
     });
