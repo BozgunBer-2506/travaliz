@@ -47,7 +47,28 @@ func main() {
 		DB:          database,
 	}
 
+	mux := newMux(travelHandler)
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	log.Printf("Starting server on :%s...", port)
+	if err := http.ListenAndServe(":"+port, middleware.LoggingMiddleware(mux)); err != nil {
+		log.Fatalf("Server failed: %v", err)
+	}
+}
+
+func newMux(travelHandler *handlers.TravelHandler) *http.ServeMux {
 	mux := http.NewServeMux()
+	mux.HandleFunc("/sitemap.xml", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/xml; charset=utf-8")
+		http.ServeFileFS(w, r, staticFiles, "static/sitemap.xml")
+	})
+	mux.HandleFunc("/robots.txt", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		http.ServeFileFS(w, r, staticFiles, "static/robots.txt")
+	})
 	mux.Handle("/images/", http.FileServerFS(imageFiles))
 	mux.Handle("/static/", http.FileServerFS(staticFiles))
 	mux.HandleFunc("/manifest.json", func(w http.ResponseWriter, r *http.Request) {
@@ -72,12 +93,5 @@ func main() {
 	mux.HandleFunc("/account", travelHandler.AccountHandler)
 	mux.HandleFunc("/status", handlers.HealthCheckHandler)
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
-	log.Printf("Starting server on :%s...", port)
-	if err := http.ListenAndServe(":"+port, middleware.LoggingMiddleware(mux)); err != nil {
-		log.Fatalf("Server failed: %v", err)
-	}
+	return mux
 }
