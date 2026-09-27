@@ -4,17 +4,17 @@ A full-stack travel booking platform built with Go. Search hotels, flights, and 
 
 ## Features
 
-- **Hotels** - Search by destination with live autocomplete (Hotels.com API)
-- **Flights** - One-way, round-trip, and multi-city search (Google Flights API)
-- **Cars** - Car rental search with deep-link to Rentalcars.com
-- **Real bookings** - 3-step booking form (passenger details, payment, confirmation) backed by SQLite
+- **Hotels** - SerpApi Google Hotels search with offline city suggestions (one room per search)
+- **Flights** - SerpApi Google Flights search: one-way, round-trip and multi-city estimates
+- **Cars** - Not yet available; no generated vehicle offers are displayed
+- **Search results** - Continue to the provider website to confirm availability and book; SerpApi does not issue tickets or reservations
 - **Booking history** - Local drawer showing all confirmed bookings with reference numbers
 
 ## Tech Stack
 
 - **Backend:** Go 1.22, `net/http`, `html/template`
 - **Database:** SQLite via `modernc.org/sqlite` (pure Go, no CGO)
-- **APIs:** Google Flights (`google-flights2.p.rapidapi.com`), Hotels.com Provider (`hotels-com-provider.p.rapidapi.com`)
+- **Search API:** SerpApi Google Flights and Google Hotels (`serpapi.com`)
 - **Frontend:** Tailwind CSS (CDN), Inter font, vanilla JS
 
 ## Project Structure
@@ -35,7 +35,7 @@ travel-proxy-service/
     ├── middleware/
     │   └── logging.go       # Request logging
     └── proxy/
-        └── client.go        # RapidAPI HTTP client for flights, hotels, airports
+        └── client.go        # SerpApi client and shared result types
 ```
 
 ## Run Locally
@@ -64,6 +64,56 @@ PORT=3000 DB_PATH=/tmp/bookings.db go run .
 | GET    | `/status`         | Health check `{"status":"OK"}`          |
 
 ## Environment Variables
+
+### Search configuration
+
+Set `SERPAPI_API_KEY` in the **server environment** (Vercel project environment
+variables or your process environment). Never expose it to browser code or commit
+it. The production application reads environment variables; it does not load
+`.env` automatically. Docker Compose passes this setting through from `.env`.
+A missing key produces an unavailable message without falling back to another API.
+
+Each submitted search sends one synchronous SerpApi request, including multi-city
+itineraries. There are no automatic retries, result pagination or paid autocomplete
+calls. SerpApi's native cache stays enabled; there is no added cache service.
+Suggestions use a small local starter list; cities can be typed freely and airport
+codes can be entered directly. Distinct searches still consume the provider quota.
+
+Hotel search supports one room and requires ages for children. Results without a
+price are omitted. Google ratings are scaled from 5 to 10 for the existing filters.
+Round-trip/multi-city cards show the outbound/first leg and an itinerary price
+estimate for all travellers. Subsequent flight selection happens on Google Flights,
+not through additional API calls. Provider links are not affiliate links and do not
+guarantee the displayed price. `/travel-data` now returns an empty list, not mock
+hotels. Existing account/booking-history functionality is not a SerpApi booking API.
+
+### Optional SerpApi evaluation
+
+The isolated Go command below evaluates Google Hotels (Berlin, two nights) and
+Google Flights (BER to LHR, one way) independently of the web server.
+It adds no dependencies. First inspect the queries without making API calls:
+
+```bash
+go run ./cmd/serpapi-check
+```
+
+For a live evaluation, set `SERPAPI_API_KEY` in the environment or the ignored local
+`.env` file, then explicitly run:
+
+```bash
+go run ./cmd/serpapi-check -live
+```
+
+This sends at most two searches and stops at the first error. It may consume free
+quota; there are no retries, autocomplete calls, pagination, or booking requests.
+Use `-date YYYY-MM-DD` for a specific future departure/check-in date. The default
+is 30 days ahead. SerpApi's default cache remains enabled. Output contains result
+counts and lowest returned prices, not raw responses or credentials. This is a
+provider smoke test, not a booking integration or a guarantee of price availability.
+
+Official references: [pricing](https://serpapi.com/pricing),
+[flights](https://serpapi.com/google-flights-api),
+[hotels](https://serpapi.com/google-hotels-api).
 
 | Variable  | Default       | Description               |
 | --------- | ------------- | ------------------------- |

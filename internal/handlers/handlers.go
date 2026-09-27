@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"travel-proxy-service/internal/db"
@@ -86,6 +87,15 @@ func (h *TravelHandler) render(w http.ResponseWriter, data pageData) {
 }
 
 func (h *TravelHandler) HomeHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodHead {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		return
+	}
+	if r.Method != http.MethodGet {
+		w.Header().Set("Allow", "GET, HEAD")
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
 	if r.URL.Path != "/" {
 		http.NotFound(w, r)
 		return
@@ -109,9 +119,15 @@ func (h *TravelHandler) HomeHandler(w http.ResponseWriter, r *http.Request) {
 	adults := r.URL.Query().Get("adults")
 	children := r.URL.Query().Get("children")
 	rooms := r.URL.Query().Get("rooms")
-	if adults == "" { adults = "2" }
-	if children == "" { children = "0" }
-	if rooms == "" { rooms = "1" }
+	if adults == "" {
+		adults = "2"
+	}
+	if children == "" {
+		children = "0"
+	}
+	if rooms == "" {
+		rooms = "1"
+	}
 
 	nights := 4
 	if t1, e1 := time.Parse("2006-01-02", checkin); e1 == nil {
@@ -124,20 +140,11 @@ func (h *TravelHandler) HomeHandler(w http.ResponseWriter, r *http.Request) {
 
 	pd := pageData{Tab: "hotels", City: city, Checkin: checkin, Checkout: checkout, Adults: adults, Children: children, Rooms: rooms, Nights: nights}
 
-	if entityID == "" {
-		var err error
-		entityID, err = h.ProxyClient.SearchHotelDestination(city)
-		if err != nil {
-			pd.Error = "Destination not found: " + city
-			h.render(w, pd)
-			return
-		}
-	}
 	pd.CityEntityID = entityID
 
-	hotels, err := h.ProxyClient.FetchHotels(city, entityID, checkin, checkout, adults, children, rooms)
+	hotels, err := h.ProxyClient.FetchHotels(city, entityID, checkin, checkout, adults, children, rooms, r.URL.Query().Get("children_ages"))
 	if err != nil {
-		pd.Error = "Failed to load hotels. Please try again."
+		pd.Error = err.Error()
 		h.render(w, pd)
 		return
 	}
@@ -146,31 +153,28 @@ func (h *TravelHandler) HomeHandler(w http.ResponseWriter, r *http.Request) {
 	h.render(w, pd)
 }
 
-func (h *TravelHandler) resolveEntityID(skyID string) string {
-	airports, err := h.ProxyClient.SearchAirports(skyID)
-	if err != nil {
-		return ""
-	}
-	for _, a := range airports {
-		if a.SkyID == skyID {
-			return a.EntityID
-		}
-	}
-	if len(airports) > 0 {
-		return airports[0].EntityID
-	}
-	return ""
-}
-
 func (h *TravelHandler) FlightsHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodHead {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		return
+	}
+	if r.Method != http.MethodGet {
+		w.Header().Set("Allow", "GET, HEAD")
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
 	q := r.URL.Query()
 
 	adults := q.Get("adults")
 	children := q.Get("children")
 	cabinClass := q.Get("cabinClass")
 	tripType := q.Get("tripType")
-	if adults == "" { adults = "1" }
-	if cabinClass == "" { cabinClass = "economy" }
+	if adults == "" {
+		adults = "1"
+	}
+	if cabinClass == "" {
+		cabinClass = "economy"
+	}
 
 	returnDate := q.Get("returnDate")
 	if returnDate != "" && tripType != "multi" {
@@ -179,36 +183,27 @@ func (h *TravelHandler) FlightsHandler(w http.ResponseWriter, r *http.Request) {
 		tripType = "oneway"
 	}
 
-	// ── Multi-city ────────────────────────────────────────────────────────────
+	// Submit a multi-city itinerary as one provider request, not one per leg.
 	if tripType == "multi" {
 		pd := pageData{Tab: "flights", TripType: "multi", Adults: adults, Children: children, CabinClass: cabinClass}
-		var legs []FlightLeg
-
+		legs := []proxy.FlightSearchLeg{}
 		for i := 0; i < 6; i++ {
-			fromSky := q.Get(fmt.Sprintf("leg%dfrom", i))
-			toSky := q.Get(fmt.Sprintf("leg%dto", i))
-			date := q.Get(fmt.Sprintf("leg%ddate", i))
-			if fromSky == "" || toSky == "" || date == "" {
-				break
+			from, to, date := q.Get(fmt.Sprintf("leg%dfrom", i)), q.Get(fmt.Sprintf("leg%dto", i)), q.Get(fmt.Sprintf("leg%ddate", i))
+			if from == "" && to == "" && date == "" {
+				continue
 			}
-			fromEntity := q.Get(fmt.Sprintf("leg%dfromEntity", i))
-			toEntity := q.Get(fmt.Sprintf("leg%dtoEntity", i))
-			if fromEntity == "" { fromEntity = h.resolveEntityID(fromSky) }
-			if toEntity == "" { toEntity = h.resolveEntityID(toSky) }
-
-			flights, err := h.ProxyClient.FetchFlights(fromSky, fromEntity, toSky, toEntity, date, "", adults, children, cabinClass)
-			leg := FlightLeg{
-				Label:   fmt.Sprintf("%s → %s", fromSky, toSky),
-				FromSky: fromSky,
-				ToSky:   toSky,
-				Date:    date,
-			}
-			if err == nil {
-				leg.Flights = flights
-			}
-			legs = append(legs, leg)
+			legs = append(legs, proxy.FlightSearchLeg{From: strings.ToUpper(strings.TrimSpace(from)), To: strings.ToUpper(strings.TrimSpace(to)), Date: date})
 		}
-		pd.FlightLegs = legs
+		if len(legs) < 2 {
+			pd.Error = "Please enter at least two complete flight legs."
+		} else {
+			flights, err := h.ProxyClient.FetchItinerary(legs, "", adults, children, cabinClass, q.Get("children_ages"))
+			if err != nil {
+				pd.Error = err.Error()
+			} else {
+				pd.FlightLegs = []FlightLeg{{Label: "Multi-city itinerary — first leg options", Flights: flights, Date: legs[0].Date}}
+			}
+		}
 		h.render(w, pd)
 		return
 	}
@@ -228,9 +223,9 @@ func (h *TravelHandler) FlightsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if date == "" { date = time.Now().AddDate(0, 0, 1).Format("2006-01-02") }
-	if fromEntityID == "" { fromEntityID = h.resolveEntityID(fromSkyID) }
-	if toEntityID == "" { toEntityID = h.resolveEntityID(toSkyID) }
+	if date == "" {
+		date = time.Now().AddDate(0, 0, 1).Format("2006-01-02")
+	}
 
 	pd := pageData{
 		Tab: "flights", TripType: tripType,
@@ -240,11 +235,19 @@ func (h *TravelHandler) FlightsHandler(w http.ResponseWriter, r *http.Request) {
 		Adults: adults, Children: children, CabinClass: cabinClass,
 	}
 
-	flights, err := h.ProxyClient.FetchFlights(fromSkyID, fromEntityID, toSkyID, toEntityID, date, returnDate, adults, children, cabinClass)
-	if err != nil {
-		pd.Error = "Failed to load flights. Please try again."
+	if tripType == "round" && returnDate == "" {
+		pd.Error = "Please choose a return date."
 		h.render(w, pd)
 		return
+	}
+	flights, err := h.ProxyClient.FetchFlights(fromSkyID, fromEntityID, toSkyID, toEntityID, date, returnDate, adults, children, cabinClass, q.Get("children_ages"))
+	if err != nil {
+		pd.Error = err.Error()
+		h.render(w, pd)
+		return
+	}
+	if len(flights) == 0 {
+		pd.Error = "No flights found for these dates and travellers."
 	}
 	pd.Flights = flights
 	if len(flights) > 0 {
@@ -272,11 +275,6 @@ func (h *TravelHandler) CarsHandler(w http.ResponseWriter, r *http.Request) {
 	if pd.DropoffDate == "" {
 		pd.DropoffDate = time.Now().AddDate(0, 0, 7).Format("2006-01-02")
 	}
-	seedCity := pd.PickupCity
-	if seedCity == "" {
-		seedCity = "featured"
-	}
-	pd.Cars = h.ProxyClient.FetchCarsByCity(seedCity)
 	h.render(w, pd)
 }
 
