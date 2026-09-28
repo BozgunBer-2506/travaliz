@@ -848,15 +848,16 @@
     <div class="glass rounded-3xl shadow-2xl p-6">
 
       {{if eq .Tab "hotels"}}
-      <form method="GET" action="/" class="flex flex-col gap-4" id="hotel-form" onsubmit="document.getElementById('h_children-ages').value = [...document.querySelectorAll('#h-child-rows select')].map(el => el.value).join(','); setLoading(this)">
+      <form method="GET" action="/" class="flex flex-col gap-4" id="hotel-form" onsubmit="if (!validateHotelDestination()) return false; document.getElementById('h_children-ages').value = [...document.querySelectorAll('#h-child-rows select')].map(el => el.value).join(','); setLoading(this)">
         <div class="flex flex-col lg:flex-row gap-3 lg:items-end">
           <!-- Destination -->
           <div class="field-wrapper flex-1 w-full">
             <span class="field-label">Destination</span>
             <input id="city-display" type="text" autocomplete="off" placeholder="Paris, New York, Tokyo..."
-              value="{{.City}}" class="field-input" />
+              value="{{.City}}" class="field-input" required aria-label="Destination city" aria-describedby="city-help" />
             <input id="city-input" name="q" type="hidden" value="{{.City}}" />
             <input id="city-entity" name="entityId" type="hidden" value="{{.CityEntityID}}" />
+            <span id="city-help" class="text-xs" style="color:var(--text-muted)" role="status">Type at least 2 letters and select a supported city.</span>
           </div>
           <!-- Check-in -->
           <div class="field-wrapper w-full lg:w-44">
@@ -2931,12 +2932,14 @@ document.querySelectorAll('.flight-book-btn').forEach(btn => {
 // Autocomplete
 function makeAutocomplete(displayEl, endpointUrl, onSelect, renderItemFn) {
   let active = -1;
+  let revision = 0;
   function removeDropdown() {
     displayEl.parentElement.querySelector('.autocomplete-dropdown')?.remove();
     active = -1;
   }
   function buildDropdown(items) {
     removeDropdown();
+    if (displayEl.id === 'city-display') document.getElementById('city-help').textContent = items?.length ? 'Select a city from the suggestions.' : 'No matching city in our supported destinations.';
     if (!items?.length) return;
     const ul = document.createElement('ul');
     ul.className = 'autocomplete-dropdown';
@@ -2944,27 +2947,34 @@ function makeAutocomplete(displayEl, endpointUrl, onSelect, renderItemFn) {
       const li = document.createElement('li');
       li.className = 'autocomplete-item';
       li.innerHTML = renderItemFn(item);
-      li.addEventListener('mousedown', e => { e.preventDefault(); onSelect(item); removeDropdown(); });
+      li.addEventListener('mousedown', e => { e.preventDefault(); revision++; onSelect(item); removeDropdown(); });
       ul.appendChild(li);
     });
     displayEl.parentElement.style.position = 'relative';
     displayEl.parentElement.appendChild(ul);
   }
-  const fetchSuggestions = debounce(async q => {
+  const fetchSuggestions = debounce(async (q, requestRevision) => {
     if (q.length < 2) { removeDropdown(); return; }
     try {
       const res = await fetch(`${endpointUrl}?q=${encodeURIComponent(q)}`);
-      buildDropdown(await res.json());
-    } catch { removeDropdown(); }
+      if (!res.ok) throw new Error('Suggestions unavailable');
+      const items = await res.json();
+      if (requestRevision === revision && document.activeElement === displayEl) buildDropdown(items);
+    } catch {
+      if (requestRevision !== revision) return;
+      removeDropdown();
+      if (displayEl.id === 'city-display') document.getElementById('city-help').textContent = 'Could not load cities. Please try again.';
+    }
   }, 280);
-  displayEl.addEventListener('input', () => fetchSuggestions(displayEl.value));
+  displayEl.addEventListener('input', () => { revision++; removeDropdown(); fetchSuggestions(displayEl.value.trim(), revision); });
+  displayEl.addEventListener('focus', () => fetchSuggestions(displayEl.value.trim(), ++revision));
   displayEl.addEventListener('blur', () => setTimeout(removeDropdown, 150));
   displayEl.addEventListener('keydown', e => {
     const items = displayEl.parentElement.querySelectorAll('.autocomplete-item');
-    if (e.key === 'ArrowDown') { items[active]?.classList.remove('active'); active = Math.min(active+1, items.length-1); items[active]?.classList.add('active'); }
-    if (e.key === 'ArrowUp')   { items[active]?.classList.remove('active'); active = Math.max(active-1, 0); items[active]?.classList.add('active'); }
+    if (e.key === 'ArrowDown') { e.preventDefault(); items[active]?.classList.remove('active'); active = Math.min(active+1, items.length-1); items[active]?.classList.add('active'); }
+    if (e.key === 'ArrowUp')   { e.preventDefault(); items[active]?.classList.remove('active'); active = Math.max(active-1, 0); items[active]?.classList.add('active'); }
     if (e.key === 'Enter' && active >= 0) { e.preventDefault(); items[active]?.dispatchEvent(new MouseEvent('mousedown')); }
-    if (e.key === 'Escape') removeDropdown();
+    if (e.key === 'Escape') { revision++; removeDropdown(); }
   });
 }
 
@@ -2973,6 +2983,8 @@ if (cityDisplay) {
   makeAutocomplete(cityDisplay, '/suggest',
     item => {
       cityDisplay.value = item.name;
+      cityDisplay.setCustomValidity('');
+      document.getElementById('city-help').textContent = item.name + ', ' + item.hierarchy;
       document.getElementById('city-input').value = item.name;
       document.getElementById('city-entity').value = item.entityId;
     },
@@ -2980,9 +2992,18 @@ if (cityDisplay) {
       <div><div class="dest-label">${item.name}</div><div class="dest-sub">${item.hierarchy || ''}</div></div>`
   );
   cityDisplay.addEventListener('input', () => {
-    document.getElementById('city-input').value = cityDisplay.value;
+    document.getElementById('city-input').value = '';
+    cityDisplay.setCustomValidity('Please select a city from the suggestions.');
+    document.getElementById('city-help').textContent = 'Type at least 2 letters and select a supported city.';
     document.getElementById('city-entity').value = '';
   });
+}
+
+function validateHotelDestination() {
+  const valid = document.getElementById('city-entity').value &&
+    document.getElementById('city-input').value === cityDisplay.value;
+  cityDisplay.setCustomValidity(valid ? '' : 'Please select a city from the suggestions.');
+  return cityDisplay.reportValidity();
 }
 
 const fromDisplay = document.getElementById('from-display');

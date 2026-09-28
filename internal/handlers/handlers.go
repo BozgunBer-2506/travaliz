@@ -140,7 +140,14 @@ func (h *TravelHandler) HomeHandler(w http.ResponseWriter, r *http.Request) {
 
 	pd := pageData{Tab: "hotels", City: city, Checkin: checkin, Checkout: checkout, Adults: adults, Children: children, Rooms: rooms, Nights: nights}
 
-	pd.CityEntityID = entityID
+	destination, matched := proxy.ResolveHotelDestination(city, entityID)
+	if !matched {
+		pd.Error = "Please select a supported city from the destination suggestions."
+		h.render(w, pd)
+		return
+	}
+	city, entityID = destination.Name, destination.EntityID
+	pd.City, pd.CityEntityID = city, entityID
 
 	hotels, err := h.ProxyClient.FetchHotels(city, entityID, checkin, checkout, adults, children, rooms, r.URL.Query().Get("children_ages"))
 	if err != nil {

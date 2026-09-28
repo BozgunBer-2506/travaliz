@@ -34,7 +34,7 @@ var airports = []FlightDestSuggestion{
 
 func (pc *ProxyClient) SearchAirports(query string) ([]FlightDestSuggestion, error) {
 	results := []FlightDestSuggestion{}
-	query = strings.ToLower(strings.TrimSpace(query))
+	query = normalizeDestination(query)
 	if len(query) < 2 {
 		return results, nil
 	}
@@ -53,12 +53,12 @@ func (pc *ProxyClient) SearchAirports(query string) ([]FlightDestSuggestion, err
 func (pc *ProxyClient) SearchHotelDestinations(query string) ([]DestSuggestion, error) {
 	results := []DestSuggestion{}
 	seen := map[string]bool{}
-	query = strings.ToLower(strings.TrimSpace(query))
+	query = normalizeDestination(query)
 	if len(query) < 2 {
 		return results, nil
 	}
 	for _, a := range airports {
-		if !seen[a.CityName] && strings.Contains(strings.ToLower(a.CityName), query) {
+		if !seen[a.CityName] && strings.Contains(normalizeDestination(a.CityName+" "+hotelCityAliases[a.CityName]), query) {
 			seen[a.CityName] = true
 			results = append(results, DestSuggestion{EntityID: a.CityName, Name: a.CityName, Type: "city", Hierarchy: a.CountryName})
 			if len(results) == 6 {
@@ -67,4 +67,34 @@ func (pc *ProxyClient) SearchHotelDestinations(query string) ([]DestSuggestion, 
 		}
 	}
 	return results, nil
+}
+
+// Aliases reuse the existing offline directory without making paid search calls.
+var hotelCityAliases = map[string]string{
+	"London": "Londra", "Munich": "München Münih", "Rome": "Roma",
+	"Vienna": "Wien Viyana", "Zurich": "Zürich Zürih", "Tokyo": "Tokio",
+	"New York": "NYC", "Singapore": "Singapur",
+}
+
+func normalizeDestination(value string) string {
+	value = strings.ToLower(strings.TrimSpace(value))
+	return strings.NewReplacer("ı", "i", "ü", "u", "ö", "o", "ç", "c", "ş", "s", "ğ", "g", "̈", "", "̇", "").Replace(value)
+}
+
+// ResolveHotelDestination accepts only exact names/aliases from our directory.
+func ResolveHotelDestination(name, entityID string) (DestSuggestion, bool) {
+	query := normalizeDestination(name)
+	for _, a := range airports {
+		if entityID != "" && entityID != a.CityName {
+			continue
+		}
+		matches := query == normalizeDestination(a.CityName)
+		for _, alias := range strings.Split(hotelCityAliases[a.CityName], " ") {
+			matches = matches || (query != "" && query == normalizeDestination(alias))
+		}
+		if matches {
+			return DestSuggestion{EntityID: a.CityName, Name: a.CityName, Type: "city", Hierarchy: a.CountryName}, true
+		}
+	}
+	return DestSuggestion{}, false
 }

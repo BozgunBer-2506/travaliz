@@ -59,6 +59,12 @@ func TestSearchPages(t *testing.T) {
 	if calls != 0 {
 		t.Fatalf("landing/suggestions consumed %d requests", calls)
 	}
+	for _, path := range []string{"/?q=Berlinn", "/?q=Berlin&entityId=Paris"} {
+		body := get("GET", path)
+		if !strings.Contains(body, "Please select a supported city") || calls != 0 {
+			t.Fatal("unmatched destination was sent to provider")
+		}
+	}
 	date := time.Now().AddDate(0, 0, 30)
 	start := date.Format("2006-01-02")
 	end := date.AddDate(0, 0, 2).Format("2006-01-02")
