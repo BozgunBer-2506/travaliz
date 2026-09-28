@@ -282,6 +282,7 @@ func (h *TravelHandler) CarsHandler(w http.ResponseWriter, r *http.Request) {
 	if pd.DropoffDate == "" {
 		pd.DropoffDate = time.Now().AddDate(0, 0, 7).Format("2006-01-02")
 	}
+	pd.Cars = h.ProxyClient.FetchCarsByCity(pd.PickupCity)
 	h.render(w, pd)
 }
 

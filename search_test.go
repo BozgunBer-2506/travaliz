@@ -52,7 +52,7 @@ func TestSearchPages(t *testing.T) {
 	}
 	for _, path := range []string{"/", "/flights", "/cars", "/cars?pickup=Berlin", "/suggest?q=Ber", "/suggest-flight?q=Ber", "/travel-data"} {
 		body := get("GET", path)
-		if strings.HasPrefix(path, "/cars") && (!strings.Contains(body, "Car rental search is not available yet") || strings.Contains(body, "Our trusted rental partners")) {
+		if strings.HasPrefix(path, "/cars") && (!strings.Contains(body, "Demo prices") || !strings.Contains(body, "Toyota Yaris") || !strings.Contains(body, `/images/cars.jpg`) || strings.Contains(body, "Our trusted rental partners")) {
 			t.Fatal("cars page misleading")
 		}
 	}

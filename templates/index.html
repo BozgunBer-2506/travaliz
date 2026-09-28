@@ -835,7 +835,7 @@
     {{else if eq .Tab "cars"}}
     <div class="text-center mb-8">
       <h2 class="text-3xl sm:text-4xl font-extrabold text-white mb-2">Car Rentals Worldwide</h2>
-      <p class="text-indigo-200 text-base">Live car rental search is coming soon</p>
+      <p class="text-indigo-200 text-base">Explore cars for your next trip</p>
     </div>
     {{else}}
     <div class="text-center mb-8">
@@ -857,7 +857,7 @@
               value="{{.City}}" class="field-input" required aria-label="Destination city" aria-describedby="city-help" />
             <input id="city-input" name="q" type="hidden" value="{{.City}}" />
             <input id="city-entity" name="entityId" type="hidden" value="{{.CityEntityID}}" />
-            <span id="city-help" class="text-xs" style="color:var(--text-muted)" role="status">Type at least 2 letters and select a supported city.</span>
+            <span id="city-help" class="sr-only" role="status">Type at least 2 letters and select a supported city.</span>
           </div>
           <!-- Check-in -->
           <div class="field-wrapper w-full lg:w-44">
@@ -1089,7 +1089,36 @@
       {{end}}
 
       {{if eq .Tab "cars"}}
-      <p class="p-4 text-sm" style="color:var(--text-muted)">Car rental comparison is coming soon. Hotel and flight searches are available now.</p>
+      <form method="GET" action="/cars" class="flex flex-col gap-4" id="cars-form" onsubmit="setLoading(this)">
+        <div class="flex flex-col lg:flex-row gap-3 items-end">
+          <!-- Pickup location -->
+          <div class="field-wrapper flex-1">
+            <span class="field-label">Pickup Location</span>
+            <input name="pickup" type="text" placeholder="City, airport or address..."
+              value="{{.PickupCity}}" class="field-input" />
+          </div>
+          <!-- Pickup date -->
+          <div class="field-wrapper w-full lg:w-44">
+            <span class="field-label">Pick-up date</span>
+            <input name="pickupDate" value="{{.PickupDate}}" type="date" class="field-input" />
+          </div>
+          <!-- Dropoff date -->
+          <div class="field-wrapper w-full lg:w-44">
+            <span class="field-label">Drop-off date</span>
+            <input name="dropoffDate" value="{{.DropoffDate}}" type="date" class="field-input" />
+          </div>
+          <!-- Driver age -->
+          <div class="field-wrapper w-full lg:w-32">
+            <span class="field-label">Driver age</span>
+            <input name="age" type="number" min="18" max="99" placeholder="30"
+              value="{{.DriverAge}}" class="field-input" />
+          </div>
+          <button type="submit" class="search-btn h-[58px] flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            Search
+          </button>
+        </div>
+      </form>
       {{end}}
 
     </div>
@@ -1542,9 +1571,12 @@
 
   <!-- CARS -->
   {{if eq .Tab "cars"}}
-  <div class="text-center py-16 rounded-3xl border" style="background:var(--bg-card);border-color:var(--border)">
-    <h2 class="text-2xl font-bold mb-3">Car rental search is not available yet</h2>
-    <p style="color:var(--text-muted)">Live vehicle availability and prices are not connected. Please check directly with a rental company.</p>
+  <div class="flex items-center justify-between mb-6">
+    <h2 class="text-2xl font-bold" style="color:var(--text-primary)">{{if .PickupCity}}Cars in {{.PickupCity}}{{else}}Explore rental cars{{end}}</h2>
+    <span class="text-xs font-semibold px-3 py-1 rounded-full" style="background:var(--bg-card2);color:var(--text-muted)">Demo prices</span>
+  </div>
+  <div id="cars-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+    {{template "car-cards" .}}
   </div>
   {{end}}
 
@@ -1741,14 +1773,13 @@
 <div class="rounded-3xl border shadow-sm overflow-hidden card-hover cursor-pointer car-card"
   data-type="{{.Category}}" data-trans="{{.Transmission}}"
   data-seats="{{.Seats}}" data-price="{{printf "%.0f" .PricePerDay}}"
-  onclick="openCarBooking(this)"
   data-car="{{.CarName}}" data-provider="{{.Provider}}"
   data-pickup="{{$.PickupCity}}" data-pickupdate="{{$.PickupDate}}" data-dropoff="{{$.DropoffDate}}"
   style="background:var(--bg-card);border-color:var(--border)">
   <div class="relative h-44 overflow-hidden flex items-center justify-center" style="background:var(--bg-card2)">
     <img src="/images/cars.jpg" class="w-full h-full object-cover transition-transform duration-500" alt="{{.CarName}}" loading="lazy" />
     <span class="absolute top-3 left-3 text-xs font-bold px-2.5 py-1 rounded-full border" style="background:rgba(238,242,255,.95);color:{{.CategoryColor}};border-color:{{.CategoryColor}}22">{{.Category}}</span>
-    <span class="absolute top-3 right-3 text-xs font-semibold px-2.5 py-1 rounded-full" style="background:rgba(0,0,0,0.52);color:#fff;backdrop-filter:blur(4px)">{{.Badge}}</span>
+    <span class="absolute top-3 right-3 text-xs font-semibold px-2.5 py-1 rounded-full" style="background:rgba(0,0,0,0.52);color:#fff;backdrop-filter:blur(4px)">Demo</span>
   </div>
   <div class="p-5">
     <div class="flex items-start justify-between mb-3">
@@ -1765,7 +1796,7 @@
     </div>
     <div class="flex items-center justify-between pt-3" style="border-top:1px solid var(--border)">
       <img src="{{.ProviderLogo}}" alt="{{.Provider}}" class="h-5 object-contain" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'text-xs font-bold',style:'color:var(--text-muted)',textContent:'{{.Provider}}'}))"/>
-      <button class="text-xs font-bold text-white px-5 py-2 rounded-xl" style="background:linear-gradient(135deg,#4f46e5,#7c3aed)">Reserve</button>
+      <button class="text-xs font-bold text-white px-5 py-2 rounded-xl" style="background:linear-gradient(135deg,#4f46e5,#7c3aed)" disabled>Demo preview</button>
     </div>
   </div>
 </div>
@@ -1844,7 +1875,7 @@
 
       <section>
         <h3 class="font-semibold text-gray-800 mb-2">1. Who We Are</h3>
-        <p>travaliz.com is a travel search demo application that retrieves flight and hotel search results through SerpApi; car rental search is not yet available. It is built and maintained by <a href="https://thebozgun.com" target="_blank" class="text-indigo-600 hover:underline">thebozgun.com</a>.</p>
+        <p>travaliz.com is a travel search demo application that retrieves flight and hotel search results through SerpApi; car rentals display demo listings. It is built and maintained by <a href="https://thebozgun.com" target="_blank" class="text-indigo-600 hover:underline">thebozgun.com</a>.</p>
       </section>
 
       <section>
@@ -1870,7 +1901,7 @@
       <section>
         <h3 class="font-semibold text-gray-800 mb-2">4. Third-Party Services</h3>
         <ul class="list-disc list-inside space-y-1 text-gray-500">
-          <li><strong class="text-gray-700">SerpApi:</strong> flight and hotel data is fetched via SerpApi (Google Flights, Google Hotels). Car rental search is not yet available. Their privacy policy applies to data transmitted during API calls.</li>
+          <li><strong class="text-gray-700">SerpApi:</strong> flight and hotel data is fetched via SerpApi (Google Flights, Google Hotels). Car rental listings use demo data. Their privacy policy applies to data transmitted during API calls.</li>
           <li><strong class="text-gray-700">Railway:</strong> the application is hosted on Railway. Server logs and request metadata may be retained per Railway's data processing terms.</li>
           <li><strong class="text-gray-700">Supabase:</strong> user authentication is handled by Supabase. Their privacy policy applies to authentication data.</li>
         </ul>
