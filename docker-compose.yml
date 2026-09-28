@@ -9,6 +9,8 @@ services:
       SERPAPI_API_KEY: ${SERPAPI_API_KEY:-}
       AMADEUS_CLIENT_ID: ${AMADEUS_CLIENT_ID:-}
       AMADEUS_CLIENT_SECRET: ${AMADEUS_CLIENT_SECRET:-}
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_SECRET_KEY: ${SUPABASE_SECRET_KEY:-}
     volumes:
       - db_data:/data
     restart: unless-stopped
