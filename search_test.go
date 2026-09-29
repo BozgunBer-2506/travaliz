@@ -56,6 +56,12 @@ func TestSearchPages(t *testing.T) {
 			t.Fatal("cars page misleading")
 		}
 	}
+	landing := get("GET", "/")
+	for _, category := range []string{"city", "beach", "apartments", "villas", "budget", "boutique", "cabins"} {
+		if !strings.Contains(landing, "/?category="+category) {
+			t.Fatalf("missing category link: %s", category)
+		}
+	}
 	if calls != 0 {
 		t.Fatalf("landing/suggestions consumed %d requests", calls)
 	}
@@ -94,4 +100,16 @@ func TestSearchPages(t *testing.T) {
 	if calls != 4 || !strings.Contains(outage, "search limit has been reached") || strings.Contains(outage, "Test Real Hotel") || strings.Contains(outage, "Grand Palace Hotel") {
 		t.Fatal("provider error hidden or mock results shown")
 	}
+	status = 200
+	before := calls
+	categoryPage := get("GET", "/?category=beach")
+	if calls != before+3 || !strings.Contains(categoryPage, "Beach Resorts across destinations") || !strings.Contains(categoryPage, "Antalya") || !strings.Contains(categoryPage, "Maldives") || strings.Contains(categoryPage, "Please select a supported city") {
+		t.Fatal("category page did not merge destinations")
+	}
+	get("HEAD", "/?category=city")
+	get("GET", "/?category=unknown")
+	if calls != before+3 {
+		t.Fatal("HEAD or unknown category consumed quota")
+	}
+
 }

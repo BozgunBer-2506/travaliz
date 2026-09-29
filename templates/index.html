@@ -1137,10 +1137,10 @@
 
   <!-- HOTELS -->
   {{if eq .Tab "hotels"}}
-  {{if .City}}
+  {{if or .City .CategoryTitle}}
   <div class="flex items-center justify-between mb-4">
     <div>
-      <h2 class="text-2xl font-extrabold" style="color:var(--text-primary)">Hotels in <span style="color:#6366f1">{{.City}}</span></h2>
+      <h2 class="text-2xl font-extrabold" style="color:var(--text-primary)">{{if .CategoryTitle}}{{.CategoryTitle}} across destinations{{else}}Hotels in <span style="color:#6366f1">{{.City}}</span>{{end}}</h2>
       <p class="text-sm mt-1" style="color:var(--text-muted)">{{len .Hotels}} properties found</p>
     </div>
   </div>
@@ -1200,6 +1200,7 @@
         <div style="color:#f59e0b;font-size:13px;font-weight:700;margin-bottom:5px;letter-spacing:1px">{{if ge .Stars 1}}★{{end}}{{if ge .Stars 2}}★{{end}}{{if ge .Stars 3}}★{{end}}{{if ge .Stars 4}}★{{end}}{{if ge .Stars 5}}★{{end}}</div>
         {{end}}
         <div style="font-size:13px;font-weight:700;color:var(--text-primary);margin-bottom:2px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">{{.HotelName}}</div>
+        <div style="font-size:11px;color:var(--text-muted)">{{.Destination}}</div>
         <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px">{{.RatingWord}}</div>
         <div style="display:flex;align-items:center;justify-content:space-between;padding-top:12px;border-top:1px solid var(--border);margin-top:auto">
           <div>
@@ -1223,8 +1224,8 @@
   {{else if not .Error}}
   <div class="text-center py-24 max-w-md mx-auto">
     <div class="w-20 h-20 bg-indigo-50 rounded-3xl flex items-center justify-center text-4xl mx-auto mb-6">🏨</div>
-    <h3 class="text-xl font-bold text-gray-900 mb-2">No results for "{{.City}}"</h3>
-    <p class="text-sm text-gray-400 mb-4">Try a different city name or check the spelling.</p>
+    <h3 class="text-xl font-bold text-gray-900 mb-2">No results for "{{if .CategoryTitle}}{{.CategoryTitle}}{{else}}{{.City}}{{end}}"</h3>
+    <p class="text-sm text-gray-400 mb-4">Try a different destination, category or travel dates.</p>
   </div>
   {{end}}
   {{else}}
@@ -1325,7 +1326,7 @@
     </div>
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-5">
       <!-- Hotels -->
-      <a href="/?q=London" class="group relative rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all" style="height:220px">
+      <a href="/?category=city" class="group relative rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all" style="height:220px">
         <img src="https://images.unsplash.com/photo-1564501049412-61c2a3083791?w=500&q=85" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="Hotels" loading="lazy" />
         <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(15,10,40,.78) 0%,rgba(30,27,75,.2) 55%,transparent 100%)"></div>
         <div class="absolute top-4 left-4">
@@ -1338,7 +1339,7 @@
         </div>
       </a>
       <!-- Apartments -->
-      <a href="/?q=Amsterdam" class="group relative rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all" style="height:220px">
+      <a href="/?category=apartments" class="group relative rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all" style="height:220px">
         <img src="https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=500&q=85" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="Apartments" loading="lazy" />
         <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(15,10,40,.78) 0%,rgba(30,27,75,.2) 55%,transparent 100%)"></div>
         <div class="absolute top-4 left-4">
@@ -1351,7 +1352,7 @@
         </div>
       </a>
       <!-- Resorts -->
-      <a href="/?q=Maldives" class="group relative rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all" style="height:220px">
+      <a href="/?category=beach" class="group relative rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all" style="height:220px">
         <img src="https://images.unsplash.com/photo-1573843981267-be1999ff37cd?w=500&q=85" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="Resorts" loading="lazy" />
         <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(15,10,40,.78) 0%,rgba(30,27,75,.2) 55%,transparent 100%)"></div>
         <div class="absolute top-4 left-4">
@@ -1364,7 +1365,7 @@
         </div>
       </a>
       <!-- Villas -->
-      <a href="/?q=Tuscany" class="group relative rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all" style="height:220px">
+      <a href="/?category=villas" class="group relative rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all" style="height:220px">
         <img src="https://images.unsplash.com/photo-1613977257363-707ba9348227?w=500&q=85" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="Villas" loading="lazy" />
         <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(15,10,40,.78) 0%,rgba(30,27,75,.2) 55%,transparent 100%)"></div>
         <div class="absolute top-4 left-4">
@@ -1380,7 +1381,7 @@
     <!-- Second row: wider cards -->
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-5 mt-5">
       <!-- Hostels -->
-      <a href="/?q=Prague" class="group relative rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all flex items-end" style="height:140px">
+      <a href="/?category=budget" class="group relative rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all flex items-end" style="height:140px">
         <img src="https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=600&q=85" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="Hostels" loading="lazy" />
         <div class="absolute inset-0" style="background:linear-gradient(to right,rgba(15,10,40,.75) 0%,transparent 70%)"></div>
         <div class="relative p-5">
@@ -1389,7 +1390,7 @@
         </div>
       </a>
       <!-- Boutique -->
-      <a href="/?q=Florence" class="group relative rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all flex items-end" style="height:140px">
+      <a href="/?category=boutique" class="group relative rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all flex items-end" style="height:140px">
         <img src="https://images.unsplash.com/photo-1590490360182-c33d57733427?w=600&q=85" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="Boutique" loading="lazy" />
         <div class="absolute inset-0" style="background:linear-gradient(to right,rgba(15,10,40,.75) 0%,transparent 70%)"></div>
         <div class="relative p-5">
@@ -1398,7 +1399,7 @@
         </div>
       </a>
       <!-- Cabins -->
-      <a href="/?q=Lapland" class="group relative rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all flex items-end" style="height:140px">
+      <a href="/?category=cabins" class="group relative rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all flex items-end" style="height:140px">
         <img src="https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=600&q=85" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="Cabins" loading="lazy" />
         <div class="absolute inset-0" style="background:linear-gradient(to right,rgba(15,10,40,.75) 0%,transparent 70%)"></div>
         <div class="relative p-5">

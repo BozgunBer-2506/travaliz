@@ -73,8 +73,9 @@ it. The production application reads environment variables; it does not load
 `.env` automatically. Docker Compose passes this setting through from `.env`.
 A missing key produces an unavailable message without falling back to another API.
 
-Each submitted search sends one synchronous SerpApi request, including multi-city
-itineraries. There are no automatic retries, result pagination or paid autocomplete
+Each city or flight search sends one synchronous SerpApi request, including
+multi-city itineraries. Property category searches query three fixed destinations
+and interleave their results; each category click can consume three API searches. There are no automatic retries, result pagination or paid autocomplete
 calls. SerpApi's native cache stays enabled; there is no added cache service.
 Suggestions use a small local starter list; cities can be typed freely and airport
 codes can be entered directly. Distinct searches still consume the provider quota.

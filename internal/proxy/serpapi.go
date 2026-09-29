@@ -132,6 +132,10 @@ func safeLink(value string) string {
 }
 
 func (pc *ProxyClient) FetchHotels(city, regionID, checkIn, checkOut, adults, children, rooms string, ages ...string) ([]HotelData, error) {
+	return pc.fetchHotelQuery(city, city+" hotels", checkIn, checkOut, adults, children, rooms, ages...)
+}
+
+func (pc *ProxyClient) fetchHotelQuery(city, query, checkIn, checkOut, adults, children, rooms string, ages ...string) ([]HotelData, error) {
 	city = strings.TrimSpace(city)
 	if city == "" || len(city) > 200 {
 		return nil, errors.New("Please enter a destination.")
@@ -158,7 +162,7 @@ func (pc *ProxyClient) FetchHotels(city, regionID, checkIn, checkOut, adults, ch
 	if err != nil {
 		return nil, err
 	}
-	q := url.Values{"engine": {"google_hotels"}, "q": {city + " hotels"}, "check_in_date": {checkIn}, "check_out_date": {checkOut}, "adults": {adults}, "children": {children}}
+	q := url.Values{"engine": {"google_hotels"}, "q": {query}, "check_in_date": {checkIn}, "check_out_date": {checkOut}, "adults": {adults}, "children": {children}}
 	if children != "0" {
 		raw := ""
 		if len(ages) > 0 {
@@ -205,7 +209,7 @@ func (pc *ProxyClient) FetchHotels(city, regionID, checkIn, checkOut, adults, ch
 		if h.Rating > 0 {
 			ratingWord = fmt.Sprintf("Google rating: %.1f/5", h.Rating)
 		}
-		hotels = append(hotels, HotelData{HotelID: i + 1, HotelName: h.Name, Price: h.Rate.Price, TotalPrice: h.Total.Price, Currency: "USD", Rating: h.Rating * 2, RatingWord: ratingWord, Stars: h.Stars, PhotoURL: photo, BookingURL: link})
+		hotels = append(hotels, HotelData{HotelID: i + 1, Destination: city, HotelName: h.Name, Price: h.Rate.Price, TotalPrice: h.Total.Price, Currency: "USD", Rating: h.Rating * 2, RatingWord: ratingWord, Stars: h.Stars, PhotoURL: photo, BookingURL: link})
 	}
 	return hotels, nil
 }

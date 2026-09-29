@@ -28,34 +28,35 @@ type FlightLeg struct {
 }
 
 type pageData struct {
-	Tab          string
-	City         string
-	CityEntityID string
-	Checkin      string
-	Checkout     string
-	Adults       string
-	Children     string
-	Rooms        string
-	FromSkyID    string
-	FromEntityID string
-	ToSkyID      string
-	ToEntityID   string
-	FromCity     string
-	ToCity       string
-	Date         string
-	ReturnDate   string
-	TripType     string
-	CabinClass   string
-	Hotels       []proxy.HotelData
-	Flights      []proxy.FlightData
-	FlightLegs   []FlightLeg
-	Cars         []proxy.CarData
-	PickupCity   string
-	PickupDate   string
-	DropoffDate  string
-	DriverAge    string
-	Nights       int
-	Error        string
+	CategoryTitle string
+	Tab           string
+	City          string
+	CityEntityID  string
+	Checkin       string
+	Checkout      string
+	Adults        string
+	Children      string
+	Rooms         string
+	FromSkyID     string
+	FromEntityID  string
+	ToSkyID       string
+	ToEntityID    string
+	FromCity      string
+	ToCity        string
+	Date          string
+	ReturnDate    string
+	TripType      string
+	CabinClass    string
+	Hotels        []proxy.HotelData
+	Flights       []proxy.FlightData
+	FlightLegs    []FlightLeg
+	Cars          []proxy.CarData
+	PickupCity    string
+	PickupDate    string
+	DropoffDate   string
+	DriverAge     string
+	Nights        int
+	Error         string
 }
 
 func (h *TravelHandler) AccountHandler(w http.ResponseWriter, r *http.Request) {
@@ -103,7 +104,8 @@ func (h *TravelHandler) HomeHandler(w http.ResponseWriter, r *http.Request) {
 
 	city := r.URL.Query().Get("q")
 	entityID := r.URL.Query().Get("entityId")
-	if city == "" {
+	category := r.URL.Query().Get("category")
+	if city == "" && category == "" {
 		h.render(w, pageData{Tab: "hotels"})
 		return
 	}
@@ -139,6 +141,16 @@ func (h *TravelHandler) HomeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	pd := pageData{Tab: "hotels", City: city, Checkin: checkin, Checkout: checkout, Adults: adults, Children: children, Rooms: rooms, Nights: nights}
+
+	if category != "" {
+		title, hotels, err := h.ProxyClient.FetchHotelCategory(category, checkin, checkout, adults, children, rooms, r.URL.Query().Get("children_ages"))
+		pd.CategoryTitle, pd.Hotels = title, hotels
+		if err != nil {
+			pd.Error = err.Error()
+		}
+		h.render(w, pd)
+		return
+	}
 
 	destination, matched := proxy.ResolveHotelDestination(city, entityID)
 	if !matched {

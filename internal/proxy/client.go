@@ -26,16 +26,17 @@ type CarData struct {
 
 // HotelData is the flat struct passed to templates and JSON API.
 type HotelData struct {
-	BookingURL string  `json:"booking_url"`
-	TotalPrice float64 `json:"total_price"`
-	HotelID    int     `json:"hotel_id"`
-	HotelName  string  `json:"hotel_name"`
-	Price      float64 `json:"price"`
-	Currency   string  `json:"currency"`
-	Rating     float64 `json:"rating"`
-	RatingWord string  `json:"rating_word"`
-	PhotoURL   string  `json:"photo_url"`
-	Stars      int     `json:"stars"`
+	Destination string  `json:"destination"`
+	BookingURL  string  `json:"booking_url"`
+	TotalPrice  float64 `json:"total_price"`
+	HotelID     int     `json:"hotel_id"`
+	HotelName   string  `json:"hotel_name"`
+	Price       float64 `json:"price"`
+	Currency    string  `json:"currency"`
+	Rating      float64 `json:"rating"`
+	RatingWord  string  `json:"rating_word"`
+	PhotoURL    string  `json:"photo_url"`
+	Stars       int     `json:"stars"`
 }
 
 // FlightData is the flat struct for flight offers.
