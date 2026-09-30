@@ -1199,8 +1199,13 @@
         {{if .Stars}}
         <div style="color:#f59e0b;font-size:13px;font-weight:700;margin-bottom:5px;letter-spacing:1px">{{if ge .Stars 1}}★{{end}}{{if ge .Stars 2}}★{{end}}{{if ge .Stars 3}}★{{end}}{{if ge .Stars 4}}★{{end}}{{if ge .Stars 5}}★{{end}}</div>
         {{end}}
-        <div style="font-size:13px;font-weight:700;color:var(--text-primary);margin-bottom:2px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">{{.HotelName}}</div>
-        <div style="font-size:11px;color:var(--text-muted)">{{.Destination}}</div>
+        {{if .Destination}}
+        <div class="hotel-destination" style="display:flex;align-items:flex-start;gap:7px;font-size:15px;font-weight:800;line-height:1.4;color:var(--text-primary);padding:8px 10px;border:1px solid var(--border);border-radius:9px;margin-bottom:10px">
+          <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:2px"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+          <span>{{.Destination}}</span>
+        </div>
+        {{end}}
+        <div style="font-size:17px;font-weight:800;line-height:1.4;color:var(--text-primary);margin-bottom:6px;overflow-wrap:anywhere">{{.HotelName}}</div>
         <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px">{{.RatingWord}}</div>
         <div style="display:flex;align-items:center;justify-content:space-between;padding-top:12px;border-top:1px solid var(--border);margin-top:auto">
           <div>
