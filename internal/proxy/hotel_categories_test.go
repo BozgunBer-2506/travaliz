@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -18,7 +19,6 @@ func TestHotelCategories(t *testing.T) {
 		t.Run(category, func(t *testing.T) {
 			pc := NewProxyClient("test-key")
 			calls := 0
-			failed := false
 			pc.HTTPClient.Transport = categoryTransport(func(r *http.Request) (*http.Response, error) {
 				destination := config.destinations[calls%3]
 				calls++
@@ -27,10 +27,6 @@ func TestHotelCategories(t *testing.T) {
 				}
 				body := fmt.Sprintf(`{"search_metadata":{"status":"Success"},"properties":[{"name":%q,"rate_per_night":{"extracted_lowest":90}},{"name":%q,"rate_per_night":{"extracted_lowest":100}}]}`, destination+" Hotel A", destination+" Hotel B")
 				status := 200
-				if failed && destination == config.destinations[0] {
-					status = 429
-					body = `{"error":"quota exceeded"}`
-				}
 				return &http.Response{StatusCode: status, Body: io.NopCloser(strings.NewReader(body)), Header: make(http.Header)}, nil
 			})
 			start := time.Now().AddDate(0, 0, 30)
@@ -46,15 +42,28 @@ func TestHotelCategories(t *testing.T) {
 					t.Fatal("destinations not interleaved or IDs duplicated")
 				}
 			}
-			failed = true
-			_, hotels, err = search()
-			if err == nil || len(hotels) != 4 {
-				t.Fatal("partial failure lost results or warning")
-			}
 			_, _, err = pc.FetchHotelCategory("unknown", "", "", "", "", "")
-			if err == nil || calls != 6 {
+			if err == nil || calls != 3 {
 				t.Fatal("unknown category consumed quota")
 			}
 		})
+	}
+}
+
+func TestHotelCategoryStopsOnQuota(t *testing.T) {
+	pc := NewProxyClient("test-key")
+	calls := 0
+	pc.HTTPClient.Transport = categoryTransport(func(r *http.Request) (*http.Response, error) {
+		calls++
+		return &http.Response{
+			StatusCode: http.StatusTooManyRequests,
+			Body:       io.NopCloser(strings.NewReader(`{"error":"quota exceeded"}`)),
+			Header:     make(http.Header),
+		}, nil
+	})
+	start := time.Now().AddDate(0, 0, 30)
+	_, hotels, err := pc.FetchHotelCategory("city", start.Format("2006-01-02"), start.AddDate(0, 0, 2).Format("2006-01-02"), "2", "0", "1")
+	if !errors.Is(err, ErrQuota) || calls != 1 || len(hotels) != 0 {
+		t.Fatalf("quota response should stop after one provider request, got calls=%d results=%d err=%v", calls, len(hotels), err)
 	}
 }

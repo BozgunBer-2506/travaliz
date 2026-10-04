@@ -32,6 +32,11 @@ func (pc *ProxyClient) FetchHotelCategory(category, checkIn, checkOut, adults, c
 			if firstErr == nil {
 				firstErr = err
 			}
+			// A quota response means further provider requests cannot succeed and
+			// would spend needless calls. Preserve any results already collected.
+			if errors.Is(err, ErrQuota) {
+				break
+			}
 			continue
 		}
 		groups[i] = hotels
