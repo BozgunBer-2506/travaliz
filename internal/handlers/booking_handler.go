@@ -19,9 +19,6 @@ type BookingRequest struct {
 	LastName   string  `json:"lastName"`
 	Email      string  `json:"email"`
 	Phone      string  `json:"phone"`
-	CardNumber string  `json:"cardNumber"`
-	CardExpiry string  `json:"cardExpiry"`
-	CardCVV    string  `json:"cardCvv"`
 	FromCode   string  `json:"fromCode"`
 	ToCode     string  `json:"toCode"`
 	Airline    string  `json:"airline"`
@@ -71,8 +68,6 @@ func (h *TravelHandler) BookHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cardLast4 := last4(req.CardNumber)
-
 	booking := &db.Booking{
 		Type:       req.Type,
 		FirstName:  strings.TrimSpace(req.FirstName),
@@ -91,7 +86,7 @@ func (h *TravelHandler) BookHandler(w http.ResponseWriter, r *http.Request) {
 		Checkout:   req.Checkout,
 		Price:      req.Price,
 		Currency:   req.Currency,
-		CardLast4:  cardLast4,
+		CardLast4:  "", // Placeholder requests do not collect card data.
 	}
 
 	ref, err := h.DB.CreateBooking(booking)
@@ -103,7 +98,9 @@ func (h *TravelHandler) BookHandler(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(BookingResponse{Ref: ref})
 
-	go sendB2BWebhook(booking, ref)
+	if os.Getenv("B2B_WEBHOOK_ENABLED") == "true" {
+		go sendB2BWebhook(booking, ref)
+	}
 }
 
 func (h *TravelHandler) MyBookingsHandler(w http.ResponseWriter, r *http.Request) {
@@ -229,12 +226,6 @@ func validateBooking(req *BookingRequest) error {
 		return fmt.Errorf("Valid email is required")
 	case len(strings.TrimSpace(req.Phone)) < 7:
 		return fmt.Errorf("Valid phone number is required")
-	case len(digitsOnly(req.CardNumber)) < 13:
-		return fmt.Errorf("Valid card number is required")
-	case len(req.CardExpiry) < 5:
-		return fmt.Errorf("Card expiry is required (MM/YY)")
-	case len(req.CardCVV) < 3:
-		return fmt.Errorf("CVV is required")
 	case req.Price <= 0:
 		return fmt.Errorf("Invalid price")
 	}
@@ -253,8 +244,8 @@ func digitsOnly(s string) string {
 
 func last4(cardNumber string) string {
 	d := digitsOnly(cardNumber)
-	if len(d) >= 4 {
-		return d[len(d)-4:]
+	if len(d) < 4 {
+		return ""
 	}
-	return "****"
+	return d[len(d)-4:]
 }

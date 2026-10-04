@@ -374,12 +374,12 @@
       <div class="flex-1 h-px bg-gray-200 mx-3"></div>
       <div class="step-dot flex items-center gap-1.5 text-xs font-semibold text-gray-400" id="step-ind-2">
         <span class="w-6 h-6 rounded-full flex items-center justify-center bg-gray-200 text-gray-500 text-xs" id="step-num-2">2</span>
-        <span class="hidden sm:inline">Payment</span>
+        <span class="hidden sm:inline">Request</span>
       </div>
       <div class="flex-1 h-px bg-gray-200 mx-3"></div>
       <div class="step-dot flex items-center gap-1.5 text-xs font-semibold text-gray-400" id="step-ind-3">
         <span class="w-6 h-6 rounded-full flex items-center justify-center bg-gray-200 text-gray-500 text-xs" id="step-num-3">3</span>
-        <span class="hidden sm:inline">Confirmed</span>
+        <span class="hidden sm:inline">Request received</span>
       </div>
     </div>
 
@@ -418,40 +418,18 @@
         <p id="step1-error" class="text-red-500 text-xs mb-3 hidden"></p>
         <button onclick="goToStep2()" class="w-full py-3 rounded-xl text-sm font-bold text-white transition-all"
           style="background:linear-gradient(135deg,#4f46e5,#7c3aed);box-shadow:0 4px 16px rgba(79,70,229,.3)">
-          Continue to Payment →
+          Review Request →
         </button>
       </div>
 
       <!-- STEP 2: Payment -->
       <div id="step-2" class="pt-4 hidden">
-        <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Payment Details</p>
-        <div class="mb-3">
-          <label class="text-xs font-semibold text-gray-500 mb-1 block">Card Number *</label>
-          <input id="b-card-number" type="text" placeholder="1234 5678 9012 3456" maxlength="19"
-            oninput="formatCardNumber(this)"
-            class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-mono focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all" />
-        </div>
-        <div class="mb-3">
-          <label class="text-xs font-semibold text-gray-500 mb-1 block">Cardholder Name *</label>
-          <input id="b-card-name" type="text" placeholder="JOHN DOE"
-            oninput="this.value=this.value.toUpperCase()"
-            class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all" />
-        </div>
-        <div class="grid grid-cols-2 gap-3 mb-3">
-          <div>
-            <label class="text-xs font-semibold text-gray-500 mb-1 block">Expiry (MM/YY) *</label>
-            <input id="b-card-expiry" type="text" placeholder="08/27" maxlength="5"
-              oninput="formatExpiry(this)"
-              class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-mono focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all" />
-          </div>
-          <div>
-            <label class="text-xs font-semibold text-gray-500 mb-1 block">CVV *</label>
-            <input id="b-card-cvv" type="password" placeholder="•••" maxlength="4"
-              class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-mono focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all" />
-          </div>
-        </div>
+        <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Payment — Placeholder</p>
+        <p class="text-sm text-gray-600 mb-4">No payment is collected. Prices and availability are unverified. Saving this request does not create a confirmed reservation or issue a ticket.</p>
+        <!-- Reserved for a future embedded payment processor. -->
+        <div id="payment-placeholder"></div>
         <div id="modal-total" class="bg-slate-50 rounded-xl p-3 mb-5 flex items-center justify-between text-sm border border-gray-100">
-          <span class="text-gray-500 font-medium">Total charge</span>
+          <span class="text-gray-500 font-medium">Displayed estimate</span>
           <span id="modal-total-amount" class="text-xl font-extrabold text-indigo-600"></span>
         </div>
         <p id="step2-error" class="text-red-500 text-xs mb-3 hidden"></p>
@@ -461,23 +439,24 @@
           </button>
           <button id="pay-btn" onclick="submitBooking()" class="py-3 rounded-xl text-sm font-bold text-white transition-all"
             style="background:linear-gradient(135deg,#059669,#10b981);box-shadow:0 4px 16px rgba(5,150,105,.3)">
-            Pay &amp; Confirm
+            Save Request
           </button>
         </div>
-        <p class="text-center text-xs text-gray-400 mt-3">🔒 Secured with 256-bit SSL encryption</p>
+        <p class="text-center text-xs text-gray-400 mt-3">No card details are requested or stored.</p>
       </div>
 
       <!-- STEP 3: Confirmation -->
       <div id="step-3" class="pt-6 hidden text-center">
         <div class="w-16 h-16 rounded-full flex items-center justify-center text-3xl mx-auto mb-4" style="background:linear-gradient(135deg,#d1fae5,#a7f3d0)">✅</div>
-        <h3 class="text-xl font-extrabold text-gray-900 mb-1">Booking Confirmed!</h3>
-        <p class="text-sm text-gray-400 mb-5">A confirmation has been saved to the system.</p>
+        <h3 class="text-xl font-extrabold text-gray-900 mb-1">Request received</h3>
+        <p class="text-sm text-gray-400 mb-5">Pending — no payment collected; reservation not confirmed. No ticket issued.</p>
         <div class="bg-indigo-50 border border-indigo-200 rounded-2xl p-5 mb-5 inline-block w-full">
-          <p class="text-xs text-gray-400 uppercase tracking-widest mb-1 font-semibold">Booking Reference</p>
+          <p class="text-xs text-gray-400 uppercase tracking-widest mb-1 font-semibold">Request Reference</p>
           <p id="confirmed-ref" class="text-3xl font-black text-indigo-600 tracking-widest font-mono"></p>
           <p id="confirmed-name" class="text-sm text-gray-500 mt-1"></p>
         </div>
         <div id="confirmed-details" class="text-sm text-gray-600 bg-slate-50 rounded-2xl p-4 text-left space-y-1.5 mb-5"></div>
+        <a href="/account#bookings-list" class="block w-full py-3 rounded-xl text-sm font-bold text-white mb-3" style="background:linear-gradient(135deg,#4f46e5,#7c3aed)">My Bookings</a>
         <button onclick="closeBookingModal()" class="w-full py-3 rounded-xl text-sm font-bold text-white"
           style="background:linear-gradient(135deg,#4f46e5,#7c3aed)">
           Done
@@ -512,7 +491,7 @@
       <div class="flex items-center justify-between">
         <span class="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full" style="background:#d1fae5;color:#065f46">
           <span style="width:6px;height:6px;border-radius:50%;background:#10b981;display:inline-block"></span>
-          Confirmed
+          Pending — no payment collected; reservation not confirmed
         </span>
         <div style="text-align:right">
           <p class="text-xs" style="color:var(--text-muted)">Reference</p>
@@ -528,7 +507,7 @@
         <p class="text-xs font-bold uppercase tracking-wider mb-3" style="color:var(--text-muted)">Price Details</p>
         <div id="bdm-price-rows" class="space-y-2"></div>
         <div class="flex items-center justify-between pt-3 mt-3" style="border-top:1px solid var(--border)">
-          <span class="text-sm font-bold" style="color:var(--text-primary)">Total Charged</span>
+          <span class="text-sm font-bold" style="color:var(--text-primary)">Displayed estimate</span>
           <span id="bdm-total" class="text-xl font-extrabold" style="color:#6366f1"></span>
         </div>
       </div>
@@ -539,7 +518,7 @@
         <div id="bdm-passenger-rows" class="space-y-1.5"></div>
       </div>
 
-      <!-- Booked on -->
+      <!-- Request status -->
       <p id="bdm-booked-at" class="text-xs text-center" style="color:var(--text-muted)"></p>
 
       <!-- Actions -->
@@ -1145,7 +1124,7 @@
     </div>
   </div>
   {{if .Hotels}}
-  <p class="text-sm mb-4" style="color:var(--text-muted)">Prices may change. Confirm dates, guests, taxes and availability on the provider website. Currency conversions are approximate; ratings are shown on a 10-point scale.</p>
+  <p class="text-sm mb-4" style="color:var(--text-muted)">Placeholder requests only: prices and availability are unverified. No payment is collected and no reservation is confirmed.</p>
   <!-- Hotel Filters -->
   <div class="flex flex-wrap items-center gap-2 mb-6">
     <select onchange="setHotelFilter('stars',this.value)" class="hf-select">
@@ -1170,10 +1149,15 @@
   </div>
   <div id="hotel-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:20px">
     {{range .Hotels}}
-    <a class="hotel-card" href="{{.BookingURL}}" target="_blank" rel="noopener noreferrer"
+    <article class="hotel-card"
       data-id="{{.HotelID}}"
       data-name="{{.HotelName}}"
-      data-price="{{printf "%.0f" .Price}}"
+      data-price="{{printf "%.2f" .Price}}"
+      data-total="{{printf "%.2f" .TotalPrice}}"
+      data-currency="{{.Currency}}"
+      data-destination="{{.Destination}}"
+      data-checkin="{{$.Checkin}}"
+      data-checkout="{{$.Checkout}}"
       data-photo="{{.PhotoURL}}"
       data-stars="{{.Stars}}"
       data-rating="{{printf "%.1f" .Rating}}"
@@ -1220,10 +1204,10 @@
             </div>
             {{end}}
           </div>
-          <span style="font-size:11px;font-weight:600;color:#6366f1;border:1px solid rgba(99,102,241,0.4);padding:5px 12px;border-radius:10px">Check availability ↗</span>
+          <button type="button" class="hotel-request-btn" style="font-size:12px;font-weight:700;color:#6366f1;border:1px solid rgba(99,102,241,0.4);padding:7px 12px;border-radius:10px">Request booking</button>
         </div>
       </div>
-    </a>
+    </article>
     {{end}}
   </div>
   {{else if not .Error}}
@@ -1447,7 +1431,7 @@
       <div class="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden card-hover">
         <div class="relative h-52 overflow-hidden">
           <img src="https://images.unsplash.com/photo-1582719508461-905c673771fd?w=600&q=80" class="w-full h-full object-cover" alt="Beach resort" loading="lazy" />
-          <span class="absolute top-3 right-3 text-xs font-bold px-2.5 py-1 rounded-full shadow" style="background:rgba(5,150,105,.9);color:white">Free cancel</span>
+          <span class="absolute top-3 right-3 text-xs font-bold px-2.5 py-1 rounded-full shadow" style="background:rgba(5,150,105,.9);color:white">Example listing</span>
         </div>
         <div class="p-5">
           <p class="text-xs text-gray-400 mb-1">Maldives</p>
@@ -1588,7 +1572,7 @@
 
   <!-- FLIGHTS -->
   {{if eq .Tab "flights"}}
-  <p class="text-sm mb-4" style="color:var(--text-muted)">Prices are estimates for all travellers. Complete flight selection and confirm the final price on Google Flights. Currency conversions are approximate.</p>
+  <p class="text-sm mb-4" style="color:var(--text-muted)">Flight prices are estimates. Requests are placeholders: no payment collected, reservation confirmed or ticket issued.</p>
 
   {{if eq .TripType "multi"}}
   {{range .FlightLegs}}
@@ -1812,7 +1796,7 @@
 {{define "flight-card"}}
 <div class="flight-card p-5 sm:p-6 flex flex-col sm:flex-row items-center gap-6"
   data-stops="{{.Stops}}"
-  data-price="{{printf "%.0f" .Price}}"
+  data-price="{{printf "%.2f" .Price}}"
   data-depart="{{.DepartTime}}"
   data-duration="{{.DurationHours}}">
   <!-- Airline -->
@@ -1860,10 +1844,14 @@
       <span class="price-display text-xl sm:text-3xl font-extrabold text-gray-900" data-usd="{{printf "%.2f" .Price}}">$0</span>
       <p class="text-xs text-gray-400">{{.PriceLabel}}</p>
     </div>
-    <a href="{{.BookingURL}}" target="_blank" rel="noopener noreferrer" class="text-white text-sm font-bold px-7 py-2.5 rounded-xl transition-all"
+    <button type="button" class="flight-book-btn text-white text-sm font-bold px-7 py-2.5 rounded-xl transition-all"
+      data-from="{{.FromCode}}" data-to="{{.ToCode}}" data-airline="{{.Airline}}"
+      data-price="{{printf "%.2f" .Price}}" data-currency="{{.Currency}}"
+      data-depart="{{.DepartTime}}" data-arrive="{{.ArriveTime}}" data-depart-date="{{.DepartDate}}"
+      data-duration="{{.DurationHours}}h {{.DurationMinutes}}m" data-stops="{{.Stops}}"
       style="background:linear-gradient(135deg,#4f46e5,#7c3aed);box-shadow:0 4px 16px rgba(79,70,229,.3)">
-      View on Google Flights ↗
-    </a>
+      Request booking
+    </button>
   </div>
 </div>
 {{end}}
@@ -1889,7 +1877,7 @@
         <p class="mb-2">We collect the minimum data necessary to operate the service:</p>
         <ul class="list-disc list-inside space-y-1 text-gray-500">
           <li><strong class="text-gray-700">Search queries:</strong> destination, dates, and passenger counts entered during a search.</li>
-          <li><strong class="text-gray-700">Booking data:</strong> name, email, phone, and last 4 digits of card number submitted during a demo booking. Full card details are never stored.</li>
+          <li><strong class="text-gray-700">Booking request data:</strong> name, email, phone, travel details, and displayed price estimate. Payment card details are not collected.</li>
           <li><strong class="text-gray-700">Usage data:</strong> pages visited and session information stored in a secure HTTP-only cookie.</li>
         </ul>
       </section>
@@ -1915,7 +1903,7 @@
 
       <section>
         <h3 class="font-semibold text-gray-800 mb-2">5. Demo Nature of This Service</h3>
-        <p>travaliz.com is a <strong class="text-gray-700">demonstration project</strong>. Bookings made through this platform are not real reservations. No payments are processed. Booking data is stored temporarily in an ephemeral SQLite database and is not retained between server restarts.</p>
+        <p>travaliz.com is a <strong class="text-gray-700">demonstration project</strong>. Requests saved through this platform are not supplier reservations. No payments are processed. Request details are stored in the connected Supabase database and can be removed from My Bookings.</p>
       </section>
 
       <section>
@@ -1925,7 +1913,7 @@
 
       <section>
         <h3 class="font-semibold text-gray-800 mb-2">7. Data Retention</h3>
-        <p>Search queries and booking data are stored only for the duration of the server session. No long-term data retention is in place for this demo application.</p>
+        <p>Saved request details remain in the connected database until removed through My Bookings. Authentication data is managed by Supabase.</p>
       </section>
 
       <section>
@@ -1993,9 +1981,9 @@ const descMap = {
 };
 const badgeColors = ['','','',''];
 const quickBadges = {
-  3: ['Free cancellation','No prepayment'],
-  4: ['Free cancellation','Breakfast available','No prepayment'],
-  5: ['Free cancellation','Breakfast included','Late check-out','No prepayment'],
+  3: ['Price estimate only','No payment collected'],
+  4: ['Price estimate only','No payment collected'],
+  5: ['Price estimate only','No payment collected'],
 };
 const roomTypes = {
   3: [
@@ -2226,7 +2214,7 @@ function openBookingDetail(item) {
   document.getElementById('bdm-type-label').textContent = typeLabel;
   document.getElementById('bdm-name').textContent = item.name || item.hotelName || 'Booking';
   document.getElementById('bdm-ref').textContent = item.ref || '-';
-  document.getElementById('bdm-booked-at').textContent = 'Booked on ' + new Date(item.at).toLocaleString();
+  document.getElementById('bdm-booked-at').textContent = 'Request received — pending; no payment collected and not confirmed.';
 
   // Trip details grid
   let tripCells = [];
@@ -2265,11 +2253,11 @@ function openBookingDetail(item) {
   if (item.type === 'hotel' && item.checkin && item.checkout) {
     const ci = new Date(item.checkin), co = new Date(item.checkout);
     const nights = Math.max(1, Math.round((co - ci) / 86400000));
-    priceRows = `<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--text-secondary)"><span>${nights} night${nights>1?'s':''} × $${item.price}/night</span><span style="font-weight:600">$${(item.price*nights).toLocaleString()}</span></div>`;
-    document.getElementById('bdm-total').textContent = '$' + (item.price * nights).toLocaleString();
+    priceRows = `<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--text-secondary)"><span>${nights} night${nights>1?'s':''} · estimated rate</span><span style="font-weight:600">${formatBookingEstimate(item.price, item.currency || 'USD')}</span></div>`;
+    document.getElementById('bdm-total').textContent = formatBookingEstimate(item.total ?? (item.price * nights), item.currency || 'USD');
   } else {
-    priceRows = `<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--text-secondary)"><span>Base fare</span><span style="font-weight:600">$${item.price||0}</span></div>`;
-    document.getElementById('bdm-total').textContent = '$' + (item.price||0);
+    priceRows = `<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--text-secondary)"><span>Estimated fare</span><span style="font-weight:600">${formatBookingEstimate(item.price||0, item.currency || 'USD')}</span></div>`;
+    document.getElementById('bdm-total').textContent = formatBookingEstimate(item.total ?? (item.price || 0), item.currency || 'USD');
   }
   document.getElementById('bdm-price-rows').innerHTML = priceRows;
 
@@ -2334,7 +2322,7 @@ function renderBookings() {
         </div>
         <div style="text-align:right;flex-shrink:0">
           ${item.ref ? `<p style="font-size:10px;font-weight:700;color:#6366f1;font-family:monospace;margin-bottom:3px">${item.ref}</p>` : ''}
-          <span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;background:#d1fae5;color:#065f46">Confirmed</span>
+          <span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;background:#fef3c7;color:#92400e">Pending · no payment collected</span>
         </div>
         <span style="color:var(--text-muted);font-size:16px;margin-left:4px">›</span>
       </div>`;
@@ -2632,29 +2620,31 @@ async function loadMyBookings() {
     const res = await fetch('/my-bookings', {
       headers: { 'Authorization': 'Bearer ' + session.access_token }
     });
+    if (!res.ok) throw new Error('Could not load booking requests');
     const data = await res.json();
     if (!data.length) {
       list.innerHTML = '<p class="text-sm text-center py-6" style="color:var(--text-muted)">No bookings yet.</p>';
       return;
     }
     list.innerHTML = data.map(b => {
-      const isHotel = b.Type === 'hotel';
-      const title = isHotel ? (b.HotelName || 'Hotel') : (b.FromCode + ' → ' + b.ToCode);
+      const isHotel = b.type === 'hotel';
+      const title = isHotel ? (b.hotel_name || 'Hotel') : (b.from_code + ' → ' + b.to_code);
       const subtitle = isHotel
-        ? (b.Checkin + ' – ' + b.Checkout)
-        : (b.Airline + (b.DepartTime ? ' · ' + b.DepartTime : ''));
-      const icon = isHotel ? '🏨' : (b.Type === 'car' ? '🚗' : '✈️');
-      const price = (b.Currency || 'USD') + ' ' + (b.Price || 0).toLocaleString();
+        ? ((b.checkin || '') + ' – ' + (b.checkout || ''))
+        : ((b.airline || '') + (b.depart_time ? ' · ' + b.depart_time : ''));
+      const icon = isHotel ? '🏨' : (b.type === 'car' ? '🚗' : '✈️');
+      const price = (b.currency || 'USD') + ' ' + Number(b.price || 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
       return `<div class="flex items-center gap-3 p-3 rounded-2xl" style="background:var(--bg-card2);border:1px solid var(--border)">
         <div class="text-2xl">${icon}</div>
         <div class="flex-1 min-w-0">
           <p class="text-sm font-bold truncate" style="color:var(--text-primary)">${title}</p>
           <p class="text-xs truncate" style="color:var(--text-muted)">${subtitle}</p>
-          <p class="text-xs font-semibold mt-0.5" style="color:#818cf8">${b.Ref}</p>
+          <p class="text-xs font-semibold mt-0.5" style="color:#818cf8">${b.ref}</p>
+          <p class="text-sm font-semibold mt-1" style="color:var(--text-primary)">Request received — pending. No payment collected; reservation not confirmed.</p>
         </div>
         <div class="text-right shrink-0">
           <p class="text-sm font-bold" style="color:var(--text-primary)">${price}</p>
-          <p class="text-xs" style="color:var(--text-muted)">****${b.CardLast4}</p>
+          <p class="text-xs" style="color:var(--text-muted)">${isHotel ? 'per night estimate' : 'itinerary estimate'}</p>
         </div>
       </div>`;
     }).join('');
@@ -2688,14 +2678,25 @@ function toggleBookings() {
   if (!isOpen) renderBookings();
 }
 
-// ── Booking Modal (real 3-step form) ─────────────────────────────────────────
+// ── Placeholder booking flow; no payment or supplier confirmation ────────────
 let pendingBooking = null;
+
+function bookingText(value) {
+  return String(value ?? '').replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function formatBookingEstimate(value, currency = 'USD') {
+  return new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(Number(value) || 0);
+}
 
 function openBookingModal(booking) {
   requireAuth(() => _doOpenBookingModal(booking));
 }
 function _doOpenBookingModal(booking) {
   pendingBooking = booking;
+  const display = Object.fromEntries(Object.entries(booking).map(([key, value]) =>
+    [key, typeof value === 'string' ? bookingText(value) : value]));
   // Pre-fill passenger details from logged-in user
   if (_currentUser) {
     const u = _currentUser;
@@ -2711,46 +2712,45 @@ function _doOpenBookingModal(booking) {
   const labels = { flight: 'Flight Booking', hotel: 'Hotel Booking', car: 'Car Rental' };
   document.getElementById('modal-header-label').textContent = labels[booking.type] || 'Booking';
   document.getElementById('modal-header-title').textContent = booking.type === 'flight'
-    ? `${booking.from} → ${booking.to}`
-    : booking.name;
+    ? `${booking.from} → ${booking.to}` : booking.name;
+  const money = value => formatBookingEstimate(value, booking.currency || 'USD');
   // Summary
   let summaryHTML = '';
   if (booking.type === 'flight') {
     summaryHTML = `
-      <div class="flex justify-between"><span class="text-gray-400">Airline</span><span class="font-semibold">${booking.airline}</span></div>
-      <div class="flex justify-between"><span class="text-gray-400">Departs</span><span class="font-semibold">${booking.depart}</span></div>
-      <div class="flex justify-between"><span class="text-gray-400">Arrives</span><span class="font-semibold">${booking.arrive}</span></div>
-      <div class="flex justify-between"><span class="text-gray-400">Duration</span><span class="font-semibold">${booking.duration}</span></div>
-      <div class="flex justify-between pt-2 border-t border-indigo-100"><span class="text-gray-500 font-semibold">Price</span><span class="font-extrabold text-indigo-600">$${booking.price} / person</span></div>`;
+      <div class="flex justify-between"><span class="text-gray-400">Airline</span><span class="font-semibold">${display.airline || '-'}</span></div>
+      <div class="flex justify-between"><span class="text-gray-400">Departs</span><span class="font-semibold">${display.depart || '-'}</span></div>
+      <div class="flex justify-between"><span class="text-gray-400">Arrives</span><span class="font-semibold">${display.arrive || '-'}</span></div>
+      <div class="flex justify-between"><span class="text-gray-400">Duration</span><span class="font-semibold">${display.duration || '-'}</span></div>
+      <div class="flex justify-between pt-2 border-t border-indigo-100"><span class="text-gray-500 font-semibold">Displayed itinerary estimate</span><span class="font-extrabold text-indigo-600">${money(booking.price)}</span></div>`;
   } else if (booking.type === 'car') {
     summaryHTML = `
-      <div class="flex justify-between"><span class="text-gray-400">Vehicle</span><span class="font-semibold">${booking.name}</span></div>
-      ${booking.provider ? `<div class="flex justify-between"><span class="text-gray-400">Provider</span><span class="font-semibold">${booking.provider}</span></div>` : ''}
+      <div class="flex justify-between"><span class="text-gray-400">Vehicle</span><span class="font-semibold">${display.name}</span></div>
+      ${display.provider ? `<div class="flex justify-between"><span class="text-gray-400">Provider</span><span class="font-semibold">${display.provider}</span></div>` : ''}
       <div class="flex justify-between"><span class="text-gray-400">Pick-up</span><span class="font-semibold">${booking.checkin || '-'}</span></div>
       <div class="flex justify-between"><span class="text-gray-400">Drop-off</span><span class="font-semibold">${booking.checkout || '-'}</span></div>
-      <div class="flex justify-between pt-2 border-t border-indigo-100"><span class="text-gray-500 font-semibold">Price</span><span class="font-extrabold text-indigo-600">$${booking.price}/day</span></div>`;
+      <div class="flex justify-between pt-2 border-t border-indigo-100"><span class="text-gray-500 font-semibold">Displayed estimate</span><span class="font-extrabold text-indigo-600">${money(booking.price)}/day</span></div>`;
   } else {
     const nights = booking.nights || 1;
     const total  = booking.total  || booking.price;
     summaryHTML = `
-      <div class="flex justify-between"><span class="text-gray-400">Hotel</span><span class="font-semibold">${booking.name}</span></div>
-      ${booking.roomType ? `<div class="flex justify-between"><span class="text-gray-400">Room</span><span class="font-semibold">${booking.roomType}</span></div>` : ''}
+      <div class="flex justify-between"><span class="text-gray-400">Hotel</span><span class="font-semibold">${display.name}</span></div>
+      <div class="flex justify-between"><span class="text-gray-400">Destination</span><span class="font-semibold">${display.to || '-'}</span></div>
+      ${display.roomType ? `<div class="flex justify-between"><span class="text-gray-400">Room</span><span class="font-semibold">${display.roomType}</span></div>` : ''}
       <div class="flex justify-between"><span class="text-gray-400">Check-in</span><span class="font-semibold">${booking.checkin || '-'}</span></div>
       <div class="flex justify-between"><span class="text-gray-400">Check-out</span><span class="font-semibold">${booking.checkout || '-'}</span></div>
       <div class="flex justify-between"><span class="text-gray-400">Duration</span><span class="font-semibold">${nights} night${nights > 1 ? 's' : ''}</span></div>
-      <div class="flex justify-between"><span class="text-gray-400">Per night</span><span class="font-semibold">$${booking.price}</span></div>
-      <div class="flex justify-between pt-2 border-t border-indigo-100"><span class="text-gray-500 font-semibold">Total</span><span class="font-extrabold text-indigo-600">$${total}</span></div>`;
+      <div class="flex justify-between"><span class="text-gray-400">Per night estimate</span><span class="font-semibold">${money(booking.price)}</span></div>
+      <div class="flex justify-between pt-2 border-t border-indigo-100"><span class="text-gray-500 font-semibold">Displayed stay estimate</span><span class="font-extrabold text-indigo-600">${money(total)}</span></div>`;
   }
   document.getElementById('modal-summary-content').innerHTML = summaryHTML;
-  const displayTotal = booking.total || booking.price;
-  document.getElementById('modal-total-amount').textContent = `$${displayTotal}`;
+  const displayTotal = booking.total ?? booking.price;
+  document.getElementById('modal-total-amount').textContent = money(displayTotal);
   // Reset to step 1
   showStep(1);
-  // Clear payment fields only (passenger fields get pre-filled below)
-  ['b-card-number','b-card-name','b-card-expiry','b-card-cvv'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = '';
-  });
+  const submitButton = document.getElementById('pay-btn');
+  submitButton.disabled = false;
+  submitButton.textContent = 'Save Request';
   // Pre-fill passenger details from logged-in user
   ['b-first-name','b-last-name','b-email','b-phone'].forEach(id => {
     const el = document.getElementById(id);
@@ -2826,42 +2826,25 @@ function goToStep2() {
   if (phone.length < 7) return showError('step1-error', 'Please enter a valid phone number.');
   hideError('step1-error');
   showStep(2);
-  document.getElementById('b-card-number').focus();
-}
-
-function formatCardNumber(el) {
-  let v = el.value.replace(/\D/g,'').substring(0,16);
-  el.value = v.replace(/(.{4})/g,'$1 ').trim();
-}
-function formatExpiry(el) {
-  let v = el.value.replace(/\D/g,'').substring(0,4);
-  if (v.length >= 2) v = v.substring(0,2) + '/' + v.substring(2);
-  el.value = v;
+  document.getElementById('pay-btn').focus();
 }
 
 async function submitBooking() {
-  const cardNumber = document.getElementById('b-card-number').value.trim();
-  const cardExpiry = document.getElementById('b-card-expiry').value.trim();
-  const cardCVV    = document.getElementById('b-card-cvv').value.trim();
-  if (cardNumber.replace(/\s/g,'').length < 13) return showError('step2-error', 'Please enter a valid card number.');
-  if (cardExpiry.length < 5) return showError('step2-error', 'Please enter card expiry (MM/YY).');
-  if (cardCVV.length < 3)    return showError('step2-error', 'Please enter your CVV.');
+  const b = pendingBooking;
+  const price = Number(b?.price);
+  if (!Number.isFinite(price) || price <= 0) return showError('step2-error', 'Please select a valid estimate.');
   hideError('step2-error');
 
   const btn = document.getElementById('pay-btn');
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> Processing...';
+  btn.textContent = 'Saving request…';
 
-  const b = pendingBooking;
   const payload = {
     type:       b.type,
     firstName:  document.getElementById('b-first-name').value.trim(),
     lastName:   document.getElementById('b-last-name').value.trim(),
     email:      document.getElementById('b-email').value.trim(),
     phone:      document.getElementById('b-phone').value.trim(),
-    cardNumber: cardNumber,
-    cardExpiry: cardExpiry,
-    cardCvv:    cardCVV,
     fromCode:   b.from   || '',
     toCode:     b.to     || '',
     airline:    b.airline|| '',
@@ -2872,8 +2855,8 @@ async function submitBooking() {
     hotelName:  b.name   || '',
     checkin:    b.checkin|| '',
     checkout:   b.checkout|| '',
-    price:      parseFloat(b.price) || 0,
-    currency:   'USD',
+    price,
+    currency:   b.currency || 'USD',
   };
 
   try {
@@ -2881,7 +2864,7 @@ async function submitBooking() {
     if (!session) {
       showError('step2-error', 'Your session has expired. Please sign in again.');
       btn.disabled = false;
-      btn.innerHTML = 'Pay & Confirm';
+      btn.textContent = 'Save Request';
       return;
     }
     const res = await fetch('/book', {
@@ -2893,58 +2876,47 @@ async function submitBooking() {
     if (!res.ok || data.error) {
       showError('step2-error', data.error || 'Booking failed. Please try again.');
       btn.disabled = false;
-      btn.innerHTML = 'Pay & Confirm';
+      btn.textContent = 'Save Request';
       return;
     }
-    // Success
+    // This records a request in the app; it does not confirm inventory or charge payment.
     const fullName = payload.firstName + ' ' + payload.lastName;
     document.getElementById('confirmed-ref').textContent  = data.ref;
     document.getElementById('confirmed-name').textContent = fullName + ' · ' + payload.email;
-    let detailsHTML = '';
-    if (b.type === 'flight') {
-      detailsHTML = `
-        <div class="flex justify-between"><span class="text-gray-400">Route</span><span class="font-semibold">${b.from} → ${b.to}</span></div>
-        <div class="flex justify-between"><span class="text-gray-400">Airline</span><span class="font-semibold">${b.airline}</span></div>
-        <div class="flex justify-between"><span class="text-gray-400">Departs</span><span class="font-semibold">${b.depart}</span></div>
-        <div class="flex justify-between"><span class="text-gray-400">Arrives</span><span class="font-semibold">${b.arrive}</span></div>
-        <div class="flex justify-between pt-2 border-t border-gray-100"><span class="text-gray-400">Charged</span><span class="font-extrabold text-indigo-600">$${b.price} · ****${cardNumber.replace(/\s/g,'').slice(-4)}</span></div>`;
-    } else {
-      detailsHTML = `
-        <div class="flex justify-between"><span class="text-gray-400">Hotel</span><span class="font-semibold">${b.name}</span></div>
-        <div class="flex justify-between"><span class="text-gray-400">Check-in</span><span class="font-semibold">${b.checkin}</span></div>
-        <div class="flex justify-between"><span class="text-gray-400">Check-out</span><span class="font-semibold">${b.checkout}</span></div>
-        <div class="flex justify-between pt-2 border-t border-gray-100"><span class="text-gray-400">Charged</span><span class="font-extrabold text-indigo-600">$${b.price}/night · ****${cardNumber.replace(/\s/g,'').slice(-4)}</span></div>`;
-    }
-    document.getElementById('confirmed-details').innerHTML = detailsHTML;
-    // Mark the select button as booked
+    const estimate = b.type === 'hotel' ? (b.total ?? price) : price;
+    document.getElementById('confirmed-details').textContent =
+      `${b.type === 'flight' ? `${b.from} → ${b.to}` : b.name} · ${formatBookingEstimate(estimate, payload.currency)} · Pending — no payment collected; reservation not confirmed.`;
     if (b._btn) {
-      b._btn.textContent = 'Booked ✓';
+      b._btn.textContent = 'Request saved';
       b._btn.disabled = true;
-      b._btn.style.background = 'linear-gradient(135deg,#059669,#10b981)';
     }
-    addBooking({ ...payload, ref: data.ref, name: b.type === 'flight' ? `${b.from} → ${b.to}` : b.name, at: new Date().toISOString() });
+    addBooking({
+      ...payload, from: b.from, to: b.to, total: b.total,
+      ref: data.ref, name: b.type === 'flight' ? `${b.from} → ${b.to}` : b.name,
+      at: new Date().toISOString(),
+    });
     showStep(3);
   } catch(e) {
     showError('step2-error', 'Network error. Please check your connection.');
     btn.disabled = false;
-    btn.innerHTML = 'Pay & Confirm';
+    btn.textContent = 'Save Request';
   }
 }
 
-// Hotel book buttons
-document.querySelectorAll('.book-btn').forEach(btn => {
-  const bookedIDs = getBookings().filter(b => b.type === 'hotel').map(b => String(b.hotelId));
-  if (bookedIDs.includes(btn.dataset.id)) {
-    btn.textContent = 'Booked ✓'; btn.disabled = true;
-    btn.style.background = 'linear-gradient(135deg,#059669,#10b981)';
-    return;
-  }
+// Hotel requests use only the displayed API estimate. No generated room or price data.
+document.querySelectorAll('.hotel-request-btn').forEach(btn => {
   btn.addEventListener('click', () => {
+    const d = btn.closest('.hotel-card').dataset;
+    const currency = localStorage.getItem('currency') || 'EUR';
+    const rate = CURRENCY_RATES[currency] || 1;
+    const nights = Math.max(1, Number(d.nights) || 1);
+    const price = Number((Number(d.price) * rate).toFixed(2));
+    const total = Number(d.total) > 0
+      ? Number((Number(d.total) * rate).toFixed(2))
+      : Number((price * nights).toFixed(2));
     openBookingModal({
-      type: 'hotel', hotelId: btn.dataset.id,
-      name: btn.dataset.name, price: btn.dataset.price,
-      checkin: document.getElementById('checkin')?.value || '',
-      checkout: document.getElementById('checkout')?.value || '',
+      type: 'hotel', hotelId: d.id, name: d.name, price, total, currency,
+      to: d.destination, nights, checkin: d.checkin, checkout: d.checkout,
       _btn: btn,
     });
   });
@@ -2957,7 +2929,9 @@ document.querySelectorAll('.flight-book-btn').forEach(btn => {
       type: 'flight',
       name: `${btn.dataset.from} → ${btn.dataset.to}`,
       from: btn.dataset.from, to: btn.dataset.to,
-      airline: btn.dataset.airline, price: btn.dataset.price,
+      airline: btn.dataset.airline,
+      price: Number((Number(btn.dataset.price) * (CURRENCY_RATES[localStorage.getItem('currency') || 'EUR'] || 1)).toFixed(2)),
+      currency: localStorage.getItem('currency') || 'EUR',
       depart: btn.dataset.depart, arrive: btn.dataset.arrive,
       checkin: btn.dataset.departDate,
       duration: btn.dataset.duration, stops: btn.dataset.stops,

@@ -127,12 +127,12 @@
 
         <!-- Spending by type - donut -->
         <div class="p-5 flex flex-col items-center">
-          <p class="text-xs font-bold mb-3 self-start" style="color:var(--text-muted)">SPEND BY TYPE</p>
+          <p class="text-xs font-bold mb-3 self-start" style="color:var(--text-muted)">ESTIMATED REQUEST PRICES</p>
           <div style="position:relative;width:140px;height:140px">
             <canvas id="chart-type"></canvas>
             <div id="chart-type-center" class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
               <p id="chart-total" class="text-base font-black" style="color:var(--text-primary)">€0</p>
-              <p class="text-xs" style="color:var(--text-muted)">total</p>
+              <p class="text-xs" style="color:var(--text-muted)">estimate</p>
             </div>
           </div>
           <div id="chart-type-legend" class="mt-3 space-y-1 self-start w-full"></div>
@@ -146,7 +146,7 @@
 
         <!-- Monthly spend bar -->
         <div class="p-5">
-          <p class="text-xs font-bold mb-3" style="color:var(--text-muted)">MONTHLY SPEND</p>
+          <p class="text-xs font-bold mb-3" style="color:var(--text-muted)">MONTHLY ESTIMATES</p>
           <canvas id="chart-monthly" height="150"></canvas>
         </div>
 
@@ -175,9 +175,9 @@
 
     <!-- Payment Methods -->
     <div class="section-card">
-      <p class="section-title">Payment Methods</p>
+      <p class="section-title">Payments</p>
       <div id="payment-list">
-        <div class="section-row"><span class="text-sm" style="color:var(--text-muted)">Loading...</span></div>
+        <div class="section-row"><span class="text-sm" style="color:var(--text-muted)">Online payment is not available yet. No card details are collected.</span></div>
       </div>
     </div>
 
@@ -267,17 +267,17 @@
     <div class="px-5 py-4" style="border-top:1px solid var(--border)">
       <div class="flex items-center justify-between">
         <div>
-          <p class="text-xs font-bold" style="color:var(--text-muted)">PAYMENT</p>
-          <p id="bmodal-card" class="text-sm font-semibold mt-0.5" style="color:var(--text-primary)"></p>
+          <p class="text-xs font-bold" style="color:var(--text-muted)">STATUS</p>
+          <p id="bmodal-card" class="text-sm font-semibold mt-0.5" style="color:var(--text-primary)">Pending — no payment collected; not confirmed</p>
         </div>
         <div class="text-right">
-          <p class="text-xs font-bold" style="color:var(--text-muted)">TOTAL</p>
+          <p class="text-xs font-bold" style="color:var(--text-muted)">ESTIMATED PRICE</p>
           <p id="bmodal-price" class="text-lg font-black mt-0.5" style="color:#818cf8"></p>
         </div>
       </div>
     </div>
     <div class="px-5 pb-5">
-      <button onclick="initiateCancelBooking()" class="w-full py-2.5 rounded-xl text-sm font-semibold" style="background:rgba(239,68,68,0.08);color:#ef4444;border:1px solid rgba(239,68,68,0.18)">Cancel Booking</button>
+      <button onclick="initiateCancelBooking()" class="w-full py-2.5 rounded-xl text-sm font-semibold" style="background:rgba(239,68,68,0.08);color:#ef4444;border:1px solid rgba(239,68,68,0.18)">Remove Request</button>
     </div>
   </div>
 </div>
@@ -285,24 +285,14 @@
 <!-- Cancel Policy Modal -->
 <div id="cancel-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(0,0,0,0.7);backdrop-filter:blur(4px)">
   <div class="section-card w-full max-w-sm p-6">
-    <h3 class="text-base font-black mb-1" style="color:var(--text-primary)">Cancel Booking</h3>
+    <h3 class="text-base font-black mb-1" style="color:var(--text-primary)">Remove Request</h3>
     <p id="cancel-ref" class="text-xs font-bold mb-4" style="color:#818cf8"></p>
     <div class="rounded-xl p-4 mb-4" style="background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.18)">
-      <p class="text-xs font-bold mb-2" style="color:#ef4444">CANCELLATION POLICY</p>
-      <p id="cancel-policy-text" class="text-xs mb-3" style="color:var(--text-muted)"></p>
-      <div class="flex justify-between text-xs mb-1.5">
-        <span style="color:var(--text-muted)">Cancellation fee</span>
-        <span id="cancel-penalty" class="font-bold" style="color:#ef4444"></span>
-      </div>
-      <div class="flex justify-between text-xs" style="border-top:1px solid rgba(239,68,68,0.15);padding-top:8px">
-        <span style="color:var(--text-muted)">Refund (<span id="cancel-refund-pct"></span>)</span>
-        <span id="cancel-refund" class="font-bold" style="color:#22c55e"></span>
-      </div>
+      <p class="text-xs" style="color:var(--text-muted)">This is a pending request only. No payment was collected and no supplier reservation was made. Removing it will delete it from My Bookings; there is no refund.</p>
     </div>
-    <p class="text-xs mb-5" style="color:var(--text-muted)">Refunds are processed within 5-7 business days to your original payment method.</p>
     <div class="flex gap-3">
       <button onclick="document.getElementById('cancel-modal').classList.add('hidden')" class="flex-1 py-2.5 rounded-xl text-sm font-semibold" style="background:var(--bg-card2);color:var(--text-primary)">Go Back</button>
-      <button id="cancel-confirm-btn" onclick="confirmCancelBooking(this.dataset.ref)" class="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style="background:linear-gradient(135deg,#ef4444,#dc2626)">Yes, Cancel</button>
+      <button id="cancel-confirm-btn" onclick="confirmCancelBooking(this.dataset.ref)" class="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style="background:linear-gradient(135deg,#ef4444,#dc2626)">Remove Request</button>
     </div>
   </div>
 </div>
@@ -389,10 +379,10 @@ function openBookingModal(ref) {
   document.getElementById('bmodal-icon').textContent  = icon;
   document.getElementById('bmodal-ref').textContent   = b.ref;
   document.getElementById('bmodal-date').textContent  = date;
-  document.getElementById('bmodal-price').textContent = price;
+  document.getElementById('bmodal-price').textContent = 'Est. ' + price;
   document.getElementById('bmodal-name').textContent  = (b.first_name || '') + ' ' + (b.last_name || '');
   document.getElementById('bmodal-email').textContent = b.email || '';
-  document.getElementById('bmodal-card').textContent  = '•••• ' + (b.card_last4 || '****');
+  document.getElementById('bmodal-card').textContent  = 'Pending — no payment collected; not confirmed';
   document.getElementById('bmodal-rows').innerHTML    = rows;
   document.getElementById('booking-modal').classList.remove('hidden');
 }
@@ -405,51 +395,7 @@ function initiateCancelBooking() {
   const ref = document.getElementById('bmodal-ref').textContent.trim();
   const b = _allBookings.find(x => x.ref === ref);
   if (!b) return;
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const currency = b.currency || 'USD';
-  let penaltyPct = 0;
-  let policyText = '';
-
-  const travelDateStr = b.checkin || null;
-  if (travelDateStr) {
-    const travelDate = new Date(travelDateStr);
-    travelDate.setHours(0, 0, 0, 0);
-    const daysUntil = Math.round((travelDate - today) / 86400000);
-    const label = b.type === 'flight' ? 'days until departure' : 'days until travel';
-
-    if (daysUntil >= 14) {
-      penaltyPct = 0;
-      policyText = daysUntil + ' ' + label + ' — Full refund.';
-    } else if (daysUntil >= 7) {
-      penaltyPct = 25;
-      policyText = daysUntil + ' ' + label + ' — 25% cancellation fee applies.';
-    } else if (daysUntil >= 3) {
-      penaltyPct = 50;
-      policyText = daysUntil + ' ' + label + ' — 50% cancellation fee applies.';
-    } else if (daysUntil >= 0) {
-      penaltyPct = 100;
-      policyText = daysUntil + ' day(s) until departure — No refund.';
-    } else {
-      penaltyPct = 100;
-      policyText = 'Travel date has passed — No refund.';
-    }
-  } else {
-    penaltyPct = 0;
-    policyText = 'No departure date on record — Full refund (demo policy).';
-  }
-
-  const penalty = +(b.price * penaltyPct / 100).toFixed(2);
-  const refund  = +(b.price - penalty).toFixed(2);
-  const fmt = v => v.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-
   document.getElementById('cancel-ref').textContent          = b.ref;
-  document.getElementById('cancel-policy-text').textContent  = policyText;
-  document.getElementById('cancel-penalty').textContent      = currency + ' ' + fmt(penalty);
-  document.getElementById('cancel-refund').textContent       = currency + ' ' + fmt(refund);
-  document.getElementById('cancel-refund-pct').textContent   = (100 - penaltyPct) + '%';
   document.getElementById('cancel-confirm-btn').dataset.ref  = b.ref;
   document.getElementById('cancel-modal').classList.remove('hidden');
 }
@@ -457,7 +403,7 @@ function initiateCancelBooking() {
 async function confirmCancelBooking(ref) {
   const btn = document.getElementById('cancel-confirm-btn');
   btn.disabled = true;
-  btn.textContent = 'Cancelling...';
+  btn.textContent = 'Removing...';
   try {
     const { data: { session } } = await _sb.auth.getSession();
     if (!session) { window.location.href = '/'; return; }
@@ -469,17 +415,17 @@ async function confirmCancelBooking(ref) {
     if (res.ok) {
       document.getElementById('cancel-modal').classList.add('hidden');
       closeBookingModal();
-      showToast('Booking cancelled. Refund processed within 5-7 business days.');
+      showToast('Request removed. No payment was collected.');
       setTimeout(() => location.reload(), 1500);
     } else {
       showToast('Cancellation failed. Please try again.');
       btn.disabled = false;
-      btn.textContent = 'Yes, Cancel';
+      btn.textContent = 'Remove Request';
     }
   } catch {
     showToast('Network error. Please try again.');
     btn.disabled = false;
-    btn.textContent = 'Yes, Cancel';
+    btn.textContent = 'Remove Request';
   }
 }
 
@@ -499,7 +445,7 @@ function renderBookings(bookings) {
       ? ((b.checkin || '') + ' – ' + (b.checkout || ''))
       : isCar ? (b.checkin || '')
       : ((b.airline || '') + (b.depart_time ? ' · ' + b.depart_time : ''));
-    const price = (b.currency || 'USD') + ' ' + (b.price || 0).toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0});
+    const price = (b.currency || 'USD') + ' ' + (b.price || 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
     const date = b.created_at ? new Date(b.created_at).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '';
     return `<div class="section-row" onclick="openBookingModal('${b.ref}')">
       <div class="flex items-center gap-3 flex-1 min-w-0">
@@ -508,10 +454,11 @@ function renderBookings(bookings) {
           <p class="text-sm font-bold truncate" style="color:var(--text-primary)">${title}</p>
           <p class="text-xs truncate" style="color:var(--text-muted)">${sub}</p>
           <p class="text-xs font-bold mt-0.5" style="color:#818cf8">${b.ref}</p>
+          <p class="text-xs mt-1" style="color:var(--text-muted)">Pending request — no payment collected; reservation not confirmed.</p>
         </div>
       </div>
       <div class="text-right shrink-0 ml-3">
-        <p class="text-sm font-bold" style="color:var(--text-primary)">${price}</p>
+        <p class="text-sm font-bold" style="color:var(--text-primary)">Est. ${price}</p>
         <p class="text-xs" style="color:var(--text-muted)">${date}</p>
         <p class="text-xs mt-0.5" style="color:var(--text-muted)">View →</p>
       </div>
@@ -526,7 +473,7 @@ function renderAnalytics(bookings) {
   const textColor = isDark ? '#94a3b8' : '#64748b';
   const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
 
-  // Spend by type
+  // Displayed estimates by type
   const byType = { flight: 0, hotel: 0, car: 0 };
   bookings.forEach(b => { byType[b.type] = (byType[b.type] || 0) + (b.price || 0); });
   const total = Object.values(byType).reduce((a, v) => a + v, 0);
@@ -574,7 +521,7 @@ function renderAnalytics(bookings) {
     </div>
   `).join('');
 
-  // Monthly spend
+  // Monthly displayed estimates
   const monthly = {};
   bookings.forEach(b => {
     if (!b.created_at) return;
@@ -600,21 +547,7 @@ function renderAnalytics(bookings) {
 
 function renderPayments(bookings) {
   const list = document.getElementById('payment-list');
-  const seen = new Set();
-  const cards = bookings.filter(b => { if (seen.has(b.card_last4)) return false; seen.add(b.card_last4); return true; });
-  if (!cards.length) {
-    list.innerHTML = '<div class="section-row"><span class="text-sm" style="color:var(--text-muted)">No payment methods on file.</span></div>';
-    return;
-  }
-  list.innerHTML = cards.map(b => `<div class="section-row">
-    <div class="flex items-center gap-3">
-      <span style="font-size:20px">💳</span>
-      <div>
-        <p class="text-sm font-bold" style="color:var(--text-primary)">Card ending in ${b.card_last4}</p>
-        <p class="text-xs" style="color:var(--text-muted)">Used for ${b.ref}</p>
-      </div>
-    </div>
-  </div>`).join('');
+  list.innerHTML = '<div class="section-row"><span class="text-sm" style="color:var(--text-muted)">Online payment is not available yet. No card details are collected.</span></div>';
 }
 
 async function loadPage(user) {
