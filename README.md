@@ -2,6 +2,23 @@
 
 A full-stack travel booking platform built with Go. Search hotels, flights, and car rentals with a modern premium UI.
 
+## Search mode
+
+The default `SEARCH_MODE=external` keeps search forms on Travaliz and displays
+links to Booking.com (hotels) and Google Flights (flights). These searches make
+no server-side travel API calls and need no API credentials or additional services.
+Booking.com links carry destination, dates, rooms, guests and child ages.
+Google Flights links carry an encoded natural-language itinerary, cabin and guest
+information. Google may interpret these details differently: users must confirm
+all search settings on the provider website. Multi-city and category searches are
+supported; category links select destinations, not guaranteed property filters.
+Provider URL formats are not versioned APIs and can change. External provider
+rendering has not been verified in an interactive browser in this environment.
+No affiliate account or commission tracking is configured.
+
+Set `SEARCH_MODE=serpapi` explicitly to restore the legacy API results described
+below. Deploy the updated application for the new default to take effect.
+
 ## Features
 
 - **Hotels** - SerpApi Google Hotels search with offline city suggestions (one room per search)

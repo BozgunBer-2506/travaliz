@@ -1114,6 +1114,15 @@
   </div>
   {{end}}
 
+  {{if .ExternalLinks}}
+  <section class="rounded-2xl p-6 mb-8" style="background:var(--bg-card);border:1px solid var(--border)">
+    <h2 class="text-2xl font-bold mb-3" style="color:var(--text-primary)">Continue your search</h2>
+    <p class="mb-4" style="color:var(--text-muted)">View live prices and availability on the provider website. Check the destination, dates, travellers and cabin there before booking. Travaliz does not issue tickets or confirm reservations.</p>
+    <div class="flex flex-wrap gap-3">{{range .ExternalLinks}}<a href="{{.URL}}" target="_blank" rel="noopener noreferrer" class="px-6 py-3 rounded-xl bg-indigo-600 text-white font-semibold">{{.Label}} ↗</a>{{end}}</div>
+  </section>
+  {{end}}
+
+  {{if not .ExternalLinks}}
   <!-- HOTELS -->
   {{if eq .Tab "hotels"}}
   {{if or .City .CategoryTitle}}
@@ -1756,6 +1765,7 @@
   {{end}}
   {{end}}{{end}}
 
+  {{end}}
 </main>
 
 {{define "car-cards"}}

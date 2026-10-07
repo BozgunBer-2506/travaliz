@@ -42,9 +42,10 @@ func main() {
 	proxyClient := proxy.NewProxyClient("")
 
 	travelHandler := &handlers.TravelHandler{
-		ProxyClient: proxyClient,
-		Templates:   tmpl,
-		DB:          database,
+		ProxyClient:    proxyClient,
+		ExternalSearch: os.Getenv("SEARCH_MODE") != "serpapi",
+		Templates:      tmpl,
+		DB:             database,
 	}
 
 	mux := newMux(travelHandler)

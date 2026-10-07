@@ -14,9 +14,10 @@ import (
 )
 
 type TravelHandler struct {
-	ProxyClient *proxy.ProxyClient
-	Templates   *template.Template
-	DB          *db.DB
+	ProxyClient    *proxy.ProxyClient
+	Templates      *template.Template
+	DB             *db.DB
+	ExternalSearch bool
 }
 
 type FlightLeg struct {
@@ -28,6 +29,7 @@ type FlightLeg struct {
 }
 
 type pageData struct {
+	ExternalLinks []searchLink
 	CategoryTitle string
 	Tab           string
 	City          string
@@ -142,6 +144,11 @@ func (h *TravelHandler) HomeHandler(w http.ResponseWriter, r *http.Request) {
 
 	pd := pageData{Tab: "hotels", City: city, Checkin: checkin, Checkout: checkout, Adults: adults, Children: children, Rooms: rooms, Nights: nights}
 
+	if h.ExternalSearch {
+		h.externalHotels(w, r, pd, category)
+		return
+	}
+
 	if category != "" {
 		title, hotels, err := h.ProxyClient.FetchHotelCategory(category, checkin, checkout, adults, children, rooms, r.URL.Query().Get("children_ages"))
 		pd.CategoryTitle, pd.Hotels = title, hotels
@@ -183,6 +190,10 @@ func (h *TravelHandler) FlightsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	q := r.URL.Query()
+	if h.ExternalSearch {
+		h.externalFlights(w, r)
+		return
+	}
 
 	adults := q.Get("adults")
 	children := q.Get("children")
