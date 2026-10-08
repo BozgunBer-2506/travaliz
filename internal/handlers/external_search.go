@@ -1,12 +1,19 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"net/url"
+	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"travel-proxy-service/internal/duffel"
+	"travel-proxy-service/internal/proxy"
 )
 
 type searchLink struct{ Label, URL string }
@@ -110,99 +117,135 @@ func (h *TravelHandler) externalHotels(w http.ResponseWriter, r *http.Request, p
 }
 func (h *TravelHandler) externalFlights(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
-	pd := pageData{Tab: "flights", TripType: q.Get("tripType"), FromSkyID: q.Get("fromSky"), ToSkyID: q.Get("toSky"), Date: q.Get("date"), ReturnDate: q.Get("returnDate"), Adults: q.Get("adults"), Children: q.Get("children"), CabinClass: q.Get("cabinClass")}
-	fail := func(err error) { pd.Error = err.Error(); h.render(w, pd) }
+	pd := pageData{Tab: "flights", TripType: q.Get("tripType"), FromSkyID: strings.ToUpper(strings.TrimSpace(q.Get("fromSky"))), ToSkyID: strings.ToUpper(strings.TrimSpace(q.Get("toSky"))), Date: q.Get("date"), Adults: q.Get("adults"), Children: q.Get("children"), CabinClass: q.Get("cabinClass")}
+	fail := func(message string) { pd.Error = message; h.render(w, pd) }
 	if pd.TripType == "" {
 		pd.TripType = "oneway"
 	}
 	if pd.CabinClass == "" {
 		pd.CabinClass = "economy"
 	}
-	if pd.TripType != "multi" && pd.FromSkyID == "" && pd.ToSkyID == "" {
+	if pd.Adults == "" {
+		pd.Adults = "1"
+	}
+	if pd.Children == "" {
+		pd.Children = "0"
+	}
+	if pd.TripType != "oneway" || q.Get("returnDate") != "" {
+		fail("Şu anda yalnızca tek yön uçuş araması destekleniyor.")
+		return
+	}
+	adults, err := searchCount(pd.Adults, 1, 1, 1)
+	if err != nil {
+		fail("Şu anda yalnızca tek yetişkin yolcu destekleniyor.")
+		return
+	}
+	children, err := searchCount(pd.Children, 0, 0, 0)
+	if err != nil || q.Get("children_ages") != "" {
+		fail("Şu anda yalnızca tek yetişkin yolcu destekleniyor.")
+		return
+	}
+	pd.Adults, pd.Children = adults, children
+	switch pd.CabinClass {
+	case "economy", "premium_economy", "business", "first":
+	default:
+		fail("Please choose a valid cabin class.")
+		return
+	}
+	if pd.FromSkyID == "" && pd.ToSkyID == "" {
 		h.render(w, pd)
 		return
 	}
-	a, c, ages, err := externalGuests(q, false)
-	if err != nil {
-		fail(err)
-		return
-	}
-	pd.Adults, pd.Children = a, c
-	cabin, ok := map[string]string{"economy": "economy", "premium_economy": "premium economy", "business": "business", "first": "first class"}[pd.CabinClass]
-	if !ok {
-		fail(fmt.Errorf("Please choose a valid cabin class."))
-		return
-	}
-	var segments []string
-	previous := ""
-	add := func(from, to, date string) error {
-		from = strings.ToUpper(strings.TrimSpace(from))
-		to = strings.ToUpper(strings.TrimSpace(to))
-		valid := func(code string) bool {
-			if len(code) != 3 {
+	validCode := func(code string) bool {
+		if len(code) != 3 {
+			return false
+		}
+		for _, letter := range code {
+			if letter < 'A' || letter > 'Z' {
 				return false
 			}
-			for _, v := range code {
-				if v < 'A' || v > 'Z' {
-					return false
-				}
-			}
-			return true
 		}
-		if !valid(from) || !valid(to) || from == to {
-			return fmt.Errorf("Enter valid three-letter airport codes, such as BER and LHR.")
-		}
-		if _, err := searchDate(date); err != nil {
-			return err
-		}
-		if date < previous {
-			return fmt.Errorf("Flight dates must be in chronological order.")
-		}
-		previous = date
-		segments = append(segments, fmt.Sprintf("from %s to %s on %s", from, to, date))
-		return nil
+		return true
 	}
-	if pd.TripType == "multi" {
-		for i := 0; i < 6; i++ {
-			from, to, date := q.Get(fmt.Sprintf("leg%dfrom", i)), q.Get(fmt.Sprintf("leg%dto", i)), q.Get(fmt.Sprintf("leg%ddate", i))
-			if from == "" && to == "" && date == "" {
-				continue
-			}
-			if err := add(from, to, date); err != nil {
-				fail(err)
-				return
-			}
-		}
-		if len(segments) < 2 {
-			fail(fmt.Errorf("Please enter at least two complete flight legs."))
-			return
-		}
-	} else {
-		if pd.Date == "" {
-			pd.Date = time.Now().AddDate(0, 0, 1).Format("2006-01-02")
-		}
-		if err := add(pd.FromSkyID, pd.ToSkyID, pd.Date); err != nil {
-			fail(err)
-			return
-		}
-		if pd.ReturnDate != "" || pd.TripType == "round" {
-			if err := add(pd.ToSkyID, pd.FromSkyID, pd.ReturnDate); err != nil {
-				fail(err)
-				return
-			}
-			pd.TripType = "round"
-		} else if pd.TripType != "oneway" {
-			fail(fmt.Errorf("Please choose a valid trip type."))
-			return
-		}
+	if !validCode(pd.FromSkyID) || !validCode(pd.ToSkyID) || pd.FromSkyID == pd.ToSkyID {
+		fail("Enter valid three-letter airport codes, such as BER and LHR.")
+		return
 	}
-	text := "Flights " + strings.Join(segments, ", ") + fmt.Sprintf(", %s adults, %s children, %s", a, c, cabin)
-	if len(ages) > 0 {
-		text += ", child ages " + strings.Join(ages, ", ")
+	if pd.Date == "" {
+		pd.Date = time.Now().AddDate(0, 0, 1).Format("2006-01-02")
 	}
-	if pd.TripType == "oneway" {
-		text += ", one way"
+	if _, err := searchDate(pd.Date); err != nil {
+		fail(err.Error())
+		return
 	}
-	pd.ExternalLinks = []searchLink{{"Search on Google Flights", "https://www.google.com/travel/flights?" + url.Values{"q": {text}}.Encode()}}
+	offers, err := duffel.NewDuffelClient().CreateOfferRequest(
+		[]duffel.SearchSlice{{Origin: pd.FromSkyID, Destination: pd.ToSkyID, DepartureDate: pd.Date}},
+		[]duffel.SearchPassenger{{Type: "adult"}},
+		pd.CabinClass,
+	)
+	if err != nil {
+		if errors.Is(err, duffel.ErrTimeout) {
+			fail("Arama zaman aşımına uğradı, tekrar deneyin")
+		} else {
+			fail("Uçuş araması tamamlanamadı, tekrar deneyin")
+		}
+		return
+	}
+	if len(offers) == 0 {
+		fail("Uçuş bulunamadı")
+		return
+	}
+	for _, offer := range offers {
+		if offer.ID == "" || len(offer.Slices) != 1 || len(offer.Slices[0].Segments) == 0 {
+			continue
+		}
+		price, err := strconv.ParseFloat(offer.TotalAmount, 64) // Display only; never use for an order payment.
+		if err != nil || price <= 0 || math.IsNaN(price) || math.IsInf(price, 0) {
+			continue
+		}
+		slice := offer.Slices[0]
+		hours, minutes, err := parseFlightDuration(slice.Duration)
+		if err != nil {
+			continue
+		}
+		first, last := slice.Segments[0], slice.Segments[len(slice.Segments)-1]
+		if len(first.DepartingAt) < 16 || len(last.ArrivingAt) < 16 {
+			continue
+		}
+		pd.Flights = append(pd.Flights, proxy.FlightData{
+			OfferID:  offer.ID,
+			FromCode: first.Origin.IATACode, ToCode: last.Destination.IATACode,
+			FromCity: first.Origin.CityName, ToCity: last.Destination.CityName,
+			DepartDate: first.DepartingAt[:10],
+			DepartTime: first.DepartingAt, ArriveTime: last.ArrivingAt,
+			DurationHours: hours, DurationMinutes: minutes,
+			Stops:   len(slice.Segments) - 1,
+			Airline: first.MarketingCarrier.Name, AirlineLogo: first.MarketingCarrier.LogoSymbolURL,
+			Price: price, Currency: offer.TotalCurrency, PriceLabel: "1 adult",
+		})
+	}
+	if len(pd.Flights) == 0 {
+		fail("Uçuş sonuçları okunamadı, tekrar deneyin")
+		return
+	}
+	sort.SliceStable(pd.Flights, func(i, j int) bool { return pd.Flights[i].Price < pd.Flights[j].Price })
+	if len(pd.Flights) > 20 {
+		pd.Flights = pd.Flights[:20]
+	}
+	pd.FromCity, pd.ToCity = pd.Flights[0].FromCity, pd.Flights[0].ToCity
 	h.render(w, pd)
+}
+
+// Parse the PT...H...M subset used by this search; reject unsupported formats.
+var flightDurationPattern = regexp.MustCompile(`^PT(?:[0-9]+H)?(?:[0-9]+M)?$`)
+
+func parseFlightDuration(raw string) (int, int, error) {
+	if raw == "PT" || !flightDurationPattern.MatchString(raw) {
+		return 0, 0, fmt.Errorf("unsupported flight duration")
+	}
+	duration, err := time.ParseDuration(strings.ToLower(strings.TrimPrefix(raw, "PT")))
+	if err != nil {
+		return 0, 0, err
+	}
+	return int(duration / time.Hour), int(duration/time.Minute) % 60, nil
 }

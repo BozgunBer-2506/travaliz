@@ -10,15 +10,14 @@ import (
 
 func TestExternalSearchWithoutAPI(t *testing.T) {
 	tmpl := template.Must(template.ParseFS(templateFiles, "templates/*.html"))
-	// Nil ProxyClient ensures these searches cannot call a paid API.
+	// Keep invalid flight requests offline; successful Duffel searches are tested separately.
 	mux := newMux(&handlers.TravelHandler{Templates: tmpl, ExternalSearch: true})
 	for _, tc := range []struct{ path, want string }{
 		{"/?q=Berlin&checkin=2099-11-10&checkout=2099-11-12&adults=2&children=1&children_ages=8&rooms=2", "age=8&amp;checkin=2099-11-10"},
 		{"/?q=Unknown+Town&checkin=2099-11-10&checkout=2099-11-12", "ss=Unknown"},
 		{"/?category=beach&checkin=2099-11-10&checkout=2099-11-12", "Search Antalya on Booking.com"},
-		{"/flights?fromSky=BER&toSky=LHR&date=2099-11-10", "Search on Google Flights"},
-		{"/flights?fromSky=BER&toSky=LHR&date=2099-11-10&returnDate=2099-11-12", "from&#43;LHR&#43;to&#43;BER"},
-		{"/flights?tripType=multi&leg0from=BER&leg0to=LHR&leg0date=2099-11-10&leg1from=LHR&leg1to=JFK&leg1date=2099-11-12", "Search on Google Flights"},
+		{"/flights?fromSky=BER&toSky=LHR&date=2099-11-10&returnDate=2099-11-12", "yalnızca tek yön"},
+		{"/flights?tripType=multi&leg0from=BER&leg0to=LHR&leg0date=2099-11-10&leg1from=LHR&leg1to=JFK&leg1date=2099-11-12", "yalnızca tek yön"},
 		{"/?q=Berlin&checkin=2099-11-12&checkout=2099-11-10", "Check-out must be after check-in."},
 		{"/flights?fromSky=BADCODE&toSky=LHR&date=2099-11-10", "Enter valid three-letter airport codes"},
 	} {

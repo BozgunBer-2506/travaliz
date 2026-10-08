@@ -901,7 +901,7 @@
 
       {{if eq .Tab "flights"}}
       <form method="GET" action="/flights" id="flights-form" class="flex flex-col gap-5" onsubmit="submitFlightForm(event)">
-        <p class="text-xs" style="color:var(--text-muted)">Suggestions cover popular airports. You can also enter any three-letter airport code, such as BER or LHR.</p>
+        <p class="text-xs" style="color:var(--text-muted)">Search supports one-way flights for one adult. Enter a three-letter airport code, such as BER or LHR.</p>
         <input type="hidden" id="trip-type-input" name="tripType" value="{{or .TripType "oneway"}}" />
 
         <!-- Controls row -->
@@ -912,11 +912,11 @@
               class="trip-pill {{if eq .TripType "oneway"}}active{{end}}" style="{{if ne .TripType "oneway"}}color:#6366f1{{end}}">
               One-way
             </button>
-            <button type="button" onclick="setTripType('round')" id="btn-rt"
+            <button type="button" disabled title="Only one-way flights are supported" id="btn-rt"
               class="trip-pill {{if eq .TripType "round"}}active{{end}}" style="{{if ne .TripType "round"}}color:#6366f1{{end}}">
               Round-trip
             </button>
-            <button type="button" onclick="setTripType('multi')" id="btn-mc"
+            <button type="button" disabled title="Only one-way flights are supported" id="btn-mc"
               class="trip-pill {{if eq .TripType "multi"}}active{{end}}" style="{{if ne .TripType "multi"}}color:#6366f1{{end}}">
               Multi-city
             </button>
@@ -946,16 +946,16 @@
               <div class="flex items-center justify-between py-3" style="border-bottom:1px solid var(--border)">
                 <div><p class="text-sm font-semibold" style="color:var(--text-primary)">Adults</p><p class="text-xs" style="color:var(--text-muted)">Age 12+</p></div>
                 <div class="flex items-center gap-4">
-                  <button type="button" onclick="changeCount('f_adults',-1,1,9)" class="counter-btn">−</button>
+                  <button type="button" disabled class="counter-btn">−</button>
                   <span id="f_adults-val" class="text-sm font-bold w-4 text-center" style="color:var(--text-primary)">{{or .Adults "1"}}</span>
-                  <button type="button" onclick="changeCount('f_adults',1,1,9)" class="counter-btn-plus">+</button>
+                  <button type="button" disabled class="counter-btn-plus">+</button>
                 </div>
               </div>
               <!-- Children rows -->
               <div id="f-children-section" style="padding-bottom:8px;margin-bottom:4px">
                 <div class="flex items-center justify-between py-3">
                   <div><p class="text-sm font-semibold" style="color:var(--text-primary)">Children</p><p class="text-xs" style="color:var(--text-muted)">Age 2–11</p></div>
-                  <button type="button" onclick="event.stopPropagation();addChildRow('f')" class="counter-btn-plus" style="width:auto;border-radius:8px;padding:4px 12px;font-size:12px;font-weight:700">+ Add child</button>
+                  <button type="button" disabled title="Only one adult is supported" class="counter-btn-plus" style="width:auto;border-radius:8px;padding:4px 12px;font-size:12px;font-weight:700">+ Add child</button>
                 </div>
                 <div id="f-child-rows"></div>
                 <input type="hidden" id="f_children-val" value="{{or .Children "0"}}" />
@@ -1804,10 +1804,12 @@
 {{end}}
 
 {{define "flight-card"}}
+{{$depart := slice .DepartTime 11 16}}
+{{$arrive := slice .ArriveTime 11 16}}
 <div class="flight-card p-5 sm:p-6 flex flex-col sm:flex-row items-center gap-6"
   data-stops="{{.Stops}}"
   data-price="{{printf "%.2f" .Price}}"
-  data-depart="{{.DepartTime}}"
+  data-depart="{{$depart}}"
   data-duration="{{.DurationHours}}">
   <!-- Airline -->
   <div class="flex items-center gap-3 w-40 shrink-0">
@@ -1832,7 +1834,7 @@
   <div class="flex-1 flex items-center justify-center gap-3">
     <div class="text-center">
       <p class="text-xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">{{.FromCode}}</p>
-      <p class="text-sm font-semibold text-indigo-500 mt-0.5">{{.DepartTime}}</p>
+      <p class="text-sm font-semibold text-indigo-500 mt-0.5">{{$depart}}</p>
     </div>
     <div class="flex items-center gap-2 flex-1 mx-2">
       <div class="w-2 h-2 rounded-full bg-indigo-400 shrink-0"></div>
@@ -1844,17 +1846,18 @@
     </div>
     <div class="text-center">
       <p class="text-xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">{{.ToCode}}</p>
-      <p class="text-sm font-semibold text-purple-500 mt-0.5">{{.ArriveTime}}</p>
+      <p class="text-sm font-semibold text-purple-500 mt-0.5">{{$arrive}}</p>
     </div>
   </div>
 
   <!-- Price + CTA -->
   <div class="flex flex-row sm:flex-col items-center sm:items-end gap-3 sm:gap-2 shrink-0">
     <div class="text-right">
-      <span class="price-display text-xl sm:text-3xl font-extrabold text-gray-900" data-usd="{{printf "%.2f" .Price}}">$0</span>
+      <span class="text-xl sm:text-3xl font-extrabold text-gray-900">{{.Currency}} {{printf "%.2f" .Price}}</span>
       <p class="text-xs text-gray-400">{{.PriceLabel}}</p>
     </div>
     <button type="button" class="flight-book-btn text-white text-sm font-bold px-7 py-2.5 rounded-xl transition-all"
+      data-offer-id="{{.OfferID}}"
       data-from="{{.FromCode}}" data-to="{{.ToCode}}" data-airline="{{.Airline}}"
       data-price="{{printf "%.2f" .Price}}" data-currency="{{.Currency}}"
       data-depart="{{.DepartTime}}" data-arrive="{{.ArriveTime}}" data-depart-date="{{.DepartDate}}"
@@ -2851,6 +2854,7 @@ async function submitBooking() {
 
   const payload = {
     type:       b.type,
+    offerId:    b.offerId || '',
     firstName:  document.getElementById('b-first-name').value.trim(),
     lastName:   document.getElementById('b-last-name').value.trim(),
     email:      document.getElementById('b-email').value.trim(),
@@ -2937,11 +2941,12 @@ document.querySelectorAll('.flight-book-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     openBookingModal({
       type: 'flight',
+      offerId: btn.dataset.offerId,
       name: `${btn.dataset.from} → ${btn.dataset.to}`,
       from: btn.dataset.from, to: btn.dataset.to,
       airline: btn.dataset.airline,
-      price: Number((Number(btn.dataset.price) * (CURRENCY_RATES[localStorage.getItem('currency') || 'EUR'] || 1)).toFixed(2)),
-      currency: localStorage.getItem('currency') || 'EUR',
+      price: Number(btn.dataset.price),
+      currency: btn.dataset.currency,
       depart: btn.dataset.depart, arrive: btn.dataset.arrive,
       checkin: btn.dataset.departDate,
       duration: btn.dataset.duration, stops: btn.dataset.stops,

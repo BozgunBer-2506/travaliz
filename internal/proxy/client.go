@@ -41,6 +41,7 @@ type HotelData struct {
 
 // FlightData is the flat struct for flight offers.
 type FlightData struct {
+	OfferID         string  `json:"offer_id"`
 	BookingURL      string  `json:"booking_url"`
 	PriceLabel      string  `json:"price_label"`
 	FromCity        string  `json:"from_city"`

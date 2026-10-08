@@ -2,11 +2,9 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"html/template"
 	"log"
 	"net/http"
-	"strings"
 	"time"
 
 	"travel-proxy-service/internal/db"
@@ -189,102 +187,7 @@ func (h *TravelHandler) FlightsHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	q := r.URL.Query()
-	if h.ExternalSearch {
-		h.externalFlights(w, r)
-		return
-	}
-
-	adults := q.Get("adults")
-	children := q.Get("children")
-	cabinClass := q.Get("cabinClass")
-	tripType := q.Get("tripType")
-	if adults == "" {
-		adults = "1"
-	}
-	if cabinClass == "" {
-		cabinClass = "economy"
-	}
-
-	returnDate := q.Get("returnDate")
-	if returnDate != "" && tripType != "multi" {
-		tripType = "round"
-	} else if tripType == "" {
-		tripType = "oneway"
-	}
-
-	// Submit a multi-city itinerary as one provider request, not one per leg.
-	if tripType == "multi" {
-		pd := pageData{Tab: "flights", TripType: "multi", Adults: adults, Children: children, CabinClass: cabinClass}
-		legs := []proxy.FlightSearchLeg{}
-		for i := 0; i < 6; i++ {
-			from, to, date := q.Get(fmt.Sprintf("leg%dfrom", i)), q.Get(fmt.Sprintf("leg%dto", i)), q.Get(fmt.Sprintf("leg%ddate", i))
-			if from == "" && to == "" && date == "" {
-				continue
-			}
-			legs = append(legs, proxy.FlightSearchLeg{From: strings.ToUpper(strings.TrimSpace(from)), To: strings.ToUpper(strings.TrimSpace(to)), Date: date})
-		}
-		if len(legs) < 2 {
-			pd.Error = "Please enter at least two complete flight legs."
-		} else {
-			flights, err := h.ProxyClient.FetchItinerary(legs, "", adults, children, cabinClass, q.Get("children_ages"))
-			if err != nil {
-				pd.Error = err.Error()
-			} else {
-				pd.FlightLegs = []FlightLeg{{Label: "Multi-city itinerary — first leg options", Flights: flights, Date: legs[0].Date}}
-			}
-		}
-		h.render(w, pd)
-		return
-	}
-
-	// ── One-way / Round-trip ──────────────────────────────────────────────────
-	fromSkyID := q.Get("fromSky")
-	fromEntityID := q.Get("fromEntity")
-	toSkyID := q.Get("toSky")
-	toEntityID := q.Get("toEntity")
-	date := q.Get("date")
-
-	if fromSkyID == "" || toSkyID == "" {
-		h.render(w, pageData{
-			Tab: "flights", TripType: "oneway",
-			Adults: adults, Children: children, CabinClass: cabinClass,
-		})
-		return
-	}
-
-	if date == "" {
-		date = time.Now().AddDate(0, 0, 1).Format("2006-01-02")
-	}
-
-	pd := pageData{
-		Tab: "flights", TripType: tripType,
-		FromSkyID: fromSkyID, FromEntityID: fromEntityID,
-		ToSkyID: toSkyID, ToEntityID: toEntityID,
-		Date: date, ReturnDate: returnDate,
-		Adults: adults, Children: children, CabinClass: cabinClass,
-	}
-
-	if tripType == "round" && returnDate == "" {
-		pd.Error = "Please choose a return date."
-		h.render(w, pd)
-		return
-	}
-	flights, err := h.ProxyClient.FetchFlights(fromSkyID, fromEntityID, toSkyID, toEntityID, date, returnDate, adults, children, cabinClass, q.Get("children_ages"))
-	if err != nil {
-		pd.Error = err.Error()
-		h.render(w, pd)
-		return
-	}
-	if len(flights) == 0 {
-		pd.Error = "No flights found for these dates and travellers."
-	}
-	pd.Flights = flights
-	if len(flights) > 0 {
-		pd.FromCity = flights[0].FromCode
-		pd.ToCity = flights[0].ToCode
-	}
-	h.render(w, pd)
+	h.externalFlights(w, r)
 }
 
 func (h *TravelHandler) CarsHandler(w http.ResponseWriter, r *http.Request) {
