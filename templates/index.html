@@ -412,8 +412,32 @@
         </div>
         <div class="mb-5">
           <label class="text-xs font-semibold text-gray-500 mb-1 block">Phone Number *</label>
-          <input id="b-phone" type="tel" placeholder="+1 555 000 0000"
+          <input id="b-phone" type="tel" placeholder="+491234567"
             class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all" />
+        </div>
+        <div id="flight-pax-fields" class="hidden grid grid-cols-3 gap-3 mb-5">
+          <div>
+            <label class="text-xs font-semibold text-gray-500 mb-1 block">Title *</label>
+            <select id="b-title" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400">
+              <option value="">–</option>
+              <option value="mr">Mr</option>
+              <option value="ms">Ms</option>
+              <option value="mrs">Mrs</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs font-semibold text-gray-500 mb-1 block">Gender *</label>
+            <select id="b-gender" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400">
+              <option value="">–</option>
+              <option value="m">Male</option>
+              <option value="f">Female</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs font-semibold text-gray-500 mb-1 block">Birth Date *</label>
+            <input id="b-born-on" type="date"
+              class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400" />
+          </div>
         </div>
         <p id="step1-error" class="text-red-500 text-xs mb-3 hidden"></p>
         <button onclick="goToStep2()" class="w-full py-3 rounded-xl text-sm font-bold text-white transition-all"
@@ -2335,7 +2359,11 @@ function renderBookings() {
         </div>
         <div style="text-align:right;flex-shrink:0">
           ${item.ref ? `<p style="font-size:10px;font-weight:700;color:#6366f1;font-family:monospace;margin-bottom:3px">${item.ref}</p>` : ''}
-          <span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;background:#fef3c7;color:#92400e">Pending · no payment collected</span>
+          ${item.type === 'flight' && item.status === 'unknown'
+            ? '<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;background:#fee2e2;color:#991b1b">Belirsiz</span>'
+            : item.type === 'flight' && item.status === 'confirmed_sandbox'
+            ? '<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;background:#dcfce7;color:#166534">Sandbox</span>'
+            : '<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;background:#fef3c7;color:#92400e">Pending · no payment collected</span>'}
         </div>
         <span style="color:var(--text-muted);font-size:16px;margin-left:4px">›</span>
       </div>`;
@@ -2647,13 +2675,18 @@ async function loadMyBookings() {
         : ((b.airline || '') + (b.depart_time ? ' · ' + b.depart_time : ''));
       const icon = isHotel ? '🏨' : (b.type === 'car' ? '🚗' : '✈️');
       const price = (b.currency || 'USD') + ' ' + Number(b.price || 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+      const statusLine = !isHotel && b.type === 'flight'
+        ? (b.status === 'unknown'
+            ? "Belirsiz — sonucu doğrulamak için bizimle iletişime geçin."
+            : `Test rezervasyonu (sandbox)${b.booking_reference ? ' · ' + b.booking_reference : ''} — gerçek bilet değildir.`)
+        : 'Request received — pending. No payment collected; reservation not confirmed.';
       return `<div class="flex items-center gap-3 p-3 rounded-2xl" style="background:var(--bg-card2);border:1px solid var(--border)">
         <div class="text-2xl">${icon}</div>
         <div class="flex-1 min-w-0">
           <p class="text-sm font-bold truncate" style="color:var(--text-primary)">${title}</p>
           <p class="text-xs truncate" style="color:var(--text-muted)">${subtitle}</p>
           <p class="text-xs font-semibold mt-0.5" style="color:#818cf8">${b.ref}</p>
-          <p class="text-sm font-semibold mt-1" style="color:var(--text-primary)">Request received — pending. No payment collected; reservation not confirmed.</p>
+          <p class="text-sm font-semibold mt-1" style="color:var(--text-primary)">${statusLine}</p>
         </div>
         <div class="text-right shrink-0">
           <p class="text-sm font-bold" style="color:var(--text-primary)">${price}</p>
@@ -2765,10 +2798,11 @@ function _doOpenBookingModal(booking) {
   submitButton.disabled = false;
   submitButton.textContent = 'Save Request';
   // Pre-fill passenger details from logged-in user
-  ['b-first-name','b-last-name','b-email','b-phone'].forEach(id => {
+  ['b-first-name','b-last-name','b-email','b-phone','b-title','b-gender','b-born-on'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
+  document.getElementById('flight-pax-fields').classList.toggle('hidden', booking.type !== 'flight');
   if (_currentUser) {
     const u = _currentUser;
     const fullName = u.user_metadata?.full_name || u.user_metadata?.name || '';
@@ -2837,6 +2871,12 @@ function goToStep2() {
   if (!lastName)  return showError('step1-error', 'Last name is required.');
   if (!email.includes('@')) return showError('step1-error', 'Please enter a valid email address.');
   if (phone.length < 7) return showError('step1-error', 'Please enter a valid phone number.');
+  if (pendingBooking?.type === 'flight') {
+    if (!/^\+[1-9]\d{6,14}$/.test(phone)) return showError('step1-error', 'Please enter your phone number in international format, e.g. +491234567.');
+    if (!document.getElementById('b-title').value) return showError('step1-error', 'Please select a title.');
+    if (!document.getElementById('b-gender').value) return showError('step1-error', 'Please select a gender.');
+    if (!document.getElementById('b-born-on').value) return showError('step1-error', 'Please enter your date of birth.');
+  }
   hideError('step1-error');
   showStep(2);
   document.getElementById('pay-btn').focus();
@@ -2852,6 +2892,7 @@ async function submitBooking() {
   btn.disabled = true;
   btn.textContent = 'Saving request…';
 
+  const isFlight = b.type === 'flight';
   const payload = {
     type:       b.type,
     offerId:    b.offerId || '',
@@ -2859,6 +2900,9 @@ async function submitBooking() {
     lastName:   document.getElementById('b-last-name').value.trim(),
     email:      document.getElementById('b-email').value.trim(),
     phone:      document.getElementById('b-phone').value.trim(),
+    bornOn:     isFlight ? document.getElementById('b-born-on').value : undefined,
+    gender:     isFlight ? document.getElementById('b-gender').value : undefined,
+    title:      isFlight ? document.getElementById('b-title').value : undefined,
     fromCode:   b.from   || '',
     toCode:     b.to     || '',
     airline:    b.airline|| '',
@@ -2869,7 +2913,8 @@ async function submitBooking() {
     hotelName:  b.name   || '',
     checkin:    b.checkin|| '',
     checkout:   b.checkout|| '',
-    price,
+    // The offer's own price is used for payment; this is never sent for flights.
+    ...(isFlight ? {} : { price }),
     currency:   b.currency || 'USD',
   };
 
@@ -2893,20 +2938,24 @@ async function submitBooking() {
       btn.textContent = 'Save Request';
       return;
     }
-    // This records a request in the app; it does not confirm inventory or charge payment.
     const fullName = payload.firstName + ' ' + payload.lastName;
     document.getElementById('confirmed-ref').textContent  = data.ref;
     document.getElementById('confirmed-name').textContent = fullName + ' · ' + payload.email;
     const estimate = b.type === 'hotel' ? (b.total ?? price) : price;
+    const statusNote = !isFlight
+      ? 'Pending — no payment collected; reservation not confirmed.'
+      : data.status === 'unknown'
+        ? "Sonuç belirsiz, My Bookings'i kontrol edin."
+        : 'Test rezervasyonu (sandbox) · gerçek bilet değildir.';
     document.getElementById('confirmed-details').textContent =
-      `${b.type === 'flight' ? `${b.from} → ${b.to}` : b.name} · ${formatBookingEstimate(estimate, payload.currency)} · Pending — no payment collected; reservation not confirmed.`;
+      `${b.type === 'flight' ? `${b.from} → ${b.to}` : b.name} · ${formatBookingEstimate(estimate, payload.currency)} · ${statusNote}`;
     if (b._btn) {
       b._btn.textContent = 'Request saved';
       b._btn.disabled = true;
     }
     addBooking({
-      ...payload, from: b.from, to: b.to, total: b.total,
-      ref: data.ref, name: b.type === 'flight' ? `${b.from} → ${b.to}` : b.name,
+      ...payload, price, from: b.from, to: b.to, total: b.total,
+      ref: data.ref, status: data.status, name: b.type === 'flight' ? `${b.from} → ${b.to}` : b.name,
       at: new Date().toISOString(),
     });
     showStep(3);

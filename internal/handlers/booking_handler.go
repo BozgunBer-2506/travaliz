@@ -3,22 +3,30 @@ package handlers
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"travel-proxy-service/internal/auth"
 	"travel-proxy-service/internal/db"
+	"travel-proxy-service/internal/duffel"
 )
 
 type BookingRequest struct {
 	Type       string  `json:"type"`
+	OfferID    string  `json:"offerId"`
 	FirstName  string  `json:"firstName"`
 	LastName   string  `json:"lastName"`
 	Email      string  `json:"email"`
 	Phone      string  `json:"phone"`
+	BornOn     string  `json:"bornOn"`
+	Gender     string  `json:"gender"`
+	Title      string  `json:"title"`
 	FromCode   string  `json:"fromCode"`
 	ToCode     string  `json:"toCode"`
 	Airline    string  `json:"airline"`
@@ -34,9 +42,12 @@ type BookingRequest struct {
 }
 
 type BookingResponse struct {
-	Ref   string `json:"ref"`
-	Error string `json:"error,omitempty"`
+	Ref    string `json:"ref"`
+	Status string `json:"status,omitempty"`
+	Error  string `json:"error,omitempty"`
 }
+
+var e164Phone = regexp.MustCompile(`^\+[1-9]\d{6,14}$`)
 
 func (h *TravelHandler) BookHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -61,6 +72,11 @@ func (h *TravelHandler) BookHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	req.Email = jwtEmail
+
+	if req.Type == "flight" {
+		h.bookFlightViaDuffel(w, &req)
+		return
+	}
 
 	if err := validateBooking(&req); err != nil {
 		w.WriteHeader(http.StatusUnprocessableEntity)
@@ -101,6 +117,84 @@ func (h *TravelHandler) BookHandler(w http.ResponseWriter, r *http.Request) {
 	if os.Getenv("B2B_WEBHOOK_ENABLED") == "true" {
 		go sendB2BWebhook(booking, ref)
 	}
+}
+
+// bookFlightViaDuffel creates a real sandbox order. The offer's own price is
+// always used for payment; a client-supplied price is never trusted.
+func (h *TravelHandler) bookFlightViaDuffel(w http.ResponseWriter, req *BookingRequest) {
+	firstName, lastName := strings.TrimSpace(req.FirstName), strings.TrimSpace(req.LastName)
+	phone := strings.TrimSpace(req.Phone)
+	if firstName == "" || lastName == "" || !strings.Contains(req.Email, "@") {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		json.NewEncoder(w).Encode(BookingResponse{Error: "First name, last name and a valid email are required"})
+		return
+	}
+	if req.BornOn == "" || req.Gender == "" || req.Title == "" {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		json.NewEncoder(w).Encode(BookingResponse{Error: "Date of birth, gender and title are required"})
+		return
+	}
+	if !e164Phone.MatchString(phone) {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		json.NewEncoder(w).Encode(BookingResponse{Error: "Please enter your phone number in international format, e.g. +491234567"})
+		return
+	}
+
+	client := duffel.NewDuffelClient()
+	offer, err := client.GetOffer(req.OfferID)
+	if err != nil || offer.ID == "" || len(offer.Passengers) == 0 {
+		w.WriteHeader(http.StatusConflict)
+		json.NewEncoder(w).Encode(BookingResponse{Error: "Fiyat güncellendi veya teklif doldu, tekrar arayın"})
+		return
+	}
+
+	passenger := duffel.OrderPassenger{
+		ID:          offer.Passengers[0].ID,
+		GivenName:   firstName,
+		FamilyName:  lastName,
+		BornOn:      req.BornOn,
+		Gender:      req.Gender,
+		Title:       req.Title,
+		Email:       req.Email,
+		PhoneNumber: phone,
+	}
+	price, _ := strconv.ParseFloat(offer.TotalAmount, 64)
+	booking := &db.Booking{
+		Type: "flight", FirstName: firstName, LastName: lastName, Email: req.Email, Phone: phone,
+		FromCode: req.FromCode, ToCode: req.ToCode, Airline: req.Airline,
+		DepartTime: req.DepartTime, ArriveTime: req.ArriveTime, Duration: req.Duration, Stops: req.Stops,
+		Price: price, Currency: offer.TotalCurrency,
+	}
+
+	order, orderErr := client.CreateOrder(offer.ID, offer.TotalAmount, offer.TotalCurrency, []duffel.OrderPassenger{passenger})
+	if orderErr != nil {
+		if !errors.Is(orderErr, duffel.ErrTimeout) {
+			w.WriteHeader(http.StatusBadGateway)
+			json.NewEncoder(w).Encode(BookingResponse{Error: "Rezervasyon tamamlanamadı, tekrar deneyin"})
+			return
+		}
+		// No automatic retry: the order's true outcome at Duffel is unknown.
+		booking.Status = "unknown"
+		ref, dbErr := h.DB.CreateBooking(booking)
+		if dbErr != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(BookingResponse{Error: "booking failed, please try again"})
+			return
+		}
+		json.NewEncoder(w).Encode(BookingResponse{Ref: ref, Status: "unknown"})
+		return
+	}
+
+	booking.Status = "confirmed_sandbox"
+	booking.DuffelOrderID = order.ID
+	booking.BookingReference = order.BookingReference
+	ref, err := h.DB.CreateBooking(booking)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(BookingResponse{Error: "booking failed, please try again"})
+		return
+	}
+	json.NewEncoder(w).Encode(BookingResponse{Ref: ref, Status: "confirmed_sandbox"})
 }
 
 func (h *TravelHandler) MyBookingsHandler(w http.ResponseWriter, r *http.Request) {

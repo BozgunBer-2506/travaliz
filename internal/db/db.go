@@ -19,27 +19,30 @@ type DB struct {
 }
 
 type Booking struct {
-	ID         int64     `json:"id,omitempty"`
-	Ref        string    `json:"ref"`
-	Type       string    `json:"type"`
-	FirstName  string    `json:"first_name"`
-	LastName   string    `json:"last_name"`
-	Email      string    `json:"email"`
-	Phone      string    `json:"phone"`
-	FromCode   string    `json:"from_code"`
-	ToCode     string    `json:"to_code"`
-	Airline    string    `json:"airline"`
-	DepartTime string    `json:"depart_time"`
-	ArriveTime string    `json:"arrive_time"`
-	Duration   string    `json:"duration"`
-	Stops      int       `json:"stops"`
-	HotelName  string    `json:"hotel_name"`
-	Checkin    string    `json:"checkin"`
-	Checkout   string    `json:"checkout"`
-	Price      float64   `json:"price"`
-	Currency   string    `json:"currency"`
-	CardLast4  string    `json:"card_last4"`
-	CreatedAt  *time.Time `json:"created_at,omitempty"`
+	ID               int64      `json:"id,omitempty"`
+	Ref              string     `json:"ref"`
+	Type             string     `json:"type"`
+	FirstName        string     `json:"first_name"`
+	LastName         string     `json:"last_name"`
+	Email            string     `json:"email"`
+	Phone            string     `json:"phone"`
+	FromCode         string     `json:"from_code"`
+	ToCode           string     `json:"to_code"`
+	Airline          string     `json:"airline"`
+	DepartTime       string     `json:"depart_time"`
+	ArriveTime       string     `json:"arrive_time"`
+	Duration         string     `json:"duration"`
+	Stops            int        `json:"stops"`
+	HotelName        string     `json:"hotel_name"`
+	Checkin          string     `json:"checkin"`
+	Checkout         string     `json:"checkout"`
+	Price            float64    `json:"price"`
+	Currency         string     `json:"currency"`
+	CardLast4        string     `json:"card_last4"`
+	DuffelOrderID    string     `json:"duffel_order_id,omitempty"`
+	BookingReference string     `json:"booking_reference,omitempty"`
+	Status           string     `json:"status,omitempty"`
+	CreatedAt        *time.Time `json:"created_at,omitempty"`
 }
 
 func Open(supabaseURL, apiKey string) (*DB, error) {
