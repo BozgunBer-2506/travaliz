@@ -13,8 +13,23 @@ import (
 	"time"
 
 	"travel-proxy-service/internal/duffel"
+	"travel-proxy-service/internal/liteapi"
 	"travel-proxy-service/internal/proxy"
 )
+
+// cityCoords is a small fixed table; LiteAPI search is by coordinate only.
+var cityCoords = map[string][2]float64{
+	"paris":     {48.8566, 2.3522},
+	"london":    {51.5074, -0.1278},
+	"berlin":    {52.5200, 13.4050},
+	"istanbul":  {41.0082, 28.9784},
+	"antalya":   {36.8969, 30.7133},
+	"rome":      {41.9028, 12.4964},
+	"barcelona": {41.3851, 2.1734},
+	"amsterdam": {52.3676, 4.9041},
+}
+
+const hotelSearchRadiusMeters = 10000 // 10km; confirmed empirically that radius is in meters
 
 type searchLink struct{ Label, URL string }
 
@@ -63,8 +78,29 @@ func externalGuests(q url.Values, hotel bool) (string, string, []string, error) 
 	}
 	return a, c, ages, nil
 }
+
+// hotelCategories maps a category to a title and cities within cityCoords
+// only. "cabins" has no reasonable match among the 8 supported cities, so it
+// is unsupported.
+var hotelCategories = map[string]struct {
+	title        string
+	destinations []string
+}{
+	"city":       {"City Hotels", []string{"London", "Paris", "Berlin"}},
+	"beach":      {"Beach Resorts", []string{"Antalya", "Barcelona"}},
+	"apartments": {"Apartments", []string{"Amsterdam", "Barcelona", "Rome"}},
+	"villas":     {"Private Villas", []string{"Antalya"}},
+	"budget":     {"Hostels & Budget", []string{"Berlin", "Istanbul"}},
+	"boutique":   {"Boutique Hotels", []string{"Paris", "Istanbul"}},
+}
+
 func (h *TravelHandler) externalHotels(w http.ResponseWriter, r *http.Request, pd pageData, category string) {
 	q := r.URL.Query()
+	pd.Nationality = strings.ToUpper(strings.TrimSpace(q.Get("guestNationality")))
+	pd.HotelCurrency = strings.ToUpper(strings.TrimSpace(q.Get("currency")))
+	if pd.HotelCurrency == "" {
+		pd.HotelCurrency = "EUR"
+	}
 	fail := func(err error) { pd.Error = err.Error(); h.render(w, pd) }
 	start, err := searchDate(pd.Checkin)
 	if err != nil {
@@ -80,7 +116,7 @@ func (h *TravelHandler) externalHotels(w http.ResponseWriter, r *http.Request, p
 		fail(fmt.Errorf("Check-out must be after check-in."))
 		return
 	}
-	a, c, ages, err := externalGuests(q, true)
+	a, children, ages, err := externalGuests(q, true)
 	if err != nil {
 		fail(err)
 		return
@@ -90,29 +126,110 @@ func (h *TravelHandler) externalHotels(w http.ResponseWriter, r *http.Request, p
 		fail(err)
 		return
 	}
+	if rooms != "1" {
+		fail(fmt.Errorf("Hotel search supports one room only; please search each room separately."))
+		return
+	}
+	if children == "0" && q.Get("children_ages") != "" {
+		fail(fmt.Errorf("Child ages must match the number of children."))
+		return
+	}
+	childAges := make([]int, len(ages))
+	for i, age := range ages {
+		childAges[i], err = strconv.Atoi(age)
+		if err != nil { // Empty ages must not silently become infants.
+			fail(fmt.Errorf("Please select an age for each child."))
+			return
+		}
+	}
+	adults, _ := strconv.Atoi(a)
+	query := liteapi.RateQuery{
+		Occupancies: []liteapi.Occupancy{{Adults: adults, Children: childAges}},
+		Checkin:     pd.Checkin, Checkout: pd.Checkout,
+		Currency: pd.HotelCurrency, GuestNationality: pd.Nationality,
+	}
+	if err := query.Validate(); err != nil {
+		fail(err)
+		return
+	}
+	pd.Nights = int(end.Sub(start).Hours() / 24)
 	destinations := []string{strings.TrimSpace(pd.City)}
 	if category != "" {
-		categories := map[string][]string{
-			"city": {"London", "Paris", "Berlin"}, "beach": {"Antalya", "Bali", "Maldives"}, "apartments": {"Amsterdam", "Barcelona", "Rome"}, "villas": {"Tuscany", "Bali", "Antalya"}, "budget": {"Prague", "Berlin", "Bangkok"}, "boutique": {"Florence", "Paris", "Istanbul"}, "cabins": {"Lapland", "Swiss Alps", "Tyrol"},
-		}
-		var ok bool
-		destinations, ok = categories[category]
+		cfg, ok := hotelCategories[category]
 		if !ok {
-			fail(fmt.Errorf("Please select a supported hotel category."))
+			fail(fmt.Errorf("Bu kategori henüz desteklenmiyor."))
 			return
 		}
+		destinations, pd.CategoryTitle = cfg.destinations, cfg.title
+	}
+	client := h.HotelClient
+	if client == nil {
+		client = liteapi.NewClient()
 	}
 	for _, city := range destinations {
-		if city == "" || len(city) > 200 {
-			fail(fmt.Errorf("Please enter a destination."))
+		key := strings.ToLower(strings.TrimSpace(city))
+		coords, ok := cityCoords[key]
+		if !ok {
+			fail(fmt.Errorf("Bu şehir henüz desteklenmiyor."))
 			return
 		}
-		params := url.Values{"ss": {city}, "checkin": {pd.Checkin}, "checkout": {pd.Checkout}, "group_adults": {a}, "group_children": {c}, "no_rooms": {rooms}}
-		for _, age := range ages {
-			params.Add("age", age)
+		hotels, err := client.SearchHotels(coords[0], coords[1], hotelSearchRadiusMeters)
+		if err != nil {
+			if errors.Is(err, liteapi.ErrTimeout) {
+				fail(fmt.Errorf("Arama zaman aşımına uğradı, tekrar deneyin."))
+			} else {
+				fail(fmt.Errorf("Otel araması tamamlanamadı, tekrar deneyin."))
+			}
+			return
 		}
-		pd.ExternalLinks = append(pd.ExternalLinks, searchLink{"Search " + city + " on Booking.com", "https://www.booking.com/searchresults.html?" + params.Encode()})
+		if len(hotels) == 0 {
+			continue
+		}
+		byID := make(map[string]liteapi.Hotel, len(hotels))
+		ids := make([]string, 0, len(hotels))
+		for _, hotel := range hotels {
+			if hotel.ID == "" {
+				continue
+			}
+			byID[hotel.ID] = hotel
+			ids = append(ids, hotel.ID)
+			if len(ids) >= 15 { // ~335KB/hotel observed live; keeps the response well under the size cap
+				break
+			}
+		}
+		rates, err := client.FetchRates(ids, query)
+		if err != nil {
+			fail(fmt.Errorf("Hotel prices could not be loaded. Please try again."))
+			return
+		}
+		for _, hr := range rates {
+			hotel, ok := byID[hr.HotelID]
+			if !ok || len(hr.RoomTypes) == 0 {
+				continue
+			}
+			cheapest, ok := hr.CheapestOffer()
+			if !ok {
+				continue
+			}
+			pd.Hotels = append(pd.Hotels, proxy.HotelData{
+				HotelID: len(pd.Hotels) + 1, HotelName: hotel.Name, Destination: city,
+				Price:      cheapest.OfferRetailRate.Amount / float64(pd.Nights),
+				TotalPrice: cheapest.OfferRetailRate.Amount, Currency: cheapest.OfferRetailRate.Currency,
+				Stars: hotel.Stars, Rating: hotel.Rating, PhotoURL: hotel.MainPhoto,
+				ExternalHotelID: hotel.ID, RateID: cheapest.Rates[0].RateID, RoomOfferID: cheapest.OfferID,
+			})
+		}
 	}
+	if len(pd.Hotels) == 0 {
+		fail(fmt.Errorf("Bu bölgede otel bulunamadı, farklı bir tarih veya şehir deneyin."))
+		return
+	}
+	sort.SliceStable(pd.Hotels, func(i, j int) bool {
+		if pd.Hotels[i].Currency != pd.Hotels[j].Currency {
+			return pd.Hotels[i].Currency < pd.Hotels[j].Currency
+		}
+		return pd.Hotels[i].Price < pd.Hotels[j].Price
+	})
 	h.render(w, pd)
 }
 func (h *TravelHandler) externalFlights(w http.ResponseWriter, r *http.Request) {

@@ -8,10 +8,12 @@ import (
 	"time"
 
 	"travel-proxy-service/internal/db"
+	"travel-proxy-service/internal/liteapi"
 	"travel-proxy-service/internal/proxy"
 )
 
 type TravelHandler struct {
+	HotelClient    *liteapi.Client
 	ProxyClient    *proxy.ProxyClient
 	Templates      *template.Template
 	DB             *db.DB
@@ -37,6 +39,8 @@ type pageData struct {
 	Adults        string
 	Children      string
 	Rooms         string
+	Nationality   string
+	HotelCurrency string
 	FromSkyID     string
 	FromEntityID  string
 	ToSkyID       string
