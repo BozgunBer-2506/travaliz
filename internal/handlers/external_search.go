@@ -153,6 +153,14 @@ func (h *TravelHandler) externalHotels(w http.ResponseWriter, r *http.Request, p
 		return
 	}
 	pd.Nights = int(end.Sub(start).Hours() / 24)
+	if category == "" {
+		destination, matched := proxy.ResolveHotelDestination(pd.City, q.Get("entityId"))
+		if !matched {
+			fail(fmt.Errorf("Bu şehir henüz desteklenmiyor."))
+			return
+		}
+		pd.City, pd.CityEntityID = destination.Name, destination.EntityID
+	}
 	destinations := []string{strings.TrimSpace(pd.City)}
 	if category != "" {
 		cfg, ok := hotelCategories[category]

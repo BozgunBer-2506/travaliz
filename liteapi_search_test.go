@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"reflect"
 	"strings"
 	"testing"
@@ -18,6 +19,7 @@ func TestLiteAPIHotelSearch(t *testing.T) {
 	t.Setenv("LITEAPI_API_KEY", "sandbox-test")
 	client := liteapi.NewClient()
 	calls, ratesStatus := 0, 200
+	expectedCoords := [2]string{"52.52", "13.405"}
 	ratesBody := `{"data":[{"hotelId":"hotel","roomTypes":[{"offerId":"offer","rates":[{"rateId":"rate"}],"offerRetailRate":{"amount":100.01,"currency":"GBP"}}]}]}`
 	client.HTTPClient.Transport = searchTransport(func(r *http.Request) (*http.Response, error) {
 		calls++
@@ -27,8 +29,8 @@ func TestLiteAPIHotelSearch(t *testing.T) {
 		}
 		switch r.URL.Path {
 		case "/v3.0/data/hotels":
-			if r.Method != "GET" {
-				t.Fatal("wrong hotel method")
+			if r.Method != "GET" || r.URL.Query().Get("latitude") != expectedCoords[0] || r.URL.Query().Get("longitude") != expectedCoords[1] {
+				t.Fatal("wrong hotel method or city coordinates")
 			}
 		case "/v3.0/hotels/rates":
 			var query struct {
@@ -79,14 +81,34 @@ func TestLiteAPIHotelSearch(t *testing.T) {
 		strings.Replace(path, "guestNationality=tr", "guestNationality=ZZ", 1),
 		strings.Replace(path, "guestNationality=tr", "guestNationality=", 1),
 		strings.Replace(path, "currency=EUR", "currency=ZZZ", 1),
+		strings.Replace(path, "q=Berlin", "q=Ber", 1),
+		strings.Replace(path, "q=Berlin", "q=Unknown+Town", 1),
+		path + "&entityId=Paris",
 	} {
-		if got := get(invalid); strings.Contains(got, "API Hotel") || !strings.Contains(got, `text-red-700`) {
-			t.Fatal("invalid guest/currency request did not show an error")
+		if got := get(invalid); strings.Contains(got, "API Hotel") || !strings.Contains(got, `text-red-700`) || strings.Contains(got, "properties found") {
+			t.Fatal("invalid search did not show an error or was displayed as an empty result")
 		}
 		if calls != 2 {
 			t.Fatal("invalid guests reached the supplier")
 		}
 	}
+	for _, tc := range []struct {
+		name, city string
+		coords     [2]string
+	}{
+		{"  bErLiN  ", "Berlin", [2]string{"52.52", "13.405"}},
+		{"İstanbul", "Istanbul", [2]string{"41.0082", "28.9784"}},
+		{"Londra", "London", [2]string{"51.5074", "-0.1278"}},
+		{"Roma", "Rome", [2]string{"41.9028", "12.4964"}},
+	} {
+		expectedCoords = tc.coords
+		before := calls
+		body := get(strings.Replace(path, "q=Berlin", "q="+url.QueryEscape(tc.name), 1))
+		if calls != before+2 || !strings.Contains(body, "API Hotel") || !strings.Contains(body, `id="city-entity" name="entityId" type="hidden" value="`+tc.city+`"`) {
+			t.Fatalf("typed city %q was not safely resolved to %s", tc.name, tc.city)
+		}
+	}
+	expectedCoords = [2]string{"52.52", "13.405"}
 	ratesStatus = 429
 	if got := get(path); !strings.Contains(got, "Hotel prices could not be loaded") || strings.Contains(got, "API Hotel") {
 		t.Fatal("supplier failure hidden or fabricated results")

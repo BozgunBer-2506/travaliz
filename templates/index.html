@@ -152,6 +152,7 @@
       gap: 12px;
     }
     .hotel-search-grid > * { min-width: 0; }
+    .hotel-search-grid > .field-wrapper:first-child { z-index: 20; }
     #hotel-form .field-wrapper { display: flex; flex-direction: column; min-width: 0; height: 100%; }
     #hotel-form .field-label {
       position: static; display: block; padding: 8px 14px 0;
@@ -890,7 +891,7 @@
               value="{{.City}}" class="field-input" required aria-label="Destination city" aria-describedby="city-help" />
             <input id="city-input" name="q" type="hidden" value="{{.City}}" />
             <input id="city-entity" name="entityId" type="hidden" value="{{.CityEntityID}}" />
-            <span id="city-help" class="sr-only" role="status">Type at least 2 letters and select a supported city.</span>
+            <span id="city-help" class="sr-only" role="status">Enter a full city name or choose a suggestion.</span>
           </div>
           <!-- Check-in -->
           <div class="field-wrapper">
@@ -946,8 +947,8 @@
             <input type="hidden" name="rooms" id="h_rooms-in" value="1" />
           </div>
           <div class="field-wrapper">
-            <label class="field-label" for="hotel-nationality">Guest nationality</label>
-            <input id="hotel-nationality" name="guestNationality" value="{{.Nationality}}" class="field-input" required pattern="[A-Za-z]{2}" maxlength="2" placeholder="e.g. DE" title="Two-letter nationality code (DE, GB, TR, US…)" />
+            <label class="field-label" for="hotel-nationality">Guest nationality (required)</label>
+            <input id="hotel-nationality" name="guestNationality" value="{{.Nationality}}" class="field-input" required pattern="[A-Za-z]{2}" maxlength="2" placeholder="e.g. DE" title="Required: your nationality as a two-letter country code (DE, GB, TR, US…)" />
           </div>
           <div class="field-wrapper">
             <label class="field-label" for="hotel-currency">Prices in</label>
@@ -1196,7 +1197,7 @@
   <div class="flex items-center justify-between mb-4">
     <div>
       <h2 class="text-2xl font-extrabold" style="color:var(--text-primary)">{{if .CategoryTitle}}{{.CategoryTitle}} across destinations{{else}}Hotels in <span style="color:#6366f1">{{.City}}</span>{{end}}</h2>
-      <p class="text-sm mt-1" style="color:var(--text-muted)">{{len .Hotels}} properties found</p>
+      {{if not .Error}}<p class="text-sm mt-1" style="color:var(--text-muted)">{{len .Hotels}} properties found</p>{{end}}
     </div>
   </div>
   {{if .Hotels}}
@@ -3099,7 +3100,7 @@ function makeAutocomplete(displayEl, endpointUrl, onSelect, renderItemFn) {
   }
   function buildDropdown(items) {
     removeDropdown();
-    if (displayEl.id === 'city-display') document.getElementById('city-help').textContent = items?.length ? 'Select a city from the suggestions.' : 'No matching city in our supported destinations.';
+    if (displayEl.id === 'city-display') document.getElementById('city-help').textContent = items?.length ? 'Choose a suggestion or enter a full city name.' : 'No matching suggestion. You can still enter a full city name.';
     if (!items?.length) return;
     const ul = document.createElement('ul');
     ul.className = 'autocomplete-dropdown';
@@ -3123,7 +3124,7 @@ function makeAutocomplete(displayEl, endpointUrl, onSelect, renderItemFn) {
     } catch {
       if (requestRevision !== revision) return;
       removeDropdown();
-      if (displayEl.id === 'city-display') document.getElementById('city-help').textContent = 'Could not load cities. Please try again.';
+      if (displayEl.id === 'city-display') document.getElementById('city-help').textContent = 'Suggestions unavailable. You can still enter a full city name.';
     }
   }, 280);
   displayEl.addEventListener('input', () => { revision++; removeDropdown(); fetchSuggestions(displayEl.value.trim(), revision); });
@@ -3152,17 +3153,19 @@ if (cityDisplay) {
       <div><div class="dest-label">${item.name}</div><div class="dest-sub">${item.hierarchy || ''}</div></div>`
   );
   cityDisplay.addEventListener('input', () => {
-    document.getElementById('city-input').value = '';
-    cityDisplay.setCustomValidity('Please select a city from the suggestions.');
-    document.getElementById('city-help').textContent = 'Type at least 2 letters and select a supported city.';
+    document.getElementById('city-input').value = cityDisplay.value.trim();
+    cityDisplay.setCustomValidity('');
+    document.getElementById('city-help').textContent = 'Enter a full city name or choose a suggestion.';
     document.getElementById('city-entity').value = '';
   });
 }
 
 function validateHotelDestination() {
-  const valid = document.getElementById('city-entity').value &&
-    document.getElementById('city-input').value === cityDisplay.value;
-  cityDisplay.setCustomValidity(valid ? '' : 'Please select a city from the suggestions.');
+  const cityInput = document.getElementById('city-input');
+  const name = cityDisplay.value.trim();
+  if (cityInput.value !== name) document.getElementById('city-entity').value = '';
+  cityInput.value = name;
+  cityDisplay.setCustomValidity(name ? '' : 'Enter a destination city.');
   return cityDisplay.reportValidity();
 }
 
