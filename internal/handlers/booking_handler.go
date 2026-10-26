@@ -78,6 +78,14 @@ func (h *TravelHandler) BookHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Hotel rates are display estimates until a server-side prebook verifies
+	// the offer. Do not persist or forward client claims as a reservation.
+	if req.Type == "hotel" {
+		w.WriteHeader(http.StatusConflict)
+		json.NewEncoder(w).Encode(BookingResponse{Error: "Hotel booking is not available yet. No reservation was made and no payment was taken."})
+		return
+	}
+
 	if err := validateBooking(&req); err != nil {
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		json.NewEncoder(w).Encode(BookingResponse{Error: err.Error()})
