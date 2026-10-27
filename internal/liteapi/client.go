@@ -1,5 +1,4 @@
 // Package liteapi provides a client for LiteAPI hotel search and rates.
-// Search and rates only; no booking flow yet.
 package liteapi
 
 import (

@@ -11,6 +11,7 @@ import (
 
 	"github.com/MicahParks/keyfunc/v3"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 var (
@@ -37,13 +38,13 @@ func Init(ctx context.Context) error {
 
 // EmailFromRequest validates the Supabase JWT in the Authorization header
 // and returns the authenticated email claim. Returns ErrUnauthorized on failure.
-func EmailFromRequest(r *http.Request) (string, error) {
+func requestClaims(r *http.Request) (jwt.MapClaims, error) {
 	if globalKF == nil {
-		return "", fmt.Errorf("auth not initialized")
+		return nil, fmt.Errorf("auth not initialized")
 	}
 	authHeader := r.Header.Get("Authorization")
 	if !strings.HasPrefix(authHeader, "Bearer ") {
-		return "", ErrUnauthorized
+		return nil, ErrUnauthorized
 	}
 	tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
 
@@ -54,18 +55,40 @@ func EmailFromRequest(r *http.Request) (string, error) {
 		jwt.WithLeeway(30*time.Second),
 	)
 	if err != nil || !token.Valid {
-		return "", ErrUnauthorized
+		return nil, ErrUnauthorized
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
-		return "", ErrUnauthorized
+		return nil, ErrUnauthorized
 	}
+	return claims, nil
+}
 
+func EmailFromRequest(r *http.Request) (string, error) {
+	claims, err := requestClaims(r)
+	if err != nil {
+		return "", err
+	}
 	email, ok := claims["email"].(string)
 	if !ok || email == "" {
 		return "", ErrUnauthorized
 	}
 
 	return strings.ToLower(email), nil
+}
+
+// Checkout ownership uses the stable Supabase subject, never an email supplied
+// by the browser. Existing email-based flight routes keep their behavior.
+func SubjectFromRequest(r *http.Request) (string, error) {
+	claims, err := requestClaims(r)
+	if err != nil {
+		return "", err
+	}
+	sub, _ := claims["sub"].(string)
+	id, err := uuid.Parse(sub)
+	if err != nil || id == uuid.Nil {
+		return "", ErrUnauthorized
+	}
+	return id.String(), nil
 }

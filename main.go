@@ -85,6 +85,8 @@ func newMux(travelHandler *handlers.TravelHandler) *http.ServeMux {
 	mux.HandleFunc("/flights", travelHandler.FlightsHandler)
 	mux.HandleFunc("/cars", travelHandler.CarsHandler)
 	mux.HandleFunc("/book", travelHandler.BookHandler)
+	mux.HandleFunc("/hotel/prebook", travelHandler.HotelPrebookHandler)
+	mux.HandleFunc("/hotel/booking-status", travelHandler.HotelStatusHandler)
 	mux.HandleFunc("/suggest", travelHandler.SuggestHandler)
 	mux.HandleFunc("/suggest-flight", travelHandler.SuggestFlightHandler)
 	mux.HandleFunc("/travel-data", travelHandler.GetTravelDataHandler)

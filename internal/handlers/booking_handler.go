@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/google/uuid"
 	"log"
 	"net/http"
 	"os"
@@ -18,27 +19,30 @@ import (
 )
 
 type BookingRequest struct {
-	Type       string  `json:"type"`
-	OfferID    string  `json:"offerId"`
-	FirstName  string  `json:"firstName"`
-	LastName   string  `json:"lastName"`
-	Email      string  `json:"email"`
-	Phone      string  `json:"phone"`
-	BornOn     string  `json:"bornOn"`
-	Gender     string  `json:"gender"`
-	Title      string  `json:"title"`
-	FromCode   string  `json:"fromCode"`
-	ToCode     string  `json:"toCode"`
-	Airline    string  `json:"airline"`
-	DepartTime string  `json:"departTime"`
-	ArriveTime string  `json:"arriveTime"`
-	Duration   string  `json:"duration"`
-	Stops      int     `json:"stops"`
-	HotelName  string  `json:"hotelName"`
-	Checkin    string  `json:"checkin"`
-	Checkout   string  `json:"checkout"`
-	Price      float64 `json:"price"`
-	Currency   string  `json:"currency"`
+	HotelCheckoutID string  `json:"hotelCheckoutId"`
+	QuoteHash       string  `json:"quoteHash"`
+	AcceptQuote     bool    `json:"acceptQuote"`
+	Type            string  `json:"type"`
+	OfferID         string  `json:"offerId"`
+	FirstName       string  `json:"firstName"`
+	LastName        string  `json:"lastName"`
+	Email           string  `json:"email"`
+	Phone           string  `json:"phone"`
+	BornOn          string  `json:"bornOn"`
+	Gender          string  `json:"gender"`
+	Title           string  `json:"title"`
+	FromCode        string  `json:"fromCode"`
+	ToCode          string  `json:"toCode"`
+	Airline         string  `json:"airline"`
+	DepartTime      string  `json:"departTime"`
+	ArriveTime      string  `json:"arriveTime"`
+	Duration        string  `json:"duration"`
+	Stops           int     `json:"stops"`
+	HotelName       string  `json:"hotelName"`
+	Checkin         string  `json:"checkin"`
+	Checkout        string  `json:"checkout"`
+	Price           float64 `json:"price"`
+	Currency        string  `json:"currency"`
 }
 
 type BookingResponse struct {
@@ -65,7 +69,7 @@ func (h *TravelHandler) BookHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req BookingRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20)).Decode(&req); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(BookingResponse{Error: "invalid request body"})
 		return
@@ -78,11 +82,8 @@ func (h *TravelHandler) BookHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Hotel rates are display estimates until a server-side prebook verifies
-	// the offer. Do not persist or forward client claims as a reservation.
 	if req.Type == "hotel" {
-		w.WriteHeader(http.StatusConflict)
-		json.NewEncoder(w).Encode(BookingResponse{Error: "Hotel booking is not available yet. No reservation was made and no payment was taken."})
+		h.bookHotel(w, r, &req)
 		return
 	}
 
@@ -224,6 +225,36 @@ func (h *TravelHandler) MyBookingsHandler(w http.ResponseWriter, r *http.Request
 	if bookings == nil {
 		bookings = []*db.Booking{}
 	}
+	if h.hotelClient().SandboxBookingEnabled() {
+		user, err := auth.SubjectFromRequest(r)
+		if err != nil {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		rows, err := h.hotelStore().ListHotels(user)
+		if err != nil {
+			http.Error(w, "hotel history unavailable", http.StatusServiceUnavailable)
+			return
+		}
+		for _, row := range rows {
+			if row.Quote == nil {
+				continue
+			}
+			q := row.Quote
+			status := row.Status
+			if status == "booking" {
+				status = "unknown"
+			}
+			b := &db.Booking{Ref: row.ID, Type: "hotel", Email: email, HotelName: q.HotelName, Checkin: q.Checkin, Checkout: q.Checkout,
+				Price: q.Price, Currency: q.Currency, Status: status, BookingReference: row.BookingID, CreatedAt: &row.CreatedAt}
+			if row.Guest != nil {
+				b.FirstName = row.Guest.FirstName
+				b.LastName = row.Guest.LastName
+			}
+			bookings = append(bookings, b)
+		}
+	}
+	w.Header().Set("Cache-Control", "no-store")
 	json.NewEncoder(w).Encode(bookings)
 }
 
@@ -247,6 +278,12 @@ func (h *TravelHandler) CancelBookingHandler(w http.ResponseWriter, r *http.Requ
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Ref == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(map[string]string{"error": "ref required"})
+		return
+	}
+	if _, err := uuid.Parse(req.Ref); err == nil {
+		// Hotel checkout rows are durable idempotency records. Removing them or
+		// claiming a local deletion cancelled a provider booking is unsafe.
+		hotelError(w, http.StatusConflict, "Hotel sandbox checkouts cannot be removed here. No provider cancellation was performed.")
 		return
 	}
 

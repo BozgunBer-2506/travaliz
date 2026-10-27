@@ -277,7 +277,8 @@
       </div>
     </div>
     <div class="px-5 pb-5">
-      <button onclick="initiateCancelBooking()" class="w-full py-2.5 rounded-xl text-sm font-semibold" style="background:rgba(239,68,68,0.08);color:#ef4444;border:1px solid rgba(239,68,68,0.18)">Remove Request</button>
+      <button id="bmodal-status" hidden class="w-full py-2.5 rounded-xl text-sm font-semibold">Refresh sandbox booking status</button>
+      <button id="bmodal-remove" onclick="initiateCancelBooking()" class="w-full py-2.5 rounded-xl text-sm font-semibold" style="background:rgba(239,68,68,0.08);color:#ef4444;border:1px solid rgba(239,68,68,0.18)">Remove Request</button>
     </div>
   </div>
 </div>
@@ -381,7 +382,13 @@ function openBookingModal(ref) {
   document.getElementById('bmodal-price').textContent = 'Est. ' + price;
   document.getElementById('bmodal-name').textContent  = (b.first_name || '') + ' ' + (b.last_name || '');
   document.getElementById('bmodal-email').textContent = b.email || '';
-  document.getElementById('bmodal-card').textContent  = 'Pending — no payment collected; not confirmed';
+  const sandboxHotel = isHotel && ['confirmed_sandbox', 'unknown', 'booking'].includes(b.status);
+  document.getElementById('bmodal-card').textContent = sandboxHotel
+    ? (b.status === 'confirmed_sandbox' ? 'Confirmed sandbox test — no real reservation or charge. Booking ID: ' + b.booking_reference : 'Outcome unknown — refresh status; do not place another reservation.')
+    : 'Pending — no payment collected; not confirmed';
+  document.getElementById('bmodal-remove').hidden = sandboxHotel;
+  document.getElementById('bmodal-status').hidden = !sandboxHotel;
+  document.getElementById('bmodal-status').onclick = () => refreshSandboxHotelStatus(b.ref);
   document.getElementById('bmodal-rows').replaceChildren(...rows.map(([label, value]) => {
     const row = document.createElement('tr');
     row.append(accountNode('td', 'detail-label', label), accountNode('td', 'detail-val', value || '-'));
@@ -392,6 +399,20 @@ function openBookingModal(ref) {
 
 function closeBookingModal() {
   document.getElementById('booking-modal').classList.add('hidden');
+}
+
+async function refreshSandboxHotelStatus(ref) {
+  try {
+    const { data: { session } } = await _sb.auth.getSession();
+    if (!session) return showToast('Please sign in again.');
+    const response = await fetch('/hotel/booking-status?id=' + encodeURIComponent(ref), {
+      headers: { Authorization: 'Bearer ' + session.access_token },
+    });
+    const data = await response.json();
+    if (!response.ok || data.error) return showToast(data.error || 'Status unavailable.');
+    await loadPage(_user);
+    openBookingModal(ref);
+  } catch { showToast('Status unavailable. Do not place another reservation.'); }
 }
 
 function initiateCancelBooking() {
@@ -465,7 +486,11 @@ function renderBookings(bookings) {
     subtitle.style.color = 'var(--text-muted)';
     const reference = accountNode('p', 'text-xs font-bold mt-0.5', b.ref);
     reference.style.color = '#818cf8';
-    const status = accountNode('p', 'text-xs mt-1', 'Pending request — no payment collected; reservation not confirmed.');
+    const status = accountNode('p', 'text-xs mt-1', isHotel && b.status === 'confirmed_sandbox'
+      ? 'Confirmed sandbox test — no real reservation or charge.'
+      : isHotel && ['unknown', 'booking'].includes(b.status)
+        ? 'Outcome unknown — check status before booking again.'
+        : 'Pending request — no payment collected; reservation not confirmed.');
     status.style.color = 'var(--text-muted)';
     details.append(heading, subtitle, reference, status);
     main.append(accountNode('div', 'text-2xl shrink-0', icon), details);

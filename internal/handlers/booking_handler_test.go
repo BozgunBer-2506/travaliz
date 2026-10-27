@@ -54,6 +54,7 @@ func bookingTestHandler(t *testing.T, respond func(*http.Request) string) (*Trav
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodES256, jwt.MapClaims{
 		"email": "guest@example.com", "aud": "authenticated", "exp": time.Now().Add(time.Hour).Unix(),
+		"sub": "11111111-1111-4111-8111-111111111111",
 	})
 	token.Header["kid"] = "test"
 	signed, err := token.SignedString(key)

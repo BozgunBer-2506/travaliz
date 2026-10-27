@@ -14,6 +14,7 @@ import (
 
 type TravelHandler struct {
 	HotelClient    *liteapi.Client
+	HotelStore     db.HotelStore
 	ProxyClient    *proxy.ProxyClient
 	Templates      *template.Template
 	DB             *db.DB

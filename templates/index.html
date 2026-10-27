@@ -471,7 +471,7 @@
           </div>
         </div>
         <p id="step1-error" class="text-red-500 text-xs mb-3 hidden"></p>
-        <button onclick="goToStep2()" class="w-full py-3 rounded-xl text-sm font-bold text-white transition-all"
+        <button id="review-request-btn" onclick="goToStep2()" class="w-full py-3 rounded-xl text-sm font-bold text-white transition-all"
           style="background:linear-gradient(135deg,#4f46e5,#7c3aed);box-shadow:0 4px 16px rgba(79,70,229,.3)">
           Review Request →
         </button>
@@ -479,12 +479,12 @@
 
       <!-- STEP 2: Payment -->
       <div id="step-2" class="pt-4 hidden">
-        <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Payment — Placeholder</p>
-        <p class="text-sm text-gray-600 mb-4">No payment is collected. Prices and availability are unverified. Saving this request does not create a confirmed reservation or issue a ticket.</p>
+        <p id="payment-heading" class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Payment — Placeholder</p>
+        <p id="payment-note" class="text-sm text-gray-600 mb-4">No payment is collected. Prices and availability are unverified. Saving this request does not create a confirmed reservation or issue a ticket.</p>
         <!-- Reserved for a future embedded payment processor. -->
         <div id="payment-placeholder"></div>
         <div id="modal-total" class="bg-slate-50 rounded-xl p-3 mb-5 flex items-center justify-between text-sm border border-gray-100">
-          <span class="text-gray-500 font-medium">Displayed estimate</span>
+          <span id="modal-total-label" class="text-gray-500 font-medium">Displayed estimate</span>
           <span id="modal-total-amount" class="text-xl font-extrabold text-indigo-600"></span>
         </div>
         <p id="step2-error" class="text-red-500 text-xs mb-3 hidden"></p>
@@ -2733,8 +2733,10 @@ async function loadMyBookings() {
         : ((b.airline || '') + (b.depart_time ? ' · ' + formatFlightDateTime(b.depart_time) : ''));
       const icon = isHotel ? '🏨' : (b.type === 'car' ? '🚗' : '✈️');
       const price = (b.currency || 'USD') + ' ' + Number(b.price || 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
-      const isSandbox = !isHotel && b.type === 'flight' && b.status === 'confirmed_sandbox';
-      const statusLine = !isHotel && b.type === 'flight'
+      const isSandbox = ['hotel', 'flight'].includes(b.type) && b.status === 'confirmed_sandbox';
+      const statusLine = isHotel && isSandbox ? 'Sandbox test — no real reservation or charge.'
+        : isHotel && ['unknown', 'booking'].includes(b.status) ? 'Outcome unknown — check status in your account before booking again.'
+        : !isHotel && b.type === 'flight'
         ? (b.status === 'unknown'
             ? "Belirsiz — sonucu doğrulamak için bizimle iletişime geçin."
             : 'Test rezervasyonu (sandbox) — gerçek bilet değildir.')
@@ -2742,15 +2744,15 @@ async function loadMyBookings() {
       return `<div class="flex items-center gap-3 p-3 rounded-2xl" style="background:var(--bg-card2);border:1px solid var(--border)">
         <div class="text-2xl">${icon}</div>
         <div class="flex-1 min-w-0">
-          <p class="text-sm font-bold truncate" style="color:var(--text-primary)">${title}</p>
-          <p class="text-xs truncate" style="color:var(--text-muted)">${subtitle}</p>
-          <p class="text-xs font-semibold mt-0.5" style="color:#818cf8">${isSandbox && b.booking_reference ? b.booking_reference : b.ref}
+          <p class="text-sm font-bold truncate" style="color:var(--text-primary)">${bookingText(title)}</p>
+          <p class="text-xs truncate" style="color:var(--text-muted)">${bookingText(subtitle)}</p>
+          <p class="text-xs font-semibold mt-0.5" style="color:#818cf8">${bookingText(isSandbox && b.booking_reference ? b.booking_reference : b.ref)}
             ${isSandbox ? '<span style="margin-left:6px;font-size:9px;font-weight:700;padding:1px 6px;border-radius:20px;background:#dcfce7;color:#166534">Sandbox</span>' : ''}</p>
           <p class="text-sm font-semibold mt-1" style="color:var(--text-primary)">${statusLine}</p>
         </div>
         <div class="text-right shrink-0">
-          <p class="text-sm font-bold" style="color:var(--text-primary)">${price}</p>
-          <p class="text-xs" style="color:var(--text-muted)">${isHotel ? 'per night estimate' : 'itinerary estimate'}</p>
+          <p class="text-sm font-bold" style="color:var(--text-primary)">${bookingText(price)}</p>
+          <p class="text-xs" style="color:var(--text-muted)">${isHotel && isSandbox ? 'sandbox stay total' : isHotel ? 'per night estimate' : 'itinerary estimate'}</p>
         </div>
       </div>`;
     }).join('');
@@ -2946,6 +2948,11 @@ function goToStep2() {
     if (!document.getElementById('b-gender').value) return showError('step1-error', 'Please select a gender.');
     if (!document.getElementById('b-born-on').value) return showError('step1-error', 'Please enter your date of birth.');
   }
+  if (pendingBooking?.type === 'hotel') { reviewSandboxHotel(); return; }
+  document.getElementById('payment-heading').textContent = 'Payment — Placeholder';
+  document.getElementById('payment-note').textContent = 'No payment is collected. Prices and availability are unverified. Saving this request does not create a confirmed reservation or issue a ticket.';
+  document.getElementById('payment-placeholder').replaceChildren();
+  document.getElementById('modal-total-label').textContent = 'Displayed estimate';
   hideError('step1-error');
   showStep(2);
   document.getElementById('pay-btn').focus();
@@ -2953,6 +2960,7 @@ function goToStep2() {
 
 async function submitBooking() {
   const b = pendingBooking;
+  if (b?.type === 'hotel' && b.hotelCheckout) return submitSandboxHotel();
   const price = Number(b?.price);
   if (!Number.isFinite(price) || price <= 0) return showError('step2-error', 'Please select a valid estimate.');
   hideError('step2-error');
@@ -3064,7 +3072,7 @@ document.querySelectorAll('.hotel-request-btn').forEach(btn => {
       ? Number(d.total)
       : Number((price * nights).toFixed(2));
     openBookingModal({
-      type: 'hotel', hotelId: d.id, name: d.name, price, total, currency,
+      type: 'hotel', hotelId: d.id, offerId: d.roomOfferId, name: d.name, price, total, currency,
       to: d.destination, nights, checkin: d.checkin, checkout: d.checkout,
       _btn: btn,
     });
@@ -3689,5 +3697,6 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js'));
 }
 </script>
+<script src="/static/hotel-booking.js"></script>
 </body>
 </html>
