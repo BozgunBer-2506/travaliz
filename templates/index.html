@@ -67,6 +67,10 @@
     [data-theme="dark"] .text-gray-300 { color: var(--text-muted) !important; }
     [data-theme="dark"] .border-gray-100,
     [data-theme="dark"] .border-gray-200 { border-color: var(--border) !important; }
+    /* Search error banner: ~6.9:1 text/background contrast, exceeds WCAG AA (4.5:1). */
+    [data-theme="dark"] .bg-red-50 { background: rgba(239,68,68,0.1) !important; }
+    [data-theme="dark"] .border-red-100 { border-color: rgba(239,68,68,0.25) !important; }
+    [data-theme="dark"] .text-red-700 { color: #f87171 !important; }
     [data-theme="dark"] .border-t { border-color: var(--border) !important; }
     [data-theme="dark"] .divide-gray-100 > * + * { border-color: var(--border) !important; }
 
