@@ -45,7 +45,7 @@ func NewClient() *Client {
 type Hotel struct {
 	ID        string  `json:"id"`
 	Name      string  `json:"name"`
-	Stars     int     `json:"stars"`
+	Stars     float64 `json:"stars"`
 	Rating    float64 `json:"rating"`
 	MainPhoto string  `json:"main_photo"`
 }
@@ -174,7 +174,18 @@ func (c *Client) FetchRates(hotelIDs []string, query RateQuery) ([]HotelRates, e
 	return out.Data, nil
 }
 
-func (c *Client) do(method, path string, payload, out any) error {
+func (c *Client) do(method, path string, payload, out any) (err error) {
+	started := time.Now()
+	status := 0 // No HTTP response received (including missing configuration).
+	defer func() {
+		if err != nil {
+			// Returned errors are sanitized below. Never log credentials, query
+			// parameters, response bodies or raw transport/JSON decoder errors.
+			endpoint, _, _ := strings.Cut(path, "?")
+			log.Printf("liteapi method=%s endpoint=%s status=%d elapsed_ms=%d error=%q",
+				method, endpoint, status, time.Since(started).Milliseconds(), err.Error())
+		}
+	}()
 	if c.key == "" {
 		return errors.New("liteapi: LITEAPI_API_KEY is not configured")
 	}
@@ -205,16 +216,16 @@ func (c *Client) do(method, path string, payload, out any) error {
 		return errors.New("liteapi: network request failed; outcome may be unknown")
 	}
 	defer resp.Body.Close()
+	status = resp.StatusCode
+	if status < 200 || status >= 300 {
+		return fmt.Errorf("liteapi: HTTP %d", status)
+	}
 	raw, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseBytes+1))
 	if err != nil {
 		return errors.New("liteapi: could not read response; outcome may be unknown")
 	}
 	if len(raw) > maxResponseBytes {
 		return errors.New("liteapi: response exceeds size limit")
-	}
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		log.Printf("liteapi %s %s: HTTP %d", method, path, resp.StatusCode)
-		return fmt.Errorf("liteapi: HTTP %d", resp.StatusCode)
 	}
 	if err := json.Unmarshal(raw, out); err != nil {
 		return errors.New("liteapi: could not decode response data")

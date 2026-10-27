@@ -209,7 +209,7 @@ func (pc *ProxyClient) fetchHotelQuery(city, query, checkIn, checkOut, adults, c
 		if h.Rating > 0 {
 			ratingWord = fmt.Sprintf("Google rating: %.1f/5", h.Rating)
 		}
-		hotels = append(hotels, HotelData{HotelID: i + 1, Destination: city, HotelName: h.Name, Price: h.Rate.Price, TotalPrice: h.Total.Price, Currency: "USD", Rating: h.Rating * 2, RatingWord: ratingWord, Stars: h.Stars, PhotoURL: photo, BookingURL: link})
+		hotels = append(hotels, HotelData{HotelID: i + 1, Destination: city, HotelName: h.Name, Price: h.Rate.Price, TotalPrice: h.Total.Price, Currency: "USD", Rating: h.Rating * 2, RatingWord: ratingWord, Stars: float64(h.Stars), PhotoURL: photo, BookingURL: link})
 	}
 	return hotels, nil
 }

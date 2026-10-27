@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>travaliz.com — Hotels &amp; Flights</title>
+  <title>travaliz.com - Hotels &amp; Flights</title>
   <link rel="canonical" href="https://travaliz.com/{{if eq .Tab "flights"}}flights{{else if eq .Tab "cars"}}cars{{end}}" />
   <link rel="manifest" href="/manifest.json" />
   <meta name="theme-color" content="#4f46e5" />
@@ -882,7 +882,7 @@
     <div class="glass rounded-3xl shadow-2xl p-6">
 
       {{if eq .Tab "hotels"}}
-      <form method="GET" action="/" class="flex flex-col gap-4" id="hotel-form" onsubmit="if (!validateHotelDestination()) return false; document.getElementById('h_children-ages').value = [...document.querySelectorAll('#h-child-rows select')].map(el => el.value).join(','); setLoading(this)">
+      <form method="GET" action="/" class="flex flex-col gap-4" id="hotel-form" onsubmit="if (!validateHotelDestination()) return false; document.getElementById('h_children-ages').value = [...document.querySelectorAll('#h-child-rows select')].map(el => el.value).join(','); saveGuestPrefs(); setLoading(this)">
         <div class="hotel-search-grid">
           <!-- Destination -->
           <div class="field-wrapper">
@@ -1261,7 +1261,7 @@
       <!-- Info -->
       <div style="padding:14px 16px 16px;display:flex;flex-direction:column;flex:1">
         {{if .Stars}}
-        <div style="color:#f59e0b;font-size:13px;font-weight:700;margin-bottom:5px;letter-spacing:1px">{{if ge .Stars 1}}★{{end}}{{if ge .Stars 2}}★{{end}}{{if ge .Stars 3}}★{{end}}{{if ge .Stars 4}}★{{end}}{{if ge .Stars 5}}★{{end}}</div>
+        <div style="color:#f59e0b;font-size:13px;font-weight:700;margin-bottom:5px;letter-spacing:1px">{{if ge .Stars 1.0}}★{{end}}{{if ge .Stars 2.0}}★{{end}}{{if ge .Stars 3.0}}★{{end}}{{if ge .Stars 4.0}}★{{end}}{{if ge .Stars 5.0}}★{{end}}</div>
         {{end}}
         {{if .Destination}}
         <div class="hotel-destination" style="display:flex;align-items:flex-start;gap:7px;font-size:15px;font-weight:800;line-height:1.4;color:var(--text-primary);padding:8px 10px;border:1px solid var(--border);border-radius:9px;margin-bottom:10px">
@@ -1329,7 +1329,7 @@
     </div>
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
       <!-- Paris -->
-      <a href="/?q=Paris" class="group relative rounded-3xl overflow-hidden aspect-[4/5] block shadow-sm hover:shadow-xl transition-shadow">
+      <a href="/?q=Paris" onclick="return quickDestination(&#39;Paris&#39;, event)" class="group relative rounded-3xl overflow-hidden aspect-[4/5] block shadow-sm hover:shadow-xl transition-shadow">
         <img src="https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=500&q=85" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="Paris" loading="lazy" />
         <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(0,0,0,.65) 0%,transparent 50%)"></div>
         <div class="absolute bottom-0 left-0 p-4">
@@ -1338,7 +1338,7 @@
         </div>
       </a>
       <!-- Tokyo -->
-      <a href="/?q=Tokyo" class="group relative rounded-3xl overflow-hidden aspect-[4/5] block shadow-sm hover:shadow-xl transition-shadow">
+      <a href="/?q=Tokyo" onclick="return quickDestination(&#39;Tokyo&#39;, event)" class="group relative rounded-3xl overflow-hidden aspect-[4/5] block shadow-sm hover:shadow-xl transition-shadow">
         <img src="https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=500&q=85" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="Tokyo" loading="lazy" />
         <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(0,0,0,.65) 0%,transparent 50%)"></div>
         <div class="absolute bottom-0 left-0 p-4">
@@ -1347,7 +1347,7 @@
         </div>
       </a>
       <!-- New York -->
-      <a href="/?q=New+York" class="group relative rounded-3xl overflow-hidden aspect-[4/5] block shadow-sm hover:shadow-xl transition-shadow">
+      <a href="/?q=New+York" onclick="return quickDestination(&#39;New York&#39;, event)" class="group relative rounded-3xl overflow-hidden aspect-[4/5] block shadow-sm hover:shadow-xl transition-shadow">
         <img src="https://images.unsplash.com/photo-1534430480872-3498386e7856?w=500&q=85" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="New York" loading="lazy" />
         <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(0,0,0,.65) 0%,transparent 50%)"></div>
         <div class="absolute bottom-0 left-0 p-4">
@@ -1356,7 +1356,7 @@
         </div>
       </a>
       <!-- Dubai -->
-      <a href="/?q=Dubai" class="group relative rounded-3xl overflow-hidden aspect-[4/5] block shadow-sm hover:shadow-xl transition-shadow">
+      <a href="/?q=Dubai" onclick="return quickDestination(&#39;Dubai&#39;, event)" class="group relative rounded-3xl overflow-hidden aspect-[4/5] block shadow-sm hover:shadow-xl transition-shadow">
         <img src="https://images.unsplash.com/photo-1512632578888-169bbbc64f33?w=500&q=85" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="Dubai" loading="lazy" />
         <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(0,0,0,.65) 0%,transparent 50%)"></div>
         <div class="absolute bottom-0 left-0 p-4">
@@ -1365,7 +1365,7 @@
         </div>
       </a>
       <!-- Barcelona -->
-      <a href="/?q=Barcelona" class="group relative rounded-3xl overflow-hidden col-span-2 block shadow-sm hover:shadow-xl transition-shadow" style="height:220px">
+      <a href="/?q=Barcelona" onclick="return quickDestination(&#39;Barcelona&#39;, event)" class="group relative rounded-3xl overflow-hidden col-span-2 block shadow-sm hover:shadow-xl transition-shadow" style="height:220px">
         <img src="https://images.unsplash.com/photo-1464790719320-516ecd75af6c?w=900&q=85" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="Barcelona" loading="lazy" />
         <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(0,0,0,.6) 0%,transparent 50%)"></div>
         <div class="absolute bottom-0 left-0 p-5">
@@ -1374,7 +1374,7 @@
         </div>
       </a>
       <!-- Istanbul -->
-      <a href="/?q=Istanbul" class="group relative rounded-3xl overflow-hidden col-span-2 block shadow-sm hover:shadow-xl transition-shadow" style="height:220px">
+      <a href="/?q=Istanbul" onclick="return quickDestination(&#39;Istanbul&#39;, event)" class="group relative rounded-3xl overflow-hidden col-span-2 block shadow-sm hover:shadow-xl transition-shadow" style="height:220px">
         <img src="https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?w=900&q=85" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="Istanbul" loading="lazy" />
         <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(0,0,0,.6) 0%,transparent 50%)"></div>
         <div class="absolute bottom-0 left-0 p-5">
@@ -1489,7 +1489,7 @@
     </div>
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-5">
       <!-- Paris -->
-      <a href="/?q=Paris" class="group relative rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all" style="height:160px">
+      <a href="/?q=Paris" onclick="return quickDestination(&#39;Paris&#39;, event)" class="group relative rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all" style="height:160px">
         <img src="https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=600&q=80" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="Paris" loading="lazy" />
         <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(15,10,40,.8) 0%,rgba(30,27,75,.25) 55%,transparent 100%)"></div>
         <div class="absolute bottom-0 left-0 p-4">
@@ -1498,7 +1498,7 @@
         </div>
       </a>
       <!-- London -->
-      <a href="/?q=London" class="group relative rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all" style="height:160px">
+      <a href="/?q=London" onclick="return quickDestination(&#39;London&#39;, event)" class="group relative rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all" style="height:160px">
         <img src="https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=600&q=80" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="London" loading="lazy" />
         <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(15,10,40,.8) 0%,rgba(30,27,75,.25) 55%,transparent 100%)"></div>
         <div class="absolute bottom-0 left-0 p-4">
@@ -1507,7 +1507,7 @@
         </div>
       </a>
       <!-- Berlin -->
-      <a href="/?q=Berlin" class="group relative rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all" style="height:160px">
+      <a href="/?q=Berlin" onclick="return quickDestination(&#39;Berlin&#39;, event)" class="group relative rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all" style="height:160px">
         <img src="https://images.unsplash.com/photo-1560930950-5cc20e80e392?w=600&q=80" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="Berlin" loading="lazy" />
         <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(15,10,40,.8) 0%,rgba(30,27,75,.25) 55%,transparent 100%)"></div>
         <div class="absolute bottom-0 left-0 p-4">
@@ -1516,7 +1516,7 @@
         </div>
       </a>
       <!-- Istanbul -->
-      <a href="/?q=Istanbul" class="group relative rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all" style="height:160px">
+      <a href="/?q=Istanbul" onclick="return quickDestination(&#39;Istanbul&#39;, event)" class="group relative rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all" style="height:160px">
         <img src="https://images.unsplash.com/photo-1527838832700-5059252407fa?w=600&q=80" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="Istanbul" loading="lazy" />
         <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(15,10,40,.8) 0%,rgba(30,27,75,.25) 55%,transparent 100%)"></div>
         <div class="absolute bottom-0 left-0 p-4">
@@ -1525,7 +1525,7 @@
         </div>
       </a>
       <!-- Antalya -->
-      <a href="/?q=Antalya" class="group relative rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all" style="height:160px">
+      <a href="/?q=Antalya" onclick="return quickDestination(&#39;Antalya&#39;, event)" class="group relative rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all" style="height:160px">
         <img src="https://images.unsplash.com/photo-1589561253898-768105ca91a8?w=600&q=80" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="Antalya" loading="lazy" />
         <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(15,10,40,.8) 0%,rgba(30,27,75,.25) 55%,transparent 100%)"></div>
         <div class="absolute bottom-0 left-0 p-4">
@@ -1534,7 +1534,7 @@
         </div>
       </a>
       <!-- Rome -->
-      <a href="/?q=Rome" class="group relative rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all" style="height:160px">
+      <a href="/?q=Rome" onclick="return quickDestination(&#39;Rome&#39;, event)" class="group relative rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all" style="height:160px">
         <img src="https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=600&q=80" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="Rome" loading="lazy" />
         <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(15,10,40,.8) 0%,rgba(30,27,75,.25) 55%,transparent 100%)"></div>
         <div class="absolute bottom-0 left-0 p-4">
@@ -1543,7 +1543,7 @@
         </div>
       </a>
       <!-- Barcelona -->
-      <a href="/?q=Barcelona" class="group relative rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all" style="height:160px">
+      <a href="/?q=Barcelona" onclick="return quickDestination(&#39;Barcelona&#39;, event)" class="group relative rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all" style="height:160px">
         <img src="https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=600&q=80" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="Barcelona" loading="lazy" />
         <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(15,10,40,.8) 0%,rgba(30,27,75,.25) 55%,transparent 100%)"></div>
         <div class="absolute bottom-0 left-0 p-4">
@@ -1552,7 +1552,7 @@
         </div>
       </a>
       <!-- Amsterdam -->
-      <a href="/?q=Amsterdam" class="group relative rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all" style="height:160px">
+      <a href="/?q=Amsterdam" onclick="return quickDestination(&#39;Amsterdam&#39;, event)" class="group relative rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all" style="height:160px">
         <img src="https://images.unsplash.com/photo-1512470876302-972faa2aa9a4?w=600&q=80" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="Amsterdam" loading="lazy" />
         <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(15,10,40,.8) 0%,rgba(30,27,75,.25) 55%,transparent 100%)"></div>
         <div class="absolute bottom-0 left-0 p-4">
@@ -1600,7 +1600,7 @@
       <span class="text-xs font-bold px-3 py-1.5 rounded-full animate-pulse" style="background:#ffffff;color:#3730a3;border:1px solid #ffffff">Limited time</span>
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      <a href="/?q=Rome" class="bg-white rounded-2xl border border-gray-100 shadow-sm hover:border-indigo-200 hover:shadow-md transition-all overflow-hidden card-hover group">
+      <a href="/?q=Rome" onclick="return quickDestination(&#39;Rome&#39;, event)" class="bg-white rounded-2xl border border-gray-100 shadow-sm hover:border-indigo-200 hover:shadow-md transition-all overflow-hidden card-hover group">
         <div class="h-36 overflow-hidden relative">
           <img src="https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=400&q=80" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="Rome" loading="lazy" />
           <span class="absolute bottom-2 right-2 text-xs font-bold px-2 py-0.5 rounded-lg" style="background:rgba(0,0,0,0.55);color:#ffffff">-32%</span>
@@ -1611,7 +1611,7 @@
           <p class="text-xs text-indigo-600 font-semibold">142 properties available</p>
         </div>
       </a>
-      <a href="/?q=Amsterdam" class="bg-white rounded-2xl border border-gray-100 shadow-sm hover:border-indigo-200 hover:shadow-md transition-all overflow-hidden card-hover group">
+      <a href="/?q=Amsterdam" onclick="return quickDestination(&#39;Amsterdam&#39;, event)" class="bg-white rounded-2xl border border-gray-100 shadow-sm hover:border-indigo-200 hover:shadow-md transition-all overflow-hidden card-hover group">
         <div class="h-36 overflow-hidden relative">
           <img src="https://images.unsplash.com/photo-1512470876302-972faa2aa9a4?w=400&q=80" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="Amsterdam" loading="lazy" />
           <span class="absolute bottom-2 right-2 text-xs font-bold px-2 py-0.5 rounded-lg" style="background:rgba(0,0,0,0.55);color:#ffffff">-25%</span>
@@ -1622,7 +1622,7 @@
           <p class="text-xs text-indigo-600 font-semibold">89 properties available</p>
         </div>
       </a>
-      <a href="/?q=Prague" class="bg-white rounded-2xl border border-gray-100 shadow-sm hover:border-indigo-200 hover:shadow-md transition-all overflow-hidden card-hover group">
+      <a href="/?q=Prague" onclick="return quickDestination(&#39;Prague&#39;, event)" class="bg-white rounded-2xl border border-gray-100 shadow-sm hover:border-indigo-200 hover:shadow-md transition-all overflow-hidden card-hover group">
         <div class="h-36 overflow-hidden relative">
           <img src="https://images.unsplash.com/photo-1541849546-216549ae216d?w=400&q=80" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="Prague" loading="lazy" />
           <span class="absolute bottom-2 right-2 text-xs font-bold px-2 py-0.5 rounded-lg" style="background:rgba(0,0,0,0.55);color:#ffffff">-40%</span>
@@ -1633,7 +1633,7 @@
           <p class="text-xs text-indigo-600 font-semibold">214 properties available</p>
         </div>
       </a>
-      <a href="/?q=Lisbon" class="bg-white rounded-2xl border border-gray-100 shadow-sm hover:border-indigo-200 hover:shadow-md transition-all overflow-hidden card-hover group">
+      <a href="/?q=Lisbon" onclick="return quickDestination(&#39;Lisbon&#39;, event)" class="bg-white rounded-2xl border border-gray-100 shadow-sm hover:border-indigo-200 hover:shadow-md transition-all overflow-hidden card-hover group">
         <div class="h-36 overflow-hidden relative">
           <img src="https://images.unsplash.com/photo-1555881400-74d7acaacd8b?w=400&q=80" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="Lisbon" loading="lazy" />
           <span class="absolute bottom-2 right-2 text-xs font-bold px-2 py-0.5 rounded-lg" style="background:rgba(0,0,0,0.55);color:#ffffff">-18%</span>
@@ -2941,7 +2941,9 @@ function goToStep2() {
   if (!firstName) return showError('step1-error', 'First name is required.');
   if (!lastName)  return showError('step1-error', 'Last name is required.');
   if (!email.includes('@')) return showError('step1-error', 'Please enter a valid email address.');
-  if (phone.length < 7) return showError('step1-error', 'Please enter a valid phone number.');
+  // LiteAPI sandbox booking (internal/liteapi/booking.go Guest) takes only
+  // first/last name and email; phone is never sent and is not required here.
+  if (pendingBooking?.type !== 'hotel' && phone.length < 7) return showError('step1-error', 'Please enter a valid phone number.');
   if (pendingBooking?.type === 'flight') {
     if (!/^\+[1-9]\d{6,14}$/.test(phone)) return showError('step1-error', 'Please enter your phone number in international format, e.g. +491234567.');
     if (!document.getElementById('b-title').value) return showError('step1-error', 'Please select a title.');
@@ -3583,10 +3585,58 @@ function applyFlightFilters() {
   if (emptyEl) emptyEl.classList.toggle('hidden', visible.length > 0);
 }
 
+// Guest nationality/currency are never guessed from a destination. They are
+// only ever the value the visitor typed themselves into the search form,
+// remembered locally so repeat searches and quick destination links don't
+// ask again in the same browser.
+function saveGuestPrefs() {
+  const nat = document.getElementById('hotel-nationality')?.value.trim().toUpperCase();
+  if (/^[A-Z]{2}$/.test(nat)) localStorage.setItem('tm_guest_nationality', nat);
+  const cur = document.getElementById('hotel-currency')?.value;
+  if (cur) localStorage.setItem('tm_guest_currency', cur);
+}
+function prefillGuestPrefs() {
+  const natField = document.getElementById('hotel-nationality');
+  if (natField && !natField.value) {
+    const saved = localStorage.getItem('tm_guest_nationality') || '';
+    if (/^[A-Z]{2}$/.test(saved)) natField.value = saved;
+  }
+  const curField = document.getElementById('hotel-currency');
+  if (curField && !document.querySelector('#hotel-currency option[selected]')) {
+    const saved = localStorage.getItem('tm_guest_currency') || '';
+    if (saved) curField.value = saved;
+  }
+}
+// A quick destination tile never guesses a nationality. With one already
+// saved from a prior search in this browser, it runs the real search
+// immediately; otherwise it sends the visitor to the search form to choose
+// one, with the destination already filled in.
+function quickDestination(city, ev) {
+  ev.preventDefault();
+  const nat = localStorage.getItem('tm_guest_nationality') || '';
+  const cityDisplay = document.getElementById('city-display');
+  const cityInput = document.getElementById('city-input');
+  const cityEntity = document.getElementById('city-entity');
+  if (cityDisplay) cityDisplay.value = city;
+  if (cityInput) cityInput.value = city;
+  if (cityEntity) cityEntity.value = '';
+  if (!/^[A-Z]{2}$/.test(nat)) {
+    const natField = document.getElementById('hotel-nationality');
+    natField?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    natField?.focus();
+    showToast('Please enter your nationality to see live prices for ' + city + '.');
+    return false;
+  }
+  const cur = localStorage.getItem('tm_guest_currency') || 'EUR';
+  location.href = '/?' + new URLSearchParams({ q: city, guestNationality: nat, currency: cur }).toString();
+  return false;
+}
+
 // Init
 updateBadge();
 updateGuestLabel();
 updateThemeIcon(localStorage.getItem('tm-theme') || 'dark');
+prefillGuestPrefs();
 
 // Scroll to top button
 (function() {

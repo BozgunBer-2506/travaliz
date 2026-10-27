@@ -325,7 +325,7 @@ func (ac *AmadeusClient) FetchHotelsByCity(city, cityCode, checkIn, checkOut, ad
 			Rating:     score,
 			RatingWord: amadeusRatingWord(score),
 			PhotoURL:   photo,
-			Stars:      stars,
+			Stars:      float64(stars),
 		})
 	}
 	if len(hotels) == 0 {

@@ -1,15 +1,21 @@
 package main
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"html/template"
 	"io"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"travel-proxy-service/internal/handlers"
 	"travel-proxy-service/internal/liteapi"
@@ -23,7 +29,7 @@ func TestLiteAPIHotelSearch(t *testing.T) {
 	ratesBody := `{"data":[{"hotelId":"hotel","roomTypes":[{"offerId":"offer","rates":[{"rateId":"rate"}],"offerRetailRate":{"amount":100.01,"currency":"GBP"}}]}]}`
 	client.HTTPClient.Transport = searchTransport(func(r *http.Request) (*http.Response, error) {
 		calls++
-		body, status := `{"data":[{"id":"hotel","name":"API Hotel","stars":4}]}`, 200
+		body, status := `{"data":[{"id":"hotel","name":"API Hotel","stars":4.5}]}`, 200
 		if r.URL.Host != "api.liteapi.travel" || r.Header.Get("X-API-Key") != "sandbox-test" {
 			t.Fatal("wrong provider or authentication")
 		}
@@ -64,7 +70,7 @@ func TestLiteAPIHotelSearch(t *testing.T) {
 		return w.Body.String()
 	}
 	body := get(path)
-	for _, want := range []string{`data-price="33.34"`, `data-total="100.01"`, `data-currency="GBP"`, `GBP 33.34`, `GBP 100.01`, `/night average`, `value="TR"`} {
+	for _, want := range []string{`data-stars="4.5"`, `data-price="33.34"`, `data-total="100.01"`, `data-currency="GBP"`, `GBP 33.34`, `GBP 100.01`, `/night average`, `value="TR"`, `</html>`} {
 		if !strings.Contains(body, want) {
 			t.Errorf("missing %s", want)
 		}
@@ -125,7 +131,7 @@ func TestLiteAPIHotelCategorySearchRendersResults(t *testing.T) {
 	t.Setenv("LITEAPI_API_KEY", "sandbox-test")
 	client := liteapi.NewClient()
 	client.HTTPClient.Transport = searchTransport(func(r *http.Request) (*http.Response, error) {
-		body := `{"data":[{"id":"hotel","name":"Category Hotel","stars":4}]}`
+		body := `{"data":[{"id":"hotel","name":"Category Hotel","stars":4.5}]}`
 		if r.URL.Path == "/v3.0/hotels/rates" {
 			body = `{"data":[{"hotelId":"hotel","roomTypes":[{"offerId":"offer","rates":[{"rateId":"rate"}],"offerRetailRate":{"amount":100.01,"currency":"EUR"}}]}]}`
 		}
@@ -136,7 +142,83 @@ func TestLiteAPIHotelCategorySearchRendersResults(t *testing.T) {
 	w := httptest.NewRecorder()
 	path := "/?category=beach&checkin=2099-11-10&checkout=2099-11-13&guestNationality=TR&currency=EUR"
 	mux.ServeHTTP(w, httptest.NewRequest("GET", path, nil))
-	if w.Code != 200 || !strings.Contains(w.Body.String(), "Category Hotel") {
-		t.Fatalf("category results were not rendered (status %d): %s", w.Code, w.Body.String())
+	if w.Code != 200 || !strings.Contains(w.Body.String(), "Category Hotel") || !strings.Contains(w.Body.String(), `data-stars="4.5"`) || !strings.Contains(w.Body.String(), `</html>`) {
+		t.Fatalf("category results with fractional stars were not rendered (status %d)", w.Code)
+	}
+}
+
+// Distinguish Go configuration/decoding failures, upstream HTTP failures and
+// transport timeouts without contacting providers or exposing sensitive input.
+func TestLiteAPIHotelSearchFailureDiagnostics(t *testing.T) {
+	const secret = "sandbox-sensitive-test-value"
+	tmpl := template.Must(template.ParseFS(templateFiles, "templates/*.html"))
+	for _, search := range []string{"q=Berlin", "category=beach"} {
+		for _, tc := range []struct {
+			name, diagnostic string
+			status           int
+			transportErr     error
+		}{
+			{"missing_key", "LITEAPI_API_KEY is not configured", 0, nil},
+			{"bad_request", "HTTP 400", 400, nil},
+			{"unauthorized", "HTTP 401", 401, nil},
+			{"forbidden", "HTTP 403", 403, nil},
+			{"not_found", "HTTP 404", 404, nil},
+			{"quota", "HTTP 429", 429, nil},
+			{"provider_failure", "HTTP 500", 500, nil},
+			{"gateway_failure", "HTTP 502", 502, nil},
+			{"unavailable", "HTTP 503", 503, nil},
+			{"gateway_timeout", "HTTP 504", 504, nil},
+			{"timeout", "request timed out", 0, context.DeadlineExceeded},
+			{"network", "network request failed", 0, errors.New(secret)},
+			{"decode", "could not decode response data", 200, nil},
+		} {
+			t.Run(search+"/"+tc.name, func(t *testing.T) {
+				t.Setenv("LITEAPI_API_KEY", secret)
+				if tc.name == "missing_key" {
+					t.Setenv("LITEAPI_API_KEY", "")
+				}
+				client := liteapi.NewClient()
+				if client.HTTPClient.Timeout != 30*time.Second {
+					t.Fatal("unexpected provider timeout")
+				}
+				calls := 0
+				client.HTTPClient.Transport = searchTransport(func(r *http.Request) (*http.Response, error) {
+					calls++
+					if r.URL.Path != "/v3.0/data/hotels" {
+						t.Fatal("failed metadata search must not request rates")
+					}
+					if tc.transportErr != nil {
+						return nil, tc.transportErr
+					}
+					return &http.Response{StatusCode: tc.status, Header: make(http.Header),
+						Body: io.NopCloser(strings.NewReader(secret))}, nil
+				})
+				var logs bytes.Buffer
+				previous := log.Writer()
+				log.SetOutput(&logs)
+				t.Cleanup(func() { log.SetOutput(previous) })
+				mux := newMux(&handlers.TravelHandler{Templates: tmpl, ExternalSearch: true, HotelClient: client})
+				w := httptest.NewRecorder()
+				mux.ServeHTTP(w, httptest.NewRequest("GET", "/?"+search+"&checkin=2099-11-10&checkout=2099-11-13&guestNationality=TR", nil))
+				message := "Otel araması tamamlanamadı"
+				if tc.name == "timeout" {
+					message = "Arama zaman aşımına uğradı"
+				}
+				if w.Code != 200 || !strings.Contains(w.Body.String(), message) {
+					t.Fatal("unexpected user-facing failure")
+				}
+				for _, want := range []string{"method=GET endpoint=/data/hotels", fmt.Sprintf("status=%d", tc.status), "elapsed_ms=", tc.diagnostic} {
+					if !strings.Contains(logs.String(), want) {
+						t.Errorf("missing safe diagnostic %q", want)
+					}
+				}
+				if strings.Contains(logs.String()+w.Body.String(), secret) || strings.Contains(logs.String(), "latitude=") {
+					t.Fatal("sensitive input leaked")
+				}
+				if (tc.name == "missing_key" && calls != 0) || (tc.name != "missing_key" && calls != 1) {
+					t.Fatal("unexpected supplier retry or category fan-out after failure")
+				}
+			})
+		}
 	}
 }

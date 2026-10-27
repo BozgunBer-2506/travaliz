@@ -30,6 +30,8 @@ var airports = []FlightDestSuggestion{
 	{SkyID: "SIN", Name: "Changi", CityName: "Singapore", CountryName: "Singapore"},
 	{SkyID: "NRT", Name: "Narita", CityName: "Tokyo", CountryName: "Japan"},
 	{SkyID: "BKK", Name: "Suvarnabhumi", CityName: "Bangkok", CountryName: "Thailand"},
+	{SkyID: "PRG", Name: "Václav Havel Airport Prague", CityName: "Prague", CountryName: "Czechia"},
+	{SkyID: "LIS", Name: "Humberto Delgado Airport", CityName: "Lisbon", CountryName: "Portugal"},
 }
 
 func (pc *ProxyClient) SearchAirports(query string) ([]FlightDestSuggestion, error) {

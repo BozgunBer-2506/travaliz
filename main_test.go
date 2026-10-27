@@ -15,17 +15,16 @@ import (
 
 func TestPublicSEO(t *testing.T) {
 	tmpl := template.Must(template.ParseFS(templateFiles, "templates/*.html"))
-	server := httptest.NewServer(newMux(&handlers.TravelHandler{
+	handler := newMux(&handlers.TravelHandler{
 		Templates: tmpl, ProxyClient: proxy.NewProxyClient(""),
-	}))
-	defer server.Close()
+	})
 
 	get := func(path, contentType string) string {
 		t.Helper()
-		resp, err := server.Client().Get(server.URL + path)
-		if err != nil {
-			t.Fatal(err)
-		}
+		// SEO checks need the actual mux response, without a listening socket.
+		recorder := httptest.NewRecorder()
+		handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, path, nil))
+		resp := recorder.Result()
 		defer resp.Body.Close()
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {

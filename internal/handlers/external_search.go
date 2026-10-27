@@ -27,6 +27,11 @@ var cityCoords = map[string][2]float64{
 	"rome":      {41.9028, 12.4964},
 	"barcelona": {41.3851, 2.1734},
 	"amsterdam": {52.3676, 4.9041},
+	"tokyo":     {35.6762, 139.6503},
+	"new york":  {40.7128, -74.0060},
+	"dubai":     {25.2048, 55.2708},
+	"prague":    {50.0755, 14.4378},
+	"lisbon":    {38.7223, -9.1393},
 }
 
 const hotelSearchRadiusMeters = 10000 // 10km; confirmed empirically that radius is in meters

@@ -36,7 +36,7 @@ type HotelData struct {
 	Rating          float64 `json:"rating"`
 	RatingWord      string  `json:"rating_word"`
 	PhotoURL        string  `json:"photo_url"`
-	Stars           int     `json:"stars"`
+	Stars           float64 `json:"stars"`
 	ExternalHotelID string  `json:"external_hotel_id,omitempty"`
 	RateID          string  `json:"rate_id,omitempty"`
 	RoomOfferID     string  `json:"room_offer_id,omitempty"`
