@@ -179,10 +179,19 @@ func (c *DuffelClient) do(method, path string, payload, out any) error {
 	if c.token == "" {
 		return errors.New("duffel: DUFFEL_API_TOKEN is not configured")
 	}
-	// This first-stage client is deliberately sandbox-only.
+	// This client is deliberately sandbox-only: it is the only type with a
+	// CreateOrder method, so a live token must go through LiveSearchClient
+	// instead, which has no CreateOrder method at all.
 	if !strings.HasPrefix(c.token, "duffel_test_") {
 		return errors.New("duffel: a sandbox test token is required")
 	}
+	return doRequest(c.HTTPClient, c.token, method, path, payload, out)
+}
+
+// doRequest is the shared HTTP/envelope plumbing for both DuffelClient
+// (sandbox) and LiveSearchClient (live, search-only). Token-scope decisions
+// belong to each caller, not here.
+func doRequest(httpClient *http.Client, token, method, path string, payload, out any) error {
 	var body io.Reader
 	if payload != nil {
 		encoded, err := json.Marshal(struct {
@@ -197,13 +206,13 @@ func (c *DuffelClient) do(method, path string, payload, out any) error {
 	if err != nil {
 		return errors.New("duffel: could not build request")
 	}
-	req.Header.Set("Authorization", "Bearer "+c.token)
+	req.Header.Set("Authorization", "Bearer "+token)
 	req.Header.Set("Duffel-Version", "v2")
 	req.Header.Set("Accept", "application/json")
 	if payload != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
-	resp, err := c.HTTPClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		var timeout net.Error
 		if errors.As(err, &timeout) && timeout.Timeout() {
@@ -231,8 +240,8 @@ func (c *DuffelClient) do(method, path string, payload, out any) error {
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 || len(envelope.Errors) > 0 {
 		apiErr := &APIError{StatusCode: resp.StatusCode}
 		if len(envelope.Errors) > 0 {
-			apiErr.Code = strings.ReplaceAll(envelope.Errors[0].Code, c.token, "[REDACTED]")
-			apiErr.Type = strings.ReplaceAll(envelope.Errors[0].Type, c.token, "[REDACTED]")
+			apiErr.Code = strings.ReplaceAll(envelope.Errors[0].Code, token, "[REDACTED]")
+			apiErr.Type = strings.ReplaceAll(envelope.Errors[0].Type, token, "[REDACTED]")
 		}
 		return apiErr
 	}
