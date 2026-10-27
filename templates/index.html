@@ -146,6 +146,31 @@
       padding: 28px 14px 10px; font-size: 0.9375rem; font-weight: 500; color: var(--text-primary);
     }
     .field-input::placeholder { color: #94a3b8; font-weight: 400; }
+    .field-input[readonly] { cursor: pointer; }
+    .dp-panel {
+      position: absolute; top: calc(100% + 8px); left: 0; z-index: 9999;
+      width: 300px; max-width: calc(100vw - 16px);
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 16px; box-shadow: 0 20px 48px rgba(0,0,0,.25); padding: 10px;
+    }
+    .dp-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; padding: 0 2px; }
+    .dp-month-label { font-size: 0.8125rem; font-weight: 700; color: var(--text-primary); }
+    .dp-nav {
+      width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--border);
+      background: var(--bg-card2); color: var(--text-primary); font-size: 1.125rem; line-height: 1;
+      display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all .15s;
+    }
+    .dp-nav:hover { background: rgba(99,102,241,.15); border-color: #6366f1; }
+    .dp-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+    .dp-weekday { font-size: 0.6875rem; font-weight: 700; color: var(--text-muted); text-align: center; padding: 4px 0; }
+    .dp-day {
+      aspect-ratio: 1; min-height: 38px; border: none; background: transparent; border-radius: 10px;
+      font-size: 0.8125rem; font-weight: 600; color: var(--text-primary); cursor: pointer; transition: all .15s;
+    }
+    .dp-day:hover:not(:disabled) { background: rgba(99,102,241,.15); }
+    .dp-day:disabled { color: var(--text-muted); opacity: .35; cursor: not-allowed; }
+    .dp-day-today { box-shadow: inset 0 0 0 1.5px #6366f1; }
+    .dp-day-selected { background: linear-gradient(135deg,#4f46e5,#7c3aed) !important; color: #fff !important; }
     .hotel-search-grid {
       display: grid;
       grid-template-columns: minmax(0, 1fr);
@@ -178,6 +203,8 @@
       .hotel-search-grid > .search-btn { grid-column: span 2; }
     }
     select.field-input option { background: var(--bg-input); color: var(--text-primary); }
+    .modal-select { background: var(--bg-input); color: var(--text-primary); }
+    .modal-select option { background: var(--bg-input); color: var(--text-primary); }
     [data-theme="dark"] input[type="date"].field-input { color-scheme: dark; }
     .trip-pill {
       padding: 7px 18px; border-radius: 100px; font-size: 0.8125rem; font-weight: 600;
@@ -449,7 +476,7 @@
         <div id="flight-pax-fields" class="hidden grid grid-cols-3 gap-3 mb-5">
           <div>
             <label class="text-xs font-semibold text-gray-500 mb-1 block">Title *</label>
-            <select id="b-title" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400">
+            <select id="b-title" class="modal-select w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400">
               <option value="">–</option>
               <option value="mr">Mr</option>
               <option value="ms">Ms</option>
@@ -458,16 +485,17 @@
           </div>
           <div>
             <label class="text-xs font-semibold text-gray-500 mb-1 block">Gender *</label>
-            <select id="b-gender" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400">
+            <select id="b-gender" class="modal-select w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400">
               <option value="">–</option>
               <option value="m">Male</option>
               <option value="f">Female</option>
             </select>
           </div>
-          <div>
+          <div id="born-on-wrapper" style="position:relative">
             <label class="text-xs font-semibold text-gray-500 mb-1 block">Birth Date *</label>
-            <input id="b-born-on" type="date"
-              class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400" />
+            <input id="b-born-on-display" type="text" readonly autocomplete="off"
+              class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400 cursor-pointer" />
+            <input id="b-born-on" type="hidden" />
           </div>
         </div>
         <p id="step1-error" class="text-red-500 text-xs mb-3 hidden"></p>
@@ -894,14 +922,16 @@
             <span id="city-help" class="sr-only" role="status">Enter a full city name or choose a suggestion.</span>
           </div>
           <!-- Check-in -->
-          <div class="field-wrapper">
+          <div class="field-wrapper" id="checkin-wrapper">
             <span class="field-label">Check-in</span>
-            <input name="checkin" id="checkin" value="{{.Checkin}}" type="date" class="field-input" />
+            <input id="checkin-display" type="text" readonly autocomplete="off" class="field-input" />
+            <input name="checkin" id="checkin" type="hidden" value="{{.Checkin}}" />
           </div>
           <!-- Check-out -->
-          <div class="field-wrapper">
+          <div class="field-wrapper" id="checkout-wrapper">
             <span class="field-label">Check-out</span>
-            <input name="checkout" id="checkout" value="{{.Checkout}}" type="date" class="field-input" />
+            <input id="checkout-display" type="text" readonly autocomplete="off" class="field-input" />
+            <input name="checkout" id="checkout" type="hidden" value="{{.Checkout}}" />
           </div>
           <!-- Guests -->
           <div class="relative" id="hotel-guests-wrap">
@@ -1059,9 +1089,10 @@
               <input name="toEntity" id="to-entity" type="hidden" value="{{.ToEntityID}}" />
             </div>
           </div>
-          <div class="field-wrapper w-full lg:w-44">
+          <div class="field-wrapper w-full lg:w-44" id="flight-date-wrapper">
             <span class="field-label">Departure</span>
-            <input name="date" value="{{.Date}}" type="date" class="field-input" />
+            <input id="flight-date-display" type="text" readonly autocomplete="off" class="field-input" />
+            <input name="date" id="flight-date" type="hidden" value="{{.Date}}" />
           </div>
           <div id="return-date-wrap" class="field-wrapper w-full lg:w-44 {{if eq .TripType "oneway"}}hidden{{end}}">
             <span class="field-label">Return</span>
@@ -2873,6 +2904,7 @@ function _doOpenBookingModal(booking) {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
+  bornOnPicker?.refresh();
   document.getElementById('flight-pax-fields').classList.toggle('hidden', booking.type !== 'flight');
   if (_currentUser) {
     const u = _currentUser;
@@ -3748,5 +3780,39 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 <script src="/static/hotel-booking.js"></script>
+<script src="/static/date-picker.js"></script>
+<script>
+let bornOnPicker = null;
+(function initDatePickers() {
+  let checkoutPicker = null;
+  const checkinPicker = attachDatePicker({
+    wrapperId: 'checkin-wrapper', displayId: 'checkin-display', hiddenId: 'checkin',
+    label: 'Check-in date', getMin: dpToday,
+    onChange: (date) => {
+      const checkoutHidden = document.getElementById('checkout');
+      const minCheckout = dpAddDays(date, 1);
+      const current = dpParseISO(checkoutHidden.value);
+      if (!current || current < minCheckout) {
+        checkoutHidden.value = dpToISO(minCheckout);
+        checkoutPicker?.refresh();
+        showToast('Check-out moved to ' + dpFormatDisplay(minCheckout) + ' to match your new check-in date.');
+      }
+    },
+  });
+  checkoutPicker = attachDatePicker({
+    wrapperId: 'checkout-wrapper', displayId: 'checkout-display', hiddenId: 'checkout',
+    label: 'Check-out date',
+    getMin: () => dpAddDays(dpParseISO(document.getElementById('checkin').value) || dpToday(), 1),
+  });
+  attachDatePicker({
+    wrapperId: 'flight-date-wrapper', displayId: 'flight-date-display', hiddenId: 'flight-date',
+    label: 'Departure date', getMin: dpToday,
+  });
+  bornOnPicker = attachDatePicker({
+    wrapperId: 'born-on-wrapper', displayId: 'b-born-on-display', hiddenId: 'b-born-on',
+    label: 'Date of birth', getMax: dpToday,
+  });
+})();
+</script>
 </body>
 </html>
