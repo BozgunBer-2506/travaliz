@@ -53,6 +53,12 @@ type BookingResponse struct {
 
 var e164Phone = regexp.MustCompile(`^\+[1-9]\d{6,14}$`)
 
+// phoneExample is a real, dialable number (live-verified against Duffel's
+// own validation, unlike the digit-count check above). The previous example,
+// +491234567, matched e164Phone but was itself rejected by Duffel as an
+// invalid phone number — so it was never a safe thing to show users.
+const phoneExample = "+4915112345678"
+
 func (h *TravelHandler) BookHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPost {
@@ -145,7 +151,7 @@ func (h *TravelHandler) bookFlightViaDuffel(w http.ResponseWriter, req *BookingR
 	}
 	if !e164Phone.MatchString(phone) {
 		w.WriteHeader(http.StatusUnprocessableEntity)
-		json.NewEncoder(w).Encode(BookingResponse{Error: "Please enter your phone number in international format, e.g. +491234567"})
+		json.NewEncoder(w).Encode(BookingResponse{Error: "Please enter your phone number in international format, e.g. " + phoneExample})
 		return
 	}
 
@@ -178,8 +184,18 @@ func (h *TravelHandler) bookFlightViaDuffel(w http.ResponseWriter, req *BookingR
 	order, orderErr := client.CreateOrder(offer.ID, offer.TotalAmount, offer.TotalCurrency, []duffel.OrderPassenger{passenger})
 	if orderErr != nil {
 		if !errors.Is(orderErr, duffel.ErrTimeout) {
+			// Live-verified: Duffel rejects a phone number that merely matches our
+			// own length check (e.g. the old UI example, +491234567) with this exact
+			// code. Code/Type are short machine-readable enums from Duffel's own
+			// docs, not free text, so surfacing this one is safe; every other
+			// order-creation failure keeps the generic message below.
+			message := "Rezervasyon tamamlanamadı, tekrar deneyin"
+			var apiErr *duffel.APIError
+			if errors.As(orderErr, &apiErr) && apiErr.Code == "invalid_phone_number" {
+				message = "Telefon numarası geçersiz görünüyor. Lütfen ülke koduyla birlikte gerçek bir numara girin, örn. " + phoneExample + "."
+			}
 			w.WriteHeader(http.StatusBadGateway)
-			json.NewEncoder(w).Encode(BookingResponse{Error: "Rezervasyon tamamlanamadı, tekrar deneyin"})
+			json.NewEncoder(w).Encode(BookingResponse{Error: message})
 			return
 		}
 		// No automatic retry: the order's true outcome at Duffel is unknown.

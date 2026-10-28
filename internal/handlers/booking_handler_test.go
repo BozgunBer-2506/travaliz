@@ -153,6 +153,66 @@ func TestBookFlightStillUsesSandboxProviderPrice(t *testing.T) {
 	}
 }
 
+// Live-verified against the real Duffel sandbox: a phone number that passes
+// our own e164Phone check (the app's previous UI example, +491234567) is
+// still rejected by Duffel's own validation with exactly this error code.
+func TestBookFlightSurfacesInvalidPhoneNumberSafely(t *testing.T) {
+	h, token := bookingTestHandler(t, func(r *http.Request) string {
+		switch r.Method + " " + r.URL.Host + r.URL.Path {
+		case "GET api.duffel.com/air/offers/offer-test":
+			return `{"data":{"id":"offer-test","total_amount":"63.92","total_currency":"EUR","passengers":[{"id":"pax-test"}]}}`
+		case "POST api.duffel.com/air/orders":
+			return `{"errors":[{"code":"invalid_phone_number","type":"validation_error"}]}`
+		default:
+			t.Errorf("unexpected flight operation: %s %s", r.Method, r.URL)
+			return `{}`
+		}
+	})
+	t.Setenv("DUFFEL_API_TOKEN", "duffel_test_offline")
+	r := httptest.NewRequest(http.MethodPost, "/book", strings.NewReader(
+		`{"type":"flight","offerId":"offer-test","firstName":"Test","lastName":"Guest","email":"other@example.com","phone":"+49123456","bornOn":"1990-01-01","gender":"m","title":"mr","price":0.01,"currency":"USD"}`))
+	r.Header.Set("Authorization", "Bearer "+token)
+	w := httptest.NewRecorder()
+	h.BookHandler(w, r)
+	var result BookingResponse
+	if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
+		t.Fatal(err)
+	}
+	if w.Code != http.StatusBadGateway || result.Ref != "" ||
+		!strings.Contains(result.Error, "Telefon numarası geçersiz") || !strings.Contains(result.Error, phoneExample) {
+		t.Fatalf("expected a specific, safe phone-number error, got HTTP %d: %+v", w.Code, result)
+	}
+}
+
+// A different, unverified Duffel validation code must not be mapped to the
+// phone-specific message: only the one live-proven case is special-cased.
+func TestBookFlightKeepsGenericMessageForOtherOrderErrors(t *testing.T) {
+	h, token := bookingTestHandler(t, func(r *http.Request) string {
+		switch r.Method + " " + r.URL.Host + r.URL.Path {
+		case "GET api.duffel.com/air/offers/offer-test":
+			return `{"data":{"id":"offer-test","total_amount":"63.92","total_currency":"EUR","passengers":[{"id":"pax-test"}]}}`
+		case "POST api.duffel.com/air/orders":
+			return `{"errors":[{"code":"availability_change","type":"validation_error"}]}`
+		default:
+			t.Errorf("unexpected flight operation: %s %s", r.Method, r.URL)
+			return `{}`
+		}
+	})
+	t.Setenv("DUFFEL_API_TOKEN", "duffel_test_offline")
+	r := httptest.NewRequest(http.MethodPost, "/book", strings.NewReader(
+		`{"type":"flight","offerId":"offer-test","firstName":"Test","lastName":"Guest","email":"other@example.com","phone":"+4915112345678","bornOn":"1990-01-01","gender":"m","title":"mr","price":0.01,"currency":"USD"}`))
+	r.Header.Set("Authorization", "Bearer "+token)
+	w := httptest.NewRecorder()
+	h.BookHandler(w, r)
+	var result BookingResponse
+	if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
+		t.Fatal(err)
+	}
+	if w.Code != http.StatusBadGateway || result.Error != "Rezervasyon tamamlanamadı, tekrar deneyin" {
+		t.Fatalf("expected the unchanged generic message for an unmapped error, got HTTP %d: %+v", w.Code, result)
+	}
+}
+
 func TestB2BWebhookPayloadUnchanged(t *testing.T) {
 	for _, kind := range []string{"hotel", "flight"} {
 		t.Run(kind, func(t *testing.T) {
