@@ -34,9 +34,20 @@ function dpFormatDisplay(date) {
 
 // attachDatePicker wires a readonly display input + a hidden form input to a
 // themed calendar popover. opts: { wrapperId, displayId, hiddenId, label,
-// getMin, getMax, onChange }. getMin/getMax are called fresh on every open
-// and every render so a linked field (e.g. check-out after check-in changes)
-// always disables the correct days.
+// getMin, getMax, onChange, yearRange: {from, to} }. getMin/getMax are
+// called fresh on every open and every render so a linked field (e.g.
+// check-out after check-in changes) always disables the correct days.
+// yearRange adds month/year <select>s for fields like date of birth, where
+// stepping back a decade one month at a time is unusable.
+//
+// The panel is appended to document.body and positioned with `fixed`
+// coordinates from the trigger's own getBoundingClientRect, not as an
+// absolutely-positioned child of the field. This is a deliberate structural
+// choice, not a flip hack: a popover nested inside any ancestor with
+// overflow other than visible (e.g. the booking modal's scrollable body) is
+// clipped by that ancestor regardless of its own position/z-index, and CSS
+// computes an explicit overflow-y also clips overflow-x. Escaping to body
+// removes the clipping ancestor and the modal's stacking context entirely.
 function attachDatePicker(opts) {
   const wrapper = document.getElementById(opts.wrapperId);
   const display = document.getElementById(opts.displayId);
@@ -59,6 +70,7 @@ function attachDatePicker(opts) {
   function onKeydown(e) {
     if (e.key === 'Escape') { close(); display.focus(); }
   }
+  function onReflow() { reposition(); }
   function close() {
     if (!panel) return;
     panel.remove();
@@ -66,12 +78,39 @@ function attachDatePicker(opts) {
     display.setAttribute('aria-expanded', 'false');
     document.removeEventListener('click', onOutsideClick, true);
     document.removeEventListener('keydown', onKeydown, true);
+    window.removeEventListener('resize', onReflow);
+    window.removeEventListener('scroll', onReflow, true);
   }
   function setValue(date) {
     hidden.value = dpToISO(date);
     syncDisplay();
     close();
+    // The day button that was just clicked/activated is removed from the DOM
+    // by close(); without this, focus silently falls back to <body>, same as
+    // Escape already restores it explicitly above.
+    display.focus();
     if (opts.onChange) opts.onChange(date);
+  }
+
+  // Positions the panel against the trigger in viewport coordinates and
+  // clamps it fully inside the viewport, flipping above the trigger when
+  // there is no room below. Runs after every render(): the grid's height
+  // varies between 4 and 6 week-rows across months.
+  function reposition() {
+    if (!panel) return;
+    const rect = display.getBoundingClientRect();
+    const margin = 8;
+    const panelWidth = panel.offsetWidth || 300;
+    const panelHeight = panel.offsetHeight || 320;
+    let left = rect.left;
+    if (left + panelWidth > window.innerWidth - margin) left = window.innerWidth - panelWidth - margin;
+    if (left < margin) left = margin;
+    let top = rect.bottom + margin;
+    if (top + panelHeight > window.innerHeight - margin && rect.top - panelHeight - margin > 0) {
+      top = rect.top - panelHeight - margin;
+    }
+    panel.style.left = left + 'px';
+    panel.style.top = top + 'px';
   }
 
   function render() {
@@ -84,16 +123,42 @@ function attachDatePicker(opts) {
     const prev = document.createElement('button');
     prev.type = 'button'; prev.className = 'dp-nav'; prev.textContent = '‹';
     prev.setAttribute('aria-label', 'Previous month');
-    const label = document.createElement('span');
-    label.className = 'dp-month-label';
-    const monthDate = new Date(viewYear, viewMonth, 1);
-    label.textContent = monthDate.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
     const next = document.createElement('button');
     next.type = 'button'; next.className = 'dp-nav'; next.textContent = '›';
     next.setAttribute('aria-label', 'Next month');
     prev.addEventListener('click', () => { viewMonth--; if (viewMonth < 0) { viewMonth = 11; viewYear--; } render(); });
     next.addEventListener('click', () => { viewMonth++; if (viewMonth > 11) { viewMonth = 0; viewYear++; } render(); });
-    header.append(prev, label, next);
+    if (opts.yearRange) {
+      const monthSelect = document.createElement('select');
+      monthSelect.className = 'dp-select';
+      monthSelect.setAttribute('aria-label', 'Month');
+      for (let m = 0; m < 12; m++) {
+        const o = document.createElement('option');
+        o.value = String(m);
+        o.textContent = new Date(2000, m, 1).toLocaleDateString(undefined, { month: 'short' });
+        if (m === viewMonth) o.selected = true;
+        monthSelect.append(o);
+      }
+      monthSelect.addEventListener('change', () => { viewMonth = Number(monthSelect.value); render(); });
+      const yearSelect = document.createElement('select');
+      yearSelect.className = 'dp-select';
+      yearSelect.setAttribute('aria-label', 'Year');
+      for (let y = opts.yearRange.to; y >= opts.yearRange.from; y--) {
+        const o = document.createElement('option');
+        o.value = String(y);
+        o.textContent = String(y);
+        if (y === viewYear) o.selected = true;
+        yearSelect.append(o);
+      }
+      yearSelect.addEventListener('change', () => { viewYear = Number(yearSelect.value); render(); });
+      header.append(prev, monthSelect, yearSelect, next);
+    } else {
+      const label = document.createElement('span');
+      label.className = 'dp-month-label';
+      const monthDate = new Date(viewYear, viewMonth, 1);
+      label.textContent = monthDate.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+      header.append(prev, label, next);
+    }
     panel.append(header);
 
     const grid = document.createElement('div');
@@ -130,6 +195,7 @@ function attachDatePicker(opts) {
       grid.append(btn);
     }
     panel.append(grid);
+    reposition();
   }
 
   function open() {
@@ -142,18 +208,15 @@ function attachDatePicker(opts) {
     panel.setAttribute('role', 'dialog');
     panel.setAttribute('aria-modal', 'false');
     panel.setAttribute('aria-label', opts.label || 'Choose a date');
-    wrapper.appendChild(panel);
-    render();
+    document.body.appendChild(panel);
+    render(); // also positions the panel; see reposition()
     display.setAttribute('aria-expanded', 'true');
     document.addEventListener('click', onOutsideClick, true);
     document.addEventListener('keydown', onKeydown, true);
-    // Flip to the other side if the panel would overflow the viewport;
-    // real layout metrics only exist once the panel is actually in the DOM.
-    if (typeof window !== 'undefined' && panel.getBoundingClientRect) {
-      const rect = panel.getBoundingClientRect();
-      if (rect.right > window.innerWidth) { panel.style.left = 'auto'; panel.style.right = '0'; }
-      if (rect.bottom > window.innerHeight) { panel.style.top = 'auto'; panel.style.bottom = 'calc(100% + 8px)'; }
-    }
+    window.addEventListener('resize', onReflow);
+    // Capture so a scroll inside the modal's own scrollable body (an
+    // ancestor of the trigger, not of this body-level panel) is still seen.
+    window.addEventListener('scroll', onReflow, true);
   }
 
   display.setAttribute('role', 'button');

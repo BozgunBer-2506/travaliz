@@ -152,19 +152,29 @@
     .field-input::placeholder { color: #94a3b8; font-weight: 400; }
     .field-input[readonly] { cursor: pointer; }
     .dp-panel {
-      position: absolute; top: calc(100% + 8px); left: 0; z-index: 9999;
+      /* fixed + JS-computed top/left (see reposition() in date-picker.js):
+         the panel is a document.body child, deliberately outside any
+         scrollable/clipping ancestor and above every stacking context
+         (modal z-50 included) via z-index alone. */
+      position: fixed; z-index: 9999;
       width: 300px; max-width: calc(100vw - 16px);
       background: var(--bg-card); border: 1px solid var(--border);
       border-radius: 16px; box-shadow: 0 20px 48px rgba(0,0,0,.25); padding: 10px;
     }
-    .dp-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; padding: 0 2px; }
+    .dp-header { display: flex; align-items: center; justify-content: space-between; gap: 4px; margin-bottom: 8px; padding: 0 2px; }
     .dp-month-label { font-size: 0.8125rem; font-weight: 700; color: var(--text-primary); }
     .dp-nav {
-      width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--border);
+      width: 36px; height: 36px; flex-shrink: 0; border-radius: 50%; border: 1px solid var(--border);
       background: var(--bg-card2); color: var(--text-primary); font-size: 1.125rem; line-height: 1;
       display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all .15s;
     }
     .dp-nav:hover { background: rgba(99,102,241,.15); border-color: #6366f1; }
+    .dp-select {
+      flex: 1; min-width: 0; height: 36px; border-radius: 10px; border: 1px solid var(--border);
+      background: var(--bg-card2); color: var(--text-primary); font-size: 0.75rem; font-weight: 600;
+      padding: 0 4px; cursor: pointer;
+    }
+    .dp-select option { background: var(--bg-input); color: var(--text-primary); }
     .dp-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
     .dp-weekday { font-size: 0.6875rem; font-weight: 700; color: var(--text-muted); text-align: center; padding: 4px 0; }
     .dp-day {
@@ -477,7 +487,7 @@
           <input id="b-phone" type="tel" placeholder="+491234567"
             class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all" />
         </div>
-        <div id="flight-pax-fields" class="hidden grid grid-cols-3 gap-3 mb-5">
+        <div id="flight-pax-fields" class="hidden grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
           <div>
             <label class="text-xs font-semibold text-gray-500 mb-1 block">Title *</label>
             <select id="b-title" class="modal-select w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400">
@@ -2929,6 +2939,10 @@ function _doOpenBookingModal(booking) {
 function closeBookingModal() {
   document.getElementById('booking-modal').classList.add('hidden');
   pendingBooking = null;
+  // The date-of-birth calendar is portaled to document.body (see
+  // date-picker.js), so hiding the modal does not hide it on its own; left
+  // open, it would float on screen after the modal itself disappears.
+  bornOnPicker?.close();
 }
 
 function showStep(n) {
@@ -3815,6 +3829,7 @@ let bornOnPicker = null;
   bornOnPicker = attachDatePicker({
     wrapperId: 'born-on-wrapper', displayId: 'b-born-on-display', hiddenId: 'b-born-on',
     label: 'Date of birth', getMax: dpToday,
+    yearRange: { from: dpToday().getFullYear() - 120, to: dpToday().getFullYear() },
   });
 })();
 </script>
