@@ -125,6 +125,48 @@ func TestLiteAPIHotelSearch(t *testing.T) {
 	}
 }
 
+func TestLiteAPIHotelCurrencyChanges(t *testing.T) {
+	t.Setenv("LITEAPI_API_KEY", "sandbox-test")
+	client := liteapi.NewClient()
+	prices := map[string]float64{"TRY": 14339.01, "USD": 448.09, "EUR": 412.24, "GBP": 354.00}
+	var requestedCurrencies []string
+	client.HTTPClient.Transport = searchTransport(func(r *http.Request) (*http.Response, error) {
+		body := `{"data":[{"id":"hotel","name":"Currency Hotel","stars":4}]}`
+		if r.URL.Path == "/v3.0/hotels/rates" {
+			var query liteapi.RateQuery
+			if err := json.NewDecoder(r.Body).Decode(&query); err != nil {
+				t.Fatal(err)
+			}
+			requestedCurrencies = append(requestedCurrencies, query.Currency)
+			body = fmt.Sprintf(`{"data":[{"hotelId":"hotel","roomTypes":[{"offerId":"offer-%s","rates":[{"rateId":"rate"}],"offerRetailRate":{"amount":%.2f,"currency":%q}}]}]}`,
+				query.Currency, prices[query.Currency], query.Currency)
+		}
+		return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(body)), Header: make(http.Header)}, nil
+	})
+	tmpl := template.Must(template.ParseFS(templateFiles, "templates/*.html"))
+	mux := newMux(&handlers.TravelHandler{Templates: tmpl, ExternalSearch: true, HotelClient: client})
+	wantCurrencies := []string{"TRY", "USD", "EUR", "GBP", "TRY", "USD"}
+	for _, currency := range wantCurrencies {
+		w := httptest.NewRecorder()
+		path := "/?q=Dubai&checkin=2099-11-10&checkout=2099-11-14&guestNationality=TR&currency=" + currency
+		mux.ServeHTTP(w, httptest.NewRequest("GET", path, nil))
+		body := w.Body.String()
+		for _, want := range []string{
+			`data-currency="` + currency + `"`,
+			fmt.Sprintf(`data-total="%.2f"`, prices[currency]),
+			fmt.Sprintf(`data-price="%.2f"`, prices[currency]/4),
+			`value="` + currency + `" selected`,
+		} {
+			if w.Code != 200 || !strings.Contains(body, want) {
+				t.Errorf("currency %s: status %d, missing %s", currency, w.Code, want)
+			}
+		}
+	}
+	if !reflect.DeepEqual(requestedCurrencies, wantCurrencies) {
+		t.Fatalf("provider currencies = %v, want %v", requestedCurrencies, wantCurrencies)
+	}
+}
+
 // A category search (no city) renders through a different template branch
 // gated on CategoryTitle; results must not be silently hidden there.
 func TestLiteAPIHotelCategorySearchRendersResults(t *testing.T) {

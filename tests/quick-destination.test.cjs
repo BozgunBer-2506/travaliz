@@ -21,6 +21,7 @@ test('every quick destination link carries a working href and an onclick guard',
 });
 
 const script = html.slice(html.indexOf('function saveGuestPrefs'), html.indexOf('// Init'));
+const currencyScript = html.slice(html.indexOf('const CURRENCY_RATES'), html.indexOf('function toggleTheme'));
 
 function setup({ savedNationality, savedCurrency } = {}) {
   const store = new Map();
@@ -37,6 +38,7 @@ function setup({ savedNationality, savedCurrency } = {}) {
     document: {
       getElementById: id => fields[id],
       querySelector: () => null, // no server-rendered <option selected> in these tests
+      addEventListener() {},
     },
     localStorage: {
       getItem: k => (store.has(k) ? store.get(k) : null),
@@ -46,7 +48,7 @@ function setup({ savedNationality, savedCurrency } = {}) {
     location: { set href(v) { navigatedTo = v; }, get href() { return navigatedTo; } },
     URLSearchParams,
   });
-  vm.runInContext(script, context);
+  vm.runInContext(currencyScript + script, context);
   return { context, fields, toasts, store, getNavigatedTo: () => navigatedTo };
 }
 
@@ -99,7 +101,7 @@ test('saveGuestPrefs only persists a well-formed two-letter nationality', () => 
   fields['hotel-currency'].value = 'USD';
   vm.runInContext('saveGuestPrefs()', context);
   assert.equal(store.get('tm_guest_nationality'), 'DE');
-  assert.equal(store.get('tm_guest_currency'), 'USD');
+  assert.equal(store.get('currency'), 'USD');
 
   const { context: ctx2, fields: fields2, store: store2 } = setup();
   fields2['hotel-nationality'].value = 'Germany';

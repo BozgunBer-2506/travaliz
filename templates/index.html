@@ -996,7 +996,7 @@
           </div>
           <div class="field-wrapper">
             <label class="field-label" for="hotel-currency">Prices in</label>
-            <select id="hotel-currency" name="currency" class="field-input">
+            <select id="hotel-currency" name="currency" class="field-input" onchange="setCurrency(this.value)">
               <option value="EUR" {{if eq .HotelCurrency "EUR"}}selected{{end}}>EUR</option>
               <option value="USD" {{if eq .HotelCurrency "USD"}}selected{{end}}>USD</option>
               <option value="GBP" {{if eq .HotelCurrency "GBP"}}selected{{end}}>GBP</option>
@@ -2540,23 +2540,47 @@ function toggleMobileMenu() {
 const CURRENCY_RATES = { EUR: 0.92, USD: 1.0, GBP: 0.79, TRY: 32.0 };
 const CURRENCY_SYMBOLS = { EUR: '€', USD: '$', GBP: '£', TRY: '₺' };
 
-function setCurrency(code) {
+function isSupportedCurrency(code) {
+  return Object.hasOwn(CURRENCY_SYMBOLS, code);
+}
+
+function getPreferredCurrency() {
+  // Read the old hotel preference only when no shared preference exists.
+  for (const key of ['currency', 'tm_guest_currency']) {
+    const code = localStorage.getItem(key);
+    if (isSupportedCurrency(code)) return code;
+  }
+  return 'EUR';
+}
+
+function syncCurrency(code) {
   localStorage.setItem('currency', code);
-  ['currency-select','currency-select-mobile'].forEach(id => {
+  ['currency-select','currency-select-mobile','hotel-currency'].forEach(id => {
     const s = document.getElementById(id);
     if (s && s.value !== code) s.value = code;
   });
+}
+
+function setCurrency(code) {
+  if (!isSupportedCurrency(code)) return;
+  syncCurrency(code);
   applyPrices();
+
+  // Hotel offers must be fetched in the requested currency, rather than
+  // relabelled or converted with the legacy estimated exchange rates.
+  const url = new URL(location.href);
+  if (url.pathname === '/' && (url.searchParams.get('q') || url.searchParams.get('category')) &&
+      (url.searchParams.get('currency') || 'EUR').toUpperCase() !== code) {
+    url.searchParams.set('currency', code);
+    location.href = url.pathname + url.search + url.hash;
+  }
 }
 
 function applyPrices() {
-  const code = localStorage.getItem('currency') || 'EUR';
+  const code = getPreferredCurrency();
   const rate = CURRENCY_RATES[code] || 1;
   const sym = CURRENCY_SYMBOLS[code] || '€';
-  ['currency-select','currency-select-mobile'].forEach(id => {
-    const s = document.getElementById(id);
-    if (s && s.value !== code) s.value = code;
-  });
+  syncCurrency(code);
   document.querySelectorAll('.price-display').forEach(el => {
     const usd = parseFloat(el.dataset.usd) || 0;
     const mult = parseFloat(el.dataset.multiply) || 1;
@@ -3643,7 +3667,7 @@ function saveGuestPrefs() {
   const nat = document.getElementById('hotel-nationality')?.value.trim().toUpperCase();
   if (/^[A-Z]{2}$/.test(nat)) localStorage.setItem('tm_guest_nationality', nat);
   const cur = document.getElementById('hotel-currency')?.value;
-  if (cur) localStorage.setItem('tm_guest_currency', cur);
+  if (isSupportedCurrency(cur)) syncCurrency(cur);
 }
 function prefillGuestPrefs() {
   const natField = document.getElementById('hotel-nationality');
@@ -3651,11 +3675,10 @@ function prefillGuestPrefs() {
     const saved = localStorage.getItem('tm_guest_nationality') || '';
     if (/^[A-Z]{2}$/.test(saved)) natField.value = saved;
   }
-  const curField = document.getElementById('hotel-currency');
-  if (curField && !document.querySelector('#hotel-currency option[selected]')) {
-    const saved = localStorage.getItem('tm_guest_currency') || '';
-    if (saved) curField.value = saved;
-  }
+  // The rendered search takes precedence over storage (including shared links
+  // and browser history), so the selectors describe the displayed offers.
+  const rendered = document.querySelector('#hotel-currency option[selected]')?.value;
+  syncCurrency(isSupportedCurrency(rendered) ? rendered : getPreferredCurrency());
 }
 // A quick destination tile never guesses a nationality. With one already
 // saved from a prior search in this browser, it runs the real search
@@ -3677,7 +3700,7 @@ function quickDestination(city, ev) {
     showToast('Please enter your nationality to see live prices for ' + city + '.');
     return false;
   }
-  const cur = localStorage.getItem('tm_guest_currency') || 'EUR';
+  const cur = getPreferredCurrency();
   location.href = '/?' + new URLSearchParams({ q: city, guestNationality: nat, currency: cur }).toString();
   return false;
 }
