@@ -44,6 +44,12 @@ type HotelData struct {
 
 // FlightData is the flat struct for flight offers.
 type FlightData struct {
+	// AdultCount and ChildAgesCSV describe this offer's passengers (same for
+	// every offer in one search result set) so the booking form can collect
+	// one personal-details form per traveller. ChildAgesCSV is empty, or a
+	// comma-joined list of each child's searched age, e.g. "0,17".
+	AdultCount      int     `json:"adult_count"`
+	ChildAgesCSV    string  `json:"child_ages_csv"`
 	OfferID         string  `json:"offer_id"`
 	BookingURL      string  `json:"booking_url"`
 	PriceLabel      string  `json:"price_label"`

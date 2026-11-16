@@ -27,6 +27,8 @@ func TestDuffelFlightSearch(t *testing.T) {
 	oldTransport := http.DefaultTransport
 	t.Cleanup(func() { http.DefaultTransport = oldTransport })
 	calls := 0
+	expectedAdults := 1
+	var expectedAges []int
 	http.DefaultTransport = searchTransport(func(r *http.Request) (*http.Response, error) {
 		calls++
 		if r.Method != http.MethodPost || r.URL.Host != "api.duffel.com" ||
@@ -44,10 +46,18 @@ func TestDuffelFlightSearch(t *testing.T) {
 			t.Fatal(err)
 		}
 		data := request.Data
-		if len(data.Slices) != 1 || len(data.Passengers) != 1 ||
-			data.Passengers[0].Type != "adult" || data.Passengers[0].Age != nil ||
+		if len(data.Slices) != 1 || len(data.Passengers) != expectedAdults+len(expectedAges) ||
 			data.Slices[0].DepartureDate != "2099-11-10" || data.CabinClass != "premium_economy" {
 			t.Fatalf("unexpected search parameters: %+v", data)
+		}
+		for i, passenger := range data.Passengers {
+			if i < expectedAdults {
+				if passenger.Type != "adult" || passenger.Age != nil {
+					t.Fatalf("invalid adult: %+v", passenger)
+				}
+			} else if passenger.Type != "" || passenger.Age == nil || *passenger.Age != expectedAges[i-expectedAdults] {
+				t.Fatalf("invalid child: %+v", passenger)
+			}
 		}
 		slice := data.Slices[0]
 		if slice.Origin == "STN" && slice.Destination == "LHR" {
@@ -123,10 +133,32 @@ func TestDuffelFlightSearch(t *testing.T) {
 				t.Fatalf("unexpected error result for %s", tc.route)
 			}
 		}
+		for _, tc := range []struct {
+			adults            int
+			ages              []int
+			query, label      string
+			adultsAttr, ages2 string
+		}{
+			{2, nil, "adults=2", "Total for 2 adults", `data-adults="2"`, `data-child-ages=""`},
+			{2, []int{0, 17}, "adults=2&children=2&children_ages=0,17", "Total for 2 adults · 2 children", `data-adults="2"`, `data-child-ages="0,17"`},
+			{1, []int{8}, "children=1&children_ages=8", "Total for 1 adult · 1 child", `data-adults="1"`, `data-child-ages="8"`},
+			{9, nil, "adults=9", "Total for 9 adults", `data-adults="9"`, `data-child-ages=""`},
+		} {
+			expectedAdults, expectedAges = tc.adults, tc.ages
+			before := calls
+			body := get("/flights?fromSky=LHR&toSky=DXB&date=2099-11-10&cabinClass=premium_economy&" + tc.query)
+			if calls != before+1 || !strings.Contains(body, tc.label) ||
+				!strings.Contains(body, tc.adultsAttr) || !strings.Contains(body, tc.ages2) ||
+				!strings.Contains(body, `data-offer-id="off_`) ||
+				strings.Contains(body, "Uçuş araması tamamlanamadı") {
+				t.Fatalf("multi-passenger search failed: %s", tc.query)
+			}
+		}
+		expectedAdults, expectedAges = 1, nil
 		before := calls
 		for _, query := range []string{
 			"tripType=round", "tripType=multi", "returnDate=2099-11-11",
-			"adults=2", "children=1", "children_ages=8", "cabinClass=invalid",
+			"adults=0", "adults=10", "adults=invalid", "children=1", "children=7", "children=-1", "children_ages=8", "cabinClass=invalid",
 			"fromSky=BADCODE", "date=invalid",
 		} {
 			params := url.Values{"fromSky": {"LHR"}, "toSky": {"DXB"}, "date": {"2099-11-10"}}
@@ -136,6 +168,13 @@ func TestDuffelFlightSearch(t *testing.T) {
 			if strings.Contains(body, `data-offer-id="off_`) {
 				t.Fatalf("invalid request returned flights: %s", query)
 			}
+		}
+		for _, query := range []string{
+			"children=1&children_ages=18", "children=1&children_ages=-1",
+			"children=2&children_ages=8", "children=1&children_ages=8,9",
+			"children=1&children_ages=invalid", "adults=9&children=1&children_ages=8",
+		} {
+			get("/flights?fromSky=LHR&toSky=DXB&date=2099-11-10&" + query)
 		}
 		w := httptest.NewRecorder()
 		mux.ServeHTTP(w, httptest.NewRequest("HEAD", "/flights?fromSky=LHR&toSky=DXB", nil))

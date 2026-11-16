@@ -27,11 +27,31 @@ type DuffelClient struct {
 	HTTPClient *http.Client
 }
 
+// orderCreateTimeout is set from Duffel's own documented guidance that an
+// instant order can occasionally take up to ~130s to confirm; this client
+// previously used 60s, which could misclassify a slow-but-successful order
+// as ErrTimeout well before Duffel itself gave up, feeding the one path
+// (status "unknown") that otherwise needs reconciliation. This number comes
+// from Duffel's published API guidance, not a live call made from this
+// session. Whether it is safe to wait this long depends on how this
+// process is actually hosted: this repo's own Dockerfile/docker-compose.yml
+// describe a persistent, long-running container with no http.Server
+// ReadTimeout/WriteTimeout set in main.go, which has no such ceiling. If
+// this service instead runs as a short-lived serverless function (e.g. a
+// Vercel Function), its platform execution-time limit -- historically far
+// below 130s on common plans, though this codebase has no vercel.json and
+// that exact number was not checked live here -- would kill the request
+// before this timeout ever fires, and before the deferred
+// UpdateFlight(...,"unknown",...) below can run, leaving a lock stuck at
+// "ordering". flightOrderStaleAfter in booking_handler.go is the mitigation
+// for that case regardless of which of these is true in production.
+const orderCreateTimeout = 135 * time.Second
+
 func NewDuffelClient() *DuffelClient {
 	return &DuffelClient{
 		token: strings.TrimSpace(os.Getenv("DUFFEL_API_TOKEN")),
 		HTTPClient: &http.Client{
-			Timeout:       60 * time.Second,
+			Timeout:       orderCreateTimeout,
 			CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
 		},
 	}
@@ -109,6 +129,13 @@ type OrderPassenger struct {
 type Order struct {
 	ID               string `json:"id"`
 	BookingReference string `json:"booking_reference"`
+	// TotalAmount/TotalCurrency are decode-only and used solely to sanity-check
+	// a candidate match from ListOrdersByOfferID against the offer's own
+	// price before adopting it. Field names follow the same total_amount /
+	// total_currency convention Offer already uses; that naming has not been
+	// independently confirmed for the order resource specifically.
+	TotalAmount   string `json:"total_amount,omitempty"`
+	TotalCurrency string `json:"total_currency,omitempty"`
 }
 
 // APIError keeps diagnostic codes but does not expose upstream messages or PII.
@@ -134,7 +161,7 @@ func (c *DuffelClient) CreateOfferRequest(slices []SearchSlice, passengers []Sea
 	}
 	// One request, flat offers, no retries or pagination. Supplier timeout defaults
 	// to 20 seconds at Duffel, below this client's 60-second HTTP timeout.
-	if err := c.do(http.MethodPost, "/air/offer_requests?return_offers=true", payload, &data); err != nil {
+	if err := c.do(http.MethodPost, "/air/offer_requests?return_offers=true", payload, "", &data); err != nil {
 		return nil, err
 	}
 	if data.Offers == nil {
@@ -148,14 +175,25 @@ func (c *DuffelClient) GetOffer(offerID string) (Offer, error) {
 	if offerID == "" {
 		return offer, errors.New("duffel: offer ID is required")
 	}
-	err := c.do(http.MethodGet, "/air/offers/"+url.PathEscape(offerID), nil, &offer)
+	err := c.do(http.MethodGet, "/air/offers/"+url.PathEscape(offerID), nil, "", &offer)
 	return offer, err
 }
 
 // CreateOrder does not refresh the offer implicitly. The caller must GetOffer,
 // confirm any price change, and pass its exact TotalAmount and TotalCurrency.
 // No float parsing, rounding or currency conversion is performed here.
-func (c *DuffelClient) CreateOrder(offerID, amount, currency string, passengers []OrderPassenger) (Order, error) {
+//
+// idempotencyKey is sent as defense-in-depth against this exact call being
+// resent at the transport level (e.g. an HTTP client/proxy retry on a
+// connection reset) -- it is NOT treated as a guarantee by any caller in
+// this codebase. Duffel's sandbox has not been confirmed here to honour
+// this header at all (no live call was made to check), so the caller-side
+// protection against a duplicate order is the caller's own durable
+// concurrency lock, which only ever invokes CreateOrder once per lock
+// (see bookFlightViaDuffel and flight_sandbox_checkouts); nothing in this
+// codebase calls CreateOrder a second time for the same lock on the
+// strength of this key alone.
+func (c *DuffelClient) CreateOrder(offerID, amount, currency string, passengers []OrderPassenger, idempotencyKey string) (Order, error) {
 	var order Order
 	if offerID == "" || amount == "" || currency == "" || len(passengers) == 0 {
 		return order, errors.New("duffel: offer, exact amount, currency and passengers are required")
@@ -171,11 +209,38 @@ func (c *DuffelClient) CreateOrder(offerID, amount, currency string, passengers 
 		Payments       []payment        `json:"payments"`
 		Passengers     []OrderPassenger `json:"passengers"`
 	}{"instant", []string{offerID}, []payment{{"balance", currency, amount}}, passengers}
-	err := c.do(http.MethodPost, "/air/orders", payload, &order)
+	err := c.do(http.MethodPost, "/air/orders", payload, idempotencyKey, &order)
 	return order, err
 }
 
-func (c *DuffelClient) do(method, path string, payload, out any) error {
+// ListOrdersByOfferID is a best-effort, read-only reconciliation lookup for
+// a lock stuck at "unknown" after a timeout. It assumes Duffel's List
+// Orders endpoint accepts an offer_id filter -- that assumption is NOT
+// confirmed against Duffel's real API or a live sandbox call in this
+// codebase; it was not possible to verify from this environment, which has
+// no network access to Duffel. Treat every result from this method as
+// advisory only:
+//   - a non-empty, matching result is reasonable grounds to adopt that
+//     order as the outcome of the original attempt;
+//   - an empty result is NOT proof that no order was created (the filter
+//     may silently not exist, or may be spelled differently), so it must
+//     never by itself be treated as "safe to create a new order";
+//   - an error from this call must be treated the same as an empty result:
+//     inconclusive, not reassuring.
+//
+// No caller in this codebase uses this method's result to justify calling
+// CreateOrder again; an inconclusive result routes to a terminal
+// "needs_review" state instead (see bookFlightViaDuffel).
+func (c *DuffelClient) ListOrdersByOfferID(offerID string) ([]Order, error) {
+	if offerID == "" {
+		return nil, errors.New("duffel: offer ID is required")
+	}
+	var orders []Order
+	err := c.do(http.MethodGet, "/air/orders?offer_id="+url.QueryEscape(offerID), nil, "", &orders)
+	return orders, err
+}
+
+func (c *DuffelClient) do(method, path string, payload any, idempotencyKey string, out any) error {
 	if c.token == "" {
 		return errors.New("duffel: DUFFEL_API_TOKEN is not configured")
 	}
@@ -185,13 +250,14 @@ func (c *DuffelClient) do(method, path string, payload, out any) error {
 	if !strings.HasPrefix(c.token, "duffel_test_") {
 		return errors.New("duffel: a sandbox test token is required")
 	}
-	return doRequest(c.HTTPClient, c.token, method, path, payload, out)
+	return doRequest(c.HTTPClient, c.token, method, path, payload, idempotencyKey, out)
 }
 
 // doRequest is the shared HTTP/envelope plumbing for both DuffelClient
 // (sandbox) and LiveSearchClient (live, search-only). Token-scope decisions
-// belong to each caller, not here.
-func doRequest(httpClient *http.Client, token, method, path string, payload, out any) error {
+// belong to each caller, not here. idempotencyKey is sent as the
+// Idempotency-Key header when non-empty; see CreateOrder.
+func doRequest(httpClient *http.Client, token, method, path string, payload any, idempotencyKey string, out any) error {
 	var body io.Reader
 	if payload != nil {
 		encoded, err := json.Marshal(struct {
@@ -211,6 +277,9 @@ func doRequest(httpClient *http.Client, token, method, path string, payload, out
 	req.Header.Set("Accept", "application/json")
 	if payload != nil {
 		req.Header.Set("Content-Type", "application/json")
+	}
+	if idempotencyKey != "" {
+		req.Header.Set("Idempotency-Key", idempotencyKey)
 	}
 	resp, err := httpClient.Do(req)
 	if err != nil {

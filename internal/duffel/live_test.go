@@ -123,7 +123,7 @@ func TestDoRequestSharedByBothClientsDecodesConsistently(t *testing.T) {
 	body := `{"data":{"offers":[{"id":"off_shared"}]}}`
 	if err := doRequest(&http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) {
 		return jsonResponse(body), nil
-	})}, "duffel_live_x", http.MethodGet, "/x", nil, &out); err != nil {
+	})}, "duffel_live_x", http.MethodGet, "/x", nil, "", &out); err != nil {
 		t.Fatal(err)
 	}
 	if len(out.Offers) != 1 || out.Offers[0].ID != "off_shared" {

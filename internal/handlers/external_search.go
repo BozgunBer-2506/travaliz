@@ -265,17 +265,41 @@ func (h *TravelHandler) externalFlights(w http.ResponseWriter, r *http.Request) 
 		fail("Şu anda yalnızca tek yön uçuş araması destekleniyor.")
 		return
 	}
-	adults, err := searchCount(pd.Adults, 1, 1, 1)
+	adults, children, ages, err := externalGuests(q, false)
 	if err != nil {
-		fail("Şu anda yalnızca tek yetişkin yolcu destekleniyor.")
+		fail(err.Error())
 		return
 	}
-	children, err := searchCount(pd.Children, 0, 0, 0)
-	if err != nil || q.Get("children_ages") != "" {
-		fail("Şu anda yalnızca tek yetişkin yolcu destekleniyor.")
+	if children == "0" && q.Get("children_ages") != "" {
+		fail("Child ages must match the number of children.")
 		return
 	}
 	pd.Adults, pd.Children = adults, children
+	adultCount, _ := strconv.Atoi(adults)
+	childCount, _ := strconv.Atoi(children)
+	if adultCount+childCount > 9 {
+		fail("Please select no more than 9 passengers.")
+		return
+	}
+	passengers := make([]duffel.SearchPassenger, 0, adultCount+childCount)
+	for i := 0; i < adultCount; i++ {
+		passengers = append(passengers, duffel.SearchPassenger{Type: "adult"})
+	}
+	for _, raw := range ages {
+		age, _ := strconv.Atoi(raw)
+		passengers = append(passengers, duffel.SearchPassenger{Age: &age})
+	}
+	priceLabel := fmt.Sprintf("Total for %s adult", adults)
+	if adultCount > 1 {
+		priceLabel += "s"
+	}
+	if childCount > 0 {
+		if childCount == 1 {
+			priceLabel += " · 1 child"
+		} else {
+			priceLabel += fmt.Sprintf(" · %s children", children)
+		}
+	}
 	switch pd.CabinClass {
 	case "economy", "premium_economy", "business", "first":
 	default:
@@ -310,7 +334,7 @@ func (h *TravelHandler) externalFlights(w http.ResponseWriter, r *http.Request) 
 	}
 	offers, err := duffel.NewDuffelClient().CreateOfferRequest(
 		[]duffel.SearchSlice{{Origin: pd.FromSkyID, Destination: pd.ToSkyID, DepartureDate: pd.Date}},
-		[]duffel.SearchPassenger{{Type: "adult"}},
+		passengers,
 		pd.CabinClass,
 	)
 	if err != nil {
@@ -351,7 +375,8 @@ func (h *TravelHandler) externalFlights(w http.ResponseWriter, r *http.Request) 
 			DurationHours: hours, DurationMinutes: minutes,
 			Stops:   len(slice.Segments) - 1,
 			Airline: first.MarketingCarrier.Name, AirlineLogo: first.MarketingCarrier.LogoSymbolURL,
-			Price: price, Currency: offer.TotalCurrency, PriceLabel: "1 adult",
+			Price: price, Currency: offer.TotalCurrency, PriceLabel: priceLabel,
+			AdultCount: adultCount, ChildAgesCSV: strings.Join(ages, ","),
 		})
 	}
 	if len(pd.Flights) == 0 {

@@ -512,6 +512,7 @@
             <input id="b-born-on" type="hidden" />
           </div>
         </div>
+        <div id="flight-extra-passengers"></div>
         <p id="step1-error" class="text-red-500 text-xs mb-3 hidden"></p>
         <button id="review-request-btn" onclick="goToStep2()" class="w-full py-3 rounded-xl text-sm font-bold text-white transition-all"
           style="background:linear-gradient(135deg,#4f46e5,#7c3aed);box-shadow:0 4px 16px rgba(79,70,229,.3)">
@@ -1013,7 +1014,7 @@
 
       {{if eq .Tab "flights"}}
       <form method="GET" action="/flights" id="flights-form" class="flex flex-col gap-5" onsubmit="submitFlightForm(event)">
-        <p class="text-xs" style="color:var(--text-muted)">Search supports one-way flights for one adult. Enter a three-letter airport code, such as BER or LHR.</p>
+        <p class="text-xs" style="color:var(--text-muted)">Search one-way flights for up to 9 passengers. Enter a three-letter airport code, such as BER or LHR.</p>
         <input type="hidden" id="trip-type-input" name="tripType" value="{{or .TripType "oneway"}}" />
 
         <!-- Controls row -->
@@ -1056,18 +1057,18 @@
             <div id="flight-guests-drop" class="hidden absolute top-full left-0 mt-2 rounded-2xl shadow-2xl p-5 w-64" style="z-index:9999;background:var(--bg-card);border:1px solid var(--border)">
               <p class="text-xs font-bold uppercase tracking-wider mb-4" style="color:var(--text-muted)">Passengers</p>
               <div class="flex items-center justify-between py-3" style="border-bottom:1px solid var(--border)">
-                <div><p class="text-sm font-semibold" style="color:var(--text-primary)">Adults</p><p class="text-xs" style="color:var(--text-muted)">Age 12+</p></div>
+                <div><p class="text-sm font-semibold" style="color:var(--text-primary)">Adults</p><p class="text-xs" style="color:var(--text-muted)">Age 18+</p></div>
                 <div class="flex items-center gap-4">
-                  <button type="button" disabled class="counter-btn">−</button>
+                  <button type="button" onclick="changeCount('f_adults',-1,1,9)" class="counter-btn">−</button>
                   <span id="f_adults-val" class="text-sm font-bold w-4 text-center" style="color:var(--text-primary)">{{or .Adults "1"}}</span>
-                  <button type="button" disabled class="counter-btn-plus">+</button>
+                  <button type="button" onclick="changeCount('f_adults',1,1,9)" class="counter-btn-plus">+</button>
                 </div>
               </div>
               <!-- Children rows -->
               <div id="f-children-section" style="padding-bottom:8px;margin-bottom:4px">
                 <div class="flex items-center justify-between py-3">
-                  <div><p class="text-sm font-semibold" style="color:var(--text-primary)">Children</p><p class="text-xs" style="color:var(--text-muted)">Age 2–11</p></div>
-                  <button type="button" disabled title="Only one adult is supported" class="counter-btn-plus" style="width:auto;border-radius:8px;padding:4px 12px;font-size:12px;font-weight:700">+ Add child</button>
+                  <div><p class="text-sm font-semibold" style="color:var(--text-primary)">Children</p><p class="text-xs" style="color:var(--text-muted)">Age 0–17</p></div>
+                  <button type="button" onclick="addChildRow('f')" class="counter-btn-plus" style="width:auto;border-radius:8px;padding:4px 12px;font-size:12px;font-weight:700">+ Add child</button>
                 </div>
                 <div id="f-child-rows"></div>
                 <input type="hidden" id="f_children-val" value="{{or .Children "0"}}" />
@@ -1989,6 +1990,7 @@
       data-price="{{printf "%.2f" .Price}}" data-currency="{{.Currency}}"
       data-depart="{{.DepartTime}}" data-arrive="{{.ArriveTime}}" data-depart-date="{{.DepartDate}}"
       data-duration="{{.DurationHours}}h {{.DurationMinutes}}m" data-stops="{{.Stops}}"
+      data-adults="{{.AdultCount}}" data-child-ages="{{.ChildAgesCSV}}"
       style="background:linear-gradient(135deg,#4f46e5,#7c3aed);box-shadow:0 4px 16px rgba(79,70,229,.3)">
       Request booking
     </button>
@@ -2876,6 +2878,70 @@ function formatFlightDateTime(iso) {
   }).format(d);
 }
 
+// Passenger 1's fields are the existing b-first-name/b-last-name/b-title/
+// b-gender/b-born-on inputs. For a multi-passenger offer, this renders one
+// extra block per remaining traveller (adults first, then children in their
+// searched age order), each with its own plain id suffix.
+function renderExtraPassengerFields(booking) {
+  const container = document.getElementById('flight-extra-passengers');
+  if (!container) return;
+  container.replaceChildren();
+  if (!booking) return;
+  const adults = Math.max(1, booking.adults || 1);
+  const childAges = booking.childAges || [];
+  for (let i = 1; i < adults + childAges.length; i++) {
+    const isChild = i >= adults;
+    const age = isChild ? childAges[i - adults] : null;
+    const label = isChild ? `Passenger ${i + 1} · Child, age ${age}` : `Passenger ${i + 1} · Adult`;
+    const block = document.createElement('div');
+    block.className = 'extra-passenger-block border border-gray-200 rounded-xl p-3 mb-3';
+    block.innerHTML = `
+      <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">${label}</p>
+      <div class="grid grid-cols-2 gap-2 mb-2">
+        <input id="p-first-${i}" type="text" placeholder="First name"
+          class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-indigo-400" />
+        <input id="p-last-${i}" type="text" placeholder="Last name"
+          class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-indigo-400" />
+      </div>
+      <div class="grid grid-cols-3 gap-2">
+        <select id="p-title-${i}" class="modal-select w-full border border-gray-200 rounded-xl px-2 py-2 text-sm focus:outline-none focus:border-indigo-400">
+          <option value="">Title –</option>
+          <option value="mr">Mr</option>
+          <option value="ms">Ms</option>
+          <option value="mrs">Mrs</option>
+        </select>
+        <select id="p-gender-${i}" class="modal-select w-full border border-gray-200 rounded-xl px-2 py-2 text-sm focus:outline-none focus:border-indigo-400">
+          <option value="">Gender –</option>
+          <option value="m">Male</option>
+          <option value="f">Female</option>
+        </select>
+        <input id="p-born-${i}" type="date"
+          class="w-full border border-gray-200 rounded-xl px-2 py-2 text-sm focus:outline-none focus:border-indigo-400" />
+      </div>
+      ${isChild ? `<p class="text-xs text-gray-400 mt-1">Birth date must make this passenger ${age} years old.</p>` : ''}`;
+    container.appendChild(block);
+  }
+}
+
+// Reads passengers 2..N from the dynamically rendered blocks above. Returns
+// null and shows step1-error if any field is missing.
+function collectExtraPassengers(booking) {
+  const adults = Math.max(1, booking.adults || 1);
+  const childAges = booking.childAges || [];
+  const total = adults + childAges.length;
+  const passengers = [];
+  for (let i = 1; i < total; i++) {
+    const firstName = document.getElementById(`p-first-${i}`)?.value.trim() || '';
+    const lastName  = document.getElementById(`p-last-${i}`)?.value.trim() || '';
+    const title     = document.getElementById(`p-title-${i}`)?.value || '';
+    const gender    = document.getElementById(`p-gender-${i}`)?.value || '';
+    const bornOn    = document.getElementById(`p-born-${i}`)?.value || '';
+    if (!firstName || !lastName || !title || !gender || !bornOn) return null;
+    passengers.push({ firstName, lastName, title, gender, bornOn });
+  }
+  return passengers;
+}
+
 function openBookingModal(booking) {
   requireAuth(() => _doOpenBookingModal(booking));
 }
@@ -2944,6 +3010,7 @@ function _doOpenBookingModal(booking) {
   });
   bornOnPicker?.refresh();
   document.getElementById('flight-pax-fields').classList.toggle('hidden', booking.type !== 'flight');
+  renderExtraPassengerFields(booking.type === 'flight' ? booking : null);
   if (_currentUser) {
     const u = _currentUser;
     const fullName = u.user_metadata?.full_name || u.user_metadata?.name || '';
@@ -3023,6 +3090,7 @@ function goToStep2() {
     if (!document.getElementById('b-title').value) return showError('step1-error', 'Please select a title.');
     if (!document.getElementById('b-gender').value) return showError('step1-error', 'Please select a gender.');
     if (!document.getElementById('b-born-on').value) return showError('step1-error', 'Please enter your date of birth.');
+    if (collectExtraPassengers(pendingBooking) === null) return showError('step1-error', 'Please fill in every passenger\'s details.');
   }
   if (pendingBooking?.type === 'hotel') { reviewSandboxHotel(); return; }
   document.getElementById('payment-heading').textContent = 'Payment — Placeholder';
@@ -3070,6 +3138,21 @@ async function submitBooking() {
     ...(isFlight ? {} : { price }),
     currency:   b.currency || 'USD',
   };
+  // Passenger 2+ details, only when this offer actually has more than one
+  // traveller; a single-passenger flight keeps the legacy top-level shape.
+  if (isFlight && (Math.max(1, b.adults || 1) + (b.childAges || []).length) > 1) {
+    const extra = collectExtraPassengers(b);
+    if (extra === null) {
+      showError('step2-error', "Please fill in every passenger's details.");
+      btn.disabled = false;
+      btn.textContent = 'Save Request';
+      return;
+    }
+    payload.passengers = [
+      { firstName: payload.firstName, lastName: payload.lastName, bornOn: payload.bornOn, gender: payload.gender, title: payload.title },
+      ...extra,
+    ];
+  }
 
   try {
     const { data: { session } } = await _sb.auth.getSession();
@@ -3158,6 +3241,8 @@ document.querySelectorAll('.hotel-request-btn').forEach(btn => {
 // Flight select buttons
 document.querySelectorAll('.flight-book-btn').forEach(btn => {
   btn.addEventListener('click', () => {
+    const adults = Math.max(1, parseInt(btn.dataset.adults) || 1);
+    const childAges = (btn.dataset.childAges || '').split(',').filter(a => a !== '').map(Number);
     openBookingModal({
       type: 'flight',
       offerId: btn.dataset.offerId,
@@ -3169,6 +3254,7 @@ document.querySelectorAll('.flight-book-btn').forEach(btn => {
       depart: btn.dataset.depart, arrive: btn.dataset.arrive,
       checkin: btn.dataset.departDate,
       duration: btn.dataset.duration, stops: btn.dataset.stops,
+      adults, childAges,
       _btn: btn,
     });
   });
@@ -3324,6 +3410,10 @@ function changeCount(key, delta, min, max) {
   let val = parseInt(valEl.textContent) + delta;
   if (val < min) val = min;
   if (max !== undefined && val > max) val = max;
+  if (key === 'f_adults') {
+    const children = document.getElementById('f-child-rows')?.querySelectorAll('.child-row').length || 0;
+    val = Math.min(val, 9 - children);
+  }
   valEl.textContent = val;
   if (inEl) inEl.value = val;
   updateGuestLabel();
@@ -3335,6 +3425,7 @@ function addChildRow(prefix) {
   if (!container || !hiddenEl) return;
   const count = container.querySelectorAll('.child-row').length;
   if (count >= 6) return;
+  if (prefix === 'f' && count + Number(document.getElementById('f_adults-val').textContent) >= 9) return;
   const idx = count + 1;
   const ageOpts = [...Array(18)].map((_,i) =>
     `<option value="${i}">${i === 0 ? 'Under 1' : i + ' yr' + (i > 1 ? 's' : '')}</option>`

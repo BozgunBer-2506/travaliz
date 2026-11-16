@@ -62,7 +62,7 @@ func (c *LiveSearchClient) CreateOfferRequest(slices []SearchSlice, passengers [
 	var data struct {
 		Offers []Offer `json:"offers"`
 	}
-	if err := doRequest(c.HTTPClient, c.token, http.MethodPost, "/air/offer_requests?return_offers=true", payload, &data); err != nil {
+	if err := doRequest(c.HTTPClient, c.token, http.MethodPost, "/air/offer_requests?return_offers=true", payload, "", &data); err != nil {
 		return nil, err
 	}
 	if data.Offers == nil {
@@ -76,6 +76,6 @@ func (c *LiveSearchClient) GetOffer(offerID string) (Offer, error) {
 	if offerID == "" {
 		return offer, errors.New("duffel: offer ID is required")
 	}
-	err := doRequest(c.HTTPClient, c.token, http.MethodGet, "/air/offers/"+url.PathEscape(offerID), nil, &offer)
+	err := doRequest(c.HTTPClient, c.token, http.MethodGet, "/air/offers/"+url.PathEscape(offerID), nil, "", &offer)
 	return offer, err
 }

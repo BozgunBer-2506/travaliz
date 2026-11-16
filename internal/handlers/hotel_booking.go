@@ -49,6 +49,13 @@ func (h *TravelHandler) hotelStore() db.HotelStore {
 	return h.DB
 }
 
+func (h *TravelHandler) flightStore() db.FlightStore {
+	if h.FlightStore != nil {
+		return h.FlightStore
+	}
+	return h.DB
+}
+
 func checkoutResult(row *db.HotelCheckout) hotelResult {
 	result := hotelResult{CheckoutID: row.ID, Ref: row.ID, Status: row.Status, Quote: row.Quote, BookingID: row.BookingID, Confirmation: row.HotelConfirmationCode}
 	if row.Quote != nil {
