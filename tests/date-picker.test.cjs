@@ -366,6 +366,7 @@ test('closeBookingModal (templates/index.html) closes the still-open date-of-bir
     document: { getElementById: () => ({ classList: { add() {} } }) },
     bornOnPicker: { close: () => { closed = true; } },
     pendingBooking: {},
+    bookingModalOpener: null,
   });
   vm.runInContext(fnSource + '\ncloseBookingModal();', context);
   assert.equal(closed, true, 'closeBookingModal must close the portaled date-of-birth panel');

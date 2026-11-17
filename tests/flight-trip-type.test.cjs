@@ -30,10 +30,16 @@ test('round-trip and multi-city buttons are enabled and wired to setTripType', (
 });
 
 test('setTripType shows the matching form fields', () => {
-  const els = Object.fromEntries(['trip-type-input', 'btn-ow', 'btn-rt', 'btn-mc', 'ow-rt-form', 'multi-form', 'return-date-wrap']
+  const els = Object.fromEntries(['trip-type-input', 'btn-ow', 'btn-rt', 'btn-mc', 'ow-rt-form', 'multi-form', 'return-date-wrap', 'flight-intro']
     .map(id => [id, element()]));
-  const context = { document: { getElementById: id => els[id] || null } };
+  const context = { Date, document: { getElementById: id => els[id] || null, querySelectorAll: () => [], addEventListener() {} } };
   vm.runInNewContext(tripType, context);
+  context.setTripType('round');
+  assert.match(els['flight-intro'].textContent, /^Search round-trip flights/);
+  context.setTripType('multi');
+  assert.match(els['flight-intro'].textContent, /^Search multi-city trips of 2 to 6 flights/);
+  context.setTripType('oneway');
+  assert.match(els['flight-intro'].textContent, /^Search one-way flights/);
   context.setTripType('round');
   assert.equal(els['trip-type-input'].value, 'round');
   assert.equal(els['return-date-wrap'].classList.contains('hidden'), false);
@@ -59,6 +65,7 @@ test('removing a leg renumbers field names so none is duplicated', () => {
   let remaining = legs;
   const context = {
     legCount: 3,
+    syncFlightDateMins() {},
     document: {
       getElementById: () => element(),
       querySelectorAll: () => remaining,
@@ -69,6 +76,61 @@ test('removing a leg renumbers field names so none is duplicated', () => {
   context.removeLeg({ closest: () => ({ remove() {} }) });
   assert.deepEqual(legs[2].inputs.map(x => x.name), ['leg1from', 'leg1fromEntity', 'leg1to', 'leg1toEntity', 'leg1date']);
   assert.equal(legs[2].label.textContent, 'Leg 2');
+});
+
+test('return and multi-city dates cannot precede earlier flights', () => {
+  const ret = { value: '2099-12-01', min: '' };
+  const depart = { value: '2099-12-05' };
+  const legs = ['2099-12-10', '2099-12-08', '2099-12-12', ''].map(value => ({ value, min: '' }));
+  let changeHandler;
+  const context = {
+    Date,
+    document: {
+      getElementById: id => ({ 'flight-date': depart, 'return-date': ret }[id] || null),
+      querySelectorAll: sel => (sel === '#multi-legs .leg-date' ? legs : []),
+      addEventListener: (type, fn) => { if (type === 'change') changeHandler = fn; },
+    },
+  };
+  vm.runInNewContext(tripType, context);
+  context.syncFlightDateMins();
+  assert.equal(ret.min, '2099-12-05');
+  assert.equal(ret.value, '', 'a return before the departure is cleared');
+  ret.value = '2099-12-05';
+  context.syncFlightDateMins();
+  assert.equal(ret.value, '2099-12-05', 'returning on the departure day is allowed');
+  assert.deepEqual(legs.map(l => l.value), ['2099-12-10', '', '2099-12-12', '']);
+  assert.deepEqual(legs.slice(1).map(l => l.min), ['2099-12-10', '2099-12-10', '2099-12-12']);
+  // Changing a leg date re-applies the order to the following legs.
+  legs[0].value = '2099-12-20';
+  changeHandler({ target: { matches: sel => sel.includes('.leg-date') } });
+  assert.equal(legs[2].value, '', 'a later leg before the changed one is cleared');
+  assert.equal(legs[3].min, '2099-12-20');
+});
+
+test('booking modal closes on Escape and returns focus to its opener', () => {
+  const start = html.indexOf('let bookingModalOpener');
+  const src = html.slice(start, html.indexOf('}, true);', start) + '}, true);'.length);
+  const classes = new Set();
+  const modal = { classList: { add: c => classes.add(c), contains: c => classes.has(c) }, firstElementChild: { querySelectorAll: () => [] } };
+  let keydown, focused = false, pickerOpen = false;
+  const context = {
+    bornOnPicker: { close() {} }, pendingBooking: {},
+    document: {
+      getElementById: id => (id === 'booking-modal' ? modal : null),
+      querySelector: () => (pickerOpen ? {} : null),
+      addEventListener: (type, fn) => { if (type === 'keydown') keydown = fn; },
+    },
+  };
+  vm.runInNewContext(src, context);
+  vm.runInContext('bookingModalOpener = opener', Object.assign(context, { opener: { isConnected: true, focus: () => { focused = true; } } }));
+  const press = key => keydown({ key, preventDefault() {} });
+  pickerOpen = true;
+  press('Escape');
+  assert.equal(classes.has('hidden'), false, 'an open date picker handles Escape first');
+  pickerOpen = false;
+  press('Escape');
+  assert.equal(classes.has('hidden'), true);
+  assert.equal(focused, true);
 });
 
 test('My Bookings route label covers every leg', () => {

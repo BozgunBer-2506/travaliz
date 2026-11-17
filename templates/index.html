@@ -426,7 +426,7 @@
 <div id="booking-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4"
   style="background:rgba(15,15,30,0.7);backdrop-filter:blur(8px)"
   onclick="if(event.target===this)closeBookingModal()">
-  <div class="rounded-3xl shadow-2xl w-full overflow-hidden flex flex-col" style="max-width:520px;max-height:92vh;background:#ffffff;color:#0f172a" onclick="event.stopPropagation()">
+  <div role="dialog" aria-modal="true" aria-labelledby="modal-header-title" class="rounded-3xl shadow-2xl w-full overflow-hidden flex flex-col" style="max-width:520px;max-height:92vh;background:#ffffff;color:#0f172a" onclick="event.stopPropagation()">
 
     <!-- Modal header -->
     <div id="modal-header" class="p-5 text-white flex items-center justify-between shrink-0" style="background:linear-gradient(135deg,#312e81,#6366f1)">
@@ -434,7 +434,7 @@
         <p id="modal-header-label" class="text-xs text-indigo-200 uppercase tracking-widest font-semibold mb-0.5"></p>
         <p id="modal-header-title" class="text-lg font-bold"></p>
       </div>
-      <button onclick="closeBookingModal()" class="w-8 h-8 rounded-full flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-colors text-xl">&times;</button>
+      <button type="button" onclick="closeBookingModal()" aria-label="Close" class="w-8 h-8 rounded-full flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-colors text-xl">&times;</button>
     </div>
 
     <!-- Step indicator -->
@@ -1014,7 +1014,7 @@
 
       {{if eq .Tab "flights"}}
       <form method="GET" action="/flights" id="flights-form" class="flex flex-col gap-5" onsubmit="submitFlightForm(event)">
-        <p class="text-xs" style="color:var(--text-muted)">Search one-way flights for up to 9 passengers. Enter a three-letter airport code, such as BER or LHR.</p>
+        <p id="flight-intro" class="text-xs" style="color:var(--text-muted)">{{if eq .TripType "round"}}Search round-trip flights for up to 9 passengers. Enter a three-letter airport code, such as BER or LHR.{{else if eq .TripType "multi"}}Search multi-city trips of 2 to 6 flights for up to 9 passengers. Enter a three-letter airport code for each flight, such as BER or LHR.{{else}}Search one-way flights for up to 9 passengers. Enter a three-letter airport code, such as BER or LHR.{{end}}</p>
         <input type="hidden" id="trip-type-input" name="tripType" value="{{or .TripType "oneway"}}" />
 
         <!-- Controls row -->
@@ -2317,6 +2317,7 @@ function acceptCookies(level) {
   localStorage.setItem('cookie_consent', level);
   const banner = document.getElementById('cookie-banner');
   if (banner) { banner.style.transition = 'opacity 0.3s'; banner.style.opacity = '0'; setTimeout(() => banner.remove(), 300); }
+  reserveCookieBannerSpace();
 }
 (function() {
   if (localStorage.getItem('cookie_consent')) {
@@ -2509,7 +2510,7 @@ function renderBookings() {
         <div style="text-align:right;flex-shrink:0">
           ${item.ref ? `<p style="font-size:10px;font-weight:700;color:#6366f1;font-family:monospace;margin-bottom:3px">${item.ref}</p>` : ''}
           ${item.type === 'flight' && item.status === 'unknown'
-            ? '<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;background:#fee2e2;color:#991b1b">Belirsiz</span>'
+            ? '<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;background:#fee2e2;color:#991b1b">Outcome unknown</span>'
             : item.type === 'flight' && item.status === 'confirmed_sandbox'
             ? '<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;background:#dcfce7;color:#166534">Sandbox</span>'
             : '<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;background:#fef3c7;color:#92400e">Pending · no payment collected</span>'}
@@ -2867,8 +2868,8 @@ async function loadMyBookings() {
         : isHotel && ['unknown', 'booking'].includes(b.status) ? 'Outcome unknown — check status in your account before booking again.'
         : !isHotel && b.type === 'flight'
         ? (b.status === 'unknown'
-            ? "Belirsiz — sonucu doğrulamak için bizimle iletişime geçin."
-            : 'Test rezervasyonu (sandbox) — gerçek bilet değildir.')
+            ? 'Outcome unknown. Contact us to confirm the result.'
+            : 'Test booking (sandbox). Not a real ticket.')
         : 'Request received — pending. No payment collected; reservation not confirmed.';
       return `<div class="flex items-center gap-3 p-3 rounded-2xl" style="background:var(--bg-card2);border:1px solid var(--border)">
         <div class="text-2xl">${icon}</div>
@@ -3086,10 +3087,26 @@ function _doOpenBookingModal(booking) {
   }
   hideError('step1-error');
   hideError('step2-error');
+  // Restore focus to the control that opened the modal when it closes.
+  bookingModalOpener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   document.getElementById('booking-modal').classList.remove('hidden');
+  reserveCookieBannerSpace();
   document.getElementById('b-first-name').focus();
 }
 
+// The cookie banner stays above every overlay so consent is always
+// reachable; while it is shown, the booking dialog is lifted above it
+// instead of being covered by it.
+function reserveCookieBannerSpace() {
+  const modal = document.getElementById('booking-modal');
+  if (!modal) return;
+  const banner = document.getElementById('cookie-banner');
+  const h = banner && banner.style.opacity !== '0' ? banner.offsetHeight : 0;
+  modal.style.paddingBottom = h ? (h + 16) + 'px' : '';
+  modal.firstElementChild.style.maxHeight = h ? `calc(92vh - ${h}px)` : '';
+}
+
+let bookingModalOpener = null;
 function closeBookingModal() {
   document.getElementById('booking-modal').classList.add('hidden');
   pendingBooking = null;
@@ -3097,7 +3114,31 @@ function closeBookingModal() {
   // date-picker.js), so hiding the modal does not hide it on its own; left
   // open, it would float on screen after the modal itself disappears.
   bornOnPicker?.close();
+  if (bookingModalOpener?.isConnected) bookingModalOpener.focus();
+  bookingModalOpener = null;
 }
+
+// Escape closes the booking dialog; Tab cycles inside it (plus the cookie
+// banner's buttons while that is shown). Registered in the capture phase
+// before any date picker opens, so an open picker handles Escape first.
+document.addEventListener('keydown', e => {
+  const modal = document.getElementById('booking-modal');
+  if (!modal || modal.classList.contains('hidden')) return;
+  if (e.key === 'Escape') {
+    if (document.querySelector('.dp-panel')) return;
+    e.preventDefault();
+    closeBookingModal();
+  } else if (e.key === 'Tab') {
+    const focusable = [...modal.firstElementChild.querySelectorAll('button, a[href], input:not([type=hidden]), select, textarea, [tabindex]:not([tabindex="-1"])'),
+      ...(document.getElementById('cookie-banner')?.querySelectorAll('button') || [])]
+      .filter(el => !el.disabled && el.getClientRects().length);
+    if (!focusable.length) return;
+    const first = focusable[0], last = focusable[focusable.length - 1];
+    if (!focusable.includes(document.activeElement)) { e.preventDefault(); first.focus(); }
+    else if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }
+}, true);
 
 function showStep(n) {
   [1,2,3].forEach(i => {
@@ -3261,14 +3302,14 @@ async function submitBooking() {
       : (isFlight ? 'Booking result pending' : 'Request received');
     document.getElementById('confirmed-subtitle').textContent = isSandbox
       ? 'Sandbox booking, not a real ticket.'
-      : (isFlight ? "Sonuç belirsiz, My Bookings'i kontrol edin." : 'Pending — no payment collected; reservation not confirmed. No ticket issued.');
+      : (isFlight ? 'Outcome unknown. Check My Bookings before booking again.' : 'Pending — no payment collected; reservation not confirmed. No ticket issued.');
     document.getElementById('confirmed-name').textContent = fullName + ' · ' + payload.email;
     const estimate = b.type === 'hotel' ? (b.total ?? price) : price;
     const statusNote = !isFlight
       ? 'Pending — no payment collected; reservation not confirmed.'
       : data.status === 'unknown'
-        ? "Sonuç belirsiz, My Bookings'i kontrol edin."
-        : 'Test rezervasyonu (sandbox) · gerçek bilet değildir.';
+        ? 'Outcome unknown. Check My Bookings before booking again.'
+        : 'Test booking (sandbox) · not a real ticket.';
     document.getElementById('confirmed-details').textContent =
       `${b.type === 'flight' ? (b.route || `${b.from} → ${b.to}`) : b.name} · ${formatBookingEstimate(estimate, payload.currency)} · ${statusNote}`;
     if (b._btn) {
@@ -3581,7 +3622,37 @@ function setTripType(type) {
   document.getElementById('ow-rt-form')?.classList.toggle('hidden', type === 'multi');
   document.getElementById('multi-form')?.classList.toggle('hidden', type !== 'multi');
   document.getElementById('return-date-wrap')?.classList.toggle('hidden', type !== 'round');
+  const intro = document.getElementById('flight-intro');
+  if (intro) intro.textContent = FLIGHT_INTRO[type] || FLIGHT_INTRO.oneway;
+  syncFlightDateMins();
 }
+const FLIGHT_INTRO = {
+  oneway: 'Search one-way flights for up to 9 passengers. Enter a three-letter airport code, such as BER or LHR.',
+  round: 'Search round-trip flights for up to 9 passengers. Enter a three-letter airport code, such as BER or LHR.',
+  multi: 'Search multi-city trips of 2 to 6 flights for up to 9 passengers. Enter a three-letter airport code for each flight, such as BER or LHR.',
+};
+
+// Keeps date order valid while choosing: the return date cannot precede the
+// departure, and each multi-city flight cannot precede an earlier one. A
+// value that became too early is cleared. The server still validates both.
+function syncFlightDateMins() {
+  const today = new Date();
+  let min = [today.getFullYear(), String(today.getMonth() + 1).padStart(2, '0'), String(today.getDate()).padStart(2, '0')].join('-');
+  const depart = document.getElementById('flight-date')?.value || '';
+  const ret = document.getElementById('return-date');
+  if (ret) {
+    ret.min = depart > min ? depart : min;
+    if (ret.value && ret.value < ret.min) ret.value = '';
+  }
+  document.querySelectorAll('#multi-legs .leg-date').forEach(input => {
+    input.min = min;
+    if (input.value && input.value < min) input.value = '';
+    if (input.value) min = input.value;
+  });
+}
+document.addEventListener('change', e => {
+  if (e.target.matches?.('#multi-legs .leg-date, #return-date')) syncFlightDateMins();
+});
 
 // Multi-city
 let legCount = 2;
@@ -3616,6 +3687,7 @@ function addLeg() {
   legCount++;
   initLegAutocomplete(div);
   if (legCount >= 6) document.getElementById('add-leg-btn').classList.add('hidden');
+  syncFlightDateMins();
 }
 
 function removeLeg(btn) {
@@ -3632,6 +3704,7 @@ function removeLeg(btn) {
     });
     el.querySelectorAll('[data-leg]').forEach(input => { input.dataset.leg = String(i); });
   });
+  syncFlightDateMins();
 }
 
 function initLegAutocomplete(legEl) {
@@ -3914,6 +3987,7 @@ function restoreSearchLegs() {
   });
 }
 restoreSearchLegs();
+syncFlightDateMins();
 </script>
 
 <!-- Download App Section -->
@@ -4036,7 +4110,7 @@ let bornOnPicker = null;
   });
   attachDatePicker({
     wrapperId: 'flight-date-wrapper', displayId: 'flight-date-display', hiddenId: 'flight-date',
-    label: 'Departure date', getMin: dpToday,
+    label: 'Departure date', getMin: dpToday, onChange: syncFlightDateMins,
   });
   bornOnPicker = attachDatePicker({
     wrapperId: 'born-on-wrapper', displayId: 'b-born-on-display', hiddenId: 'b-born-on',
