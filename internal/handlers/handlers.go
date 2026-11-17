@@ -56,6 +56,7 @@ type pageData struct {
 	Hotels        []proxy.HotelData
 	Flights       []proxy.FlightData
 	FlightLegs    []FlightLeg
+	SearchLegs    []proxy.FlightSearchLeg
 	Cars          []proxy.CarData
 	PickupCity    string
 	PickupDate    string

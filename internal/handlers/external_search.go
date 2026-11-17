@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -261,8 +262,13 @@ func (h *TravelHandler) externalFlights(w http.ResponseWriter, r *http.Request) 
 	if pd.Children == "" {
 		pd.Children = "0"
 	}
-	if pd.TripType != "oneway" || q.Get("returnDate") != "" {
-		fail("Şu anda yalnızca tek yön uçuş araması destekleniyor.")
+	switch pd.TripType {
+	case "oneway":
+	case "round":
+		pd.ReturnDate = strings.TrimSpace(q.Get("returnDate"))
+	case "multi":
+	default:
+		fail("Please choose a valid trip type.")
 		return
 	}
 	adults, children, ages, err := externalGuests(q, false)
@@ -306,34 +312,16 @@ func (h *TravelHandler) externalFlights(w http.ResponseWriter, r *http.Request) 
 		fail("Please choose a valid cabin class.")
 		return
 	}
-	if pd.FromSkyID == "" && pd.ToSkyID == "" {
-		h.render(w, pd)
+	slices, ok := h.flightSearchSlices(w, q, &pd, fail)
+	if !ok {
 		return
 	}
-	validCode := func(code string) bool {
-		if len(code) != 3 {
-			return false
-		}
-		for _, letter := range code {
-			if letter < 'A' || letter > 'Z' {
-				return false
-			}
-		}
-		return true
-	}
-	if !validCode(pd.FromSkyID) || !validCode(pd.ToSkyID) || pd.FromSkyID == pd.ToSkyID {
-		fail("Enter valid three-letter airport codes, such as BER and LHR.")
-		return
-	}
-	if pd.Date == "" {
-		pd.Date = time.Now().AddDate(0, 0, 1).Format("2006-01-02")
-	}
-	if _, err := searchDate(pd.Date); err != nil {
-		fail(err.Error())
-		return
+	if len(slices) > 1 {
+		// One offer prices the whole itinerary, all flights included.
+		priceLabel = "Itinerary total" + strings.TrimPrefix(priceLabel, "Total")
 	}
 	offers, err := duffel.NewDuffelClient().CreateOfferRequest(
-		[]duffel.SearchSlice{{Origin: pd.FromSkyID, Destination: pd.ToSkyID, DepartureDate: pd.Date}},
+		slices,
 		passengers,
 		pd.CabinClass,
 	)
@@ -350,33 +338,41 @@ func (h *TravelHandler) externalFlights(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	for _, offer := range offers {
-		if offer.ID == "" || len(offer.Slices) != 1 || len(offer.Slices[0].Segments) == 0 {
+		// An offer must cover exactly the requested slices; anything else
+		// would show a price for a different itinerary than the one searched.
+		if offer.ID == "" || len(offer.Slices) != len(slices) {
 			continue
 		}
 		price, err := strconv.ParseFloat(offer.TotalAmount, 64) // Display only; never use for an order payment.
 		if err != nil || price <= 0 || math.IsNaN(price) || math.IsInf(price, 0) {
 			continue
 		}
-		slice := offer.Slices[0]
-		hours, minutes, err := parseFlightDuration(slice.Duration)
-		if err != nil {
+		legs, ok := offerItineraryLegs(offer)
+		if !ok {
 			continue
 		}
-		first, last := slice.Segments[0], slice.Segments[len(slice.Segments)-1]
-		if len(first.DepartingAt) < 16 || len(last.ArrivingAt) < 16 {
+		first, last := legs[0], legs[len(legs)-1]
+		totalMinutes, totalStops := 0, 0
+		for _, leg := range legs {
+			totalMinutes += leg.DurationHours*60 + leg.DurationMinutes
+			totalStops += leg.Stops
+		}
+		legsJSON, err := json.Marshal(legs)
+		if err != nil {
 			continue
 		}
 		pd.Flights = append(pd.Flights, proxy.FlightData{
 			OfferID:  offer.ID,
-			FromCode: first.Origin.IATACode, ToCode: last.Destination.IATACode,
-			FromCity: first.Origin.CityName, ToCity: last.Destination.CityName,
-			DepartDate: first.DepartingAt[:10],
-			DepartTime: first.DepartingAt, ArriveTime: last.ArrivingAt,
-			DurationHours: hours, DurationMinutes: minutes,
-			Stops:   len(slice.Segments) - 1,
-			Airline: first.MarketingCarrier.Name, AirlineLogo: first.MarketingCarrier.LogoSymbolURL,
+			FromCode: first.FromCode, ToCode: last.ToCode,
+			FromCity: first.FromCity, ToCity: last.ToCity,
+			DepartDate: first.DepartTime[:10],
+			DepartTime: first.DepartTime, ArriveTime: last.ArriveTime,
+			DurationHours: totalMinutes / 60, DurationMinutes: totalMinutes % 60,
+			Stops:   totalStops,
+			Airline: first.Airline, AirlineLogo: first.AirlineLogo,
 			Price: price, Currency: offer.TotalCurrency, PriceLabel: priceLabel,
 			AdultCount: adultCount, ChildAgesCSV: strings.Join(ages, ","),
+			Legs: legs, RouteLabel: routeLabel(legs), LegsJSON: string(legsJSON),
 		})
 	}
 	if len(pd.Flights) == 0 {
@@ -387,8 +383,149 @@ func (h *TravelHandler) externalFlights(w http.ResponseWriter, r *http.Request) 
 	if len(pd.Flights) > 20 {
 		pd.Flights = pd.Flights[:20]
 	}
-	pd.FromCity, pd.ToCity = pd.Flights[0].FromCity, pd.Flights[0].ToCity
+	pd.FromCity, pd.ToCity = pd.Flights[0].Legs[0].FromCity, pd.Flights[0].Legs[0].ToCity
 	h.render(w, pd)
+}
+
+// maxFlightSlices matches the six legs the multi-city form allows.
+const maxFlightSlices = 6
+
+func validAirportCode(code string) bool {
+	if len(code) != 3 {
+		return false
+	}
+	for _, letter := range code {
+		if letter < 'A' || letter > 'Z' {
+			return false
+		}
+	}
+	return true
+}
+
+// flightSearchSlices builds the Duffel slices for the requested trip type:
+// one for one-way, two (outbound and return) for a round trip, and 2-6 for
+// multi-city. It reports false when it has already rendered the page, either
+// because no search was requested yet or because the input was invalid.
+func (h *TravelHandler) flightSearchSlices(w http.ResponseWriter, q url.Values, pd *pageData, fail func(string)) ([]duffel.SearchSlice, bool) {
+	if pd.TripType == "multi" {
+		for i := 0; i < maxFlightSlices; i++ {
+			leg := proxy.FlightSearchLeg{
+				From: strings.ToUpper(strings.TrimSpace(q.Get(fmt.Sprintf("leg%dfrom", i)))),
+				To:   strings.ToUpper(strings.TrimSpace(q.Get(fmt.Sprintf("leg%dto", i)))),
+				Date: strings.TrimSpace(q.Get(fmt.Sprintf("leg%ddate", i))),
+			}
+			if leg.From == "" && leg.To == "" && leg.Date == "" {
+				continue
+			}
+			pd.SearchLegs = append(pd.SearchLegs, leg)
+		}
+		if len(pd.SearchLegs) == 0 {
+			h.render(w, *pd)
+			return nil, false
+		}
+		if len(pd.SearchLegs) < 2 {
+			fail("Add at least two flights for a multi-city trip.")
+			return nil, false
+		}
+		slices := make([]duffel.SearchSlice, 0, len(pd.SearchLegs))
+		for i, leg := range pd.SearchLegs {
+			if !validAirportCode(leg.From) || !validAirportCode(leg.To) || leg.From == leg.To {
+				fail(fmt.Sprintf("Flight %d: enter valid three-letter airport codes, such as BER and LHR.", i+1))
+				return nil, false
+			}
+			if _, err := searchDate(leg.Date); err != nil {
+				fail(fmt.Sprintf("Flight %d: %s", i+1, err.Error()))
+				return nil, false
+			}
+			if i > 0 && leg.Date < pd.SearchLegs[i-1].Date {
+				fail("Flight dates must be in chronological order.")
+				return nil, false
+			}
+			slices = append(slices, duffel.SearchSlice{Origin: leg.From, Destination: leg.To, DepartureDate: leg.Date})
+		}
+		return slices, true
+	}
+	if pd.FromSkyID == "" && pd.ToSkyID == "" {
+		h.render(w, *pd)
+		return nil, false
+	}
+	if !validAirportCode(pd.FromSkyID) || !validAirportCode(pd.ToSkyID) || pd.FromSkyID == pd.ToSkyID {
+		fail("Enter valid three-letter airport codes, such as BER and LHR.")
+		return nil, false
+	}
+	if pd.Date == "" {
+		pd.Date = time.Now().AddDate(0, 0, 1).Format("2006-01-02")
+	}
+	if _, err := searchDate(pd.Date); err != nil {
+		fail(err.Error())
+		return nil, false
+	}
+	slices := []duffel.SearchSlice{{Origin: pd.FromSkyID, Destination: pd.ToSkyID, DepartureDate: pd.Date}}
+	if pd.TripType == "round" {
+		if pd.ReturnDate == "" {
+			fail("Please choose a return date.")
+			return nil, false
+		}
+		if _, err := searchDate(pd.ReturnDate); err != nil {
+			fail(err.Error())
+			return nil, false
+		}
+		if pd.ReturnDate < pd.Date {
+			fail("The return date must be on or after the departure date.")
+			return nil, false
+		}
+		slices = append(slices, duffel.SearchSlice{Origin: pd.ToSkyID, Destination: pd.FromSkyID, DepartureDate: pd.ReturnDate})
+	}
+	return slices, true
+}
+
+// offerItineraryLegs summarises every slice of an offer, in order. It
+// reports false when any slice lacks the data needed to display it
+// truthfully, so a partial itinerary is never shown or booked.
+func offerItineraryLegs(offer duffel.Offer) ([]proxy.FlightItineraryLeg, bool) {
+	if len(offer.Slices) == 0 {
+		return nil, false
+	}
+	legs := make([]proxy.FlightItineraryLeg, 0, len(offer.Slices))
+	for _, slice := range offer.Slices {
+		if len(slice.Segments) == 0 {
+			return nil, false
+		}
+		hours, minutes, err := parseFlightDuration(slice.Duration)
+		if err != nil {
+			return nil, false
+		}
+		first, last := slice.Segments[0], slice.Segments[len(slice.Segments)-1]
+		if len(first.DepartingAt) < 16 || len(last.ArrivingAt) < 16 ||
+			first.Origin.IATACode == "" || last.Destination.IATACode == "" {
+			return nil, false
+		}
+		legs = append(legs, proxy.FlightItineraryLeg{
+			FromCode: first.Origin.IATACode, ToCode: last.Destination.IATACode,
+			FromCity: first.Origin.CityName, ToCity: last.Destination.CityName,
+			DepartTime: first.DepartingAt, ArriveTime: last.ArrivingAt,
+			DurationHours: hours, DurationMinutes: minutes,
+			Airline: first.MarketingCarrier.Name, AirlineLogo: first.MarketingCarrier.LogoSymbolURL,
+			Stops: len(slice.Segments) - 1,
+		})
+	}
+	return legs, true
+}
+
+// routeLabel renders "BER → LHR → BER" for connected legs and separates
+// disconnected legs with " · ", e.g. "BER → LHR · CDG → BER".
+func routeLabel(legs []proxy.FlightItineraryLeg) string {
+	var b strings.Builder
+	for i, leg := range legs {
+		switch {
+		case i == 0:
+			b.WriteString(leg.FromCode)
+		case leg.FromCode != legs[i-1].ToCode:
+			b.WriteString(" · " + leg.FromCode)
+		}
+		b.WriteString(" → " + leg.ToCode)
+	}
+	return b.String()
 }
 
 // Parse the PT...H...M subset used by this search; reject unsupported formats.

@@ -43,6 +43,22 @@ type Booking struct {
 	BookingReference string     `json:"booking_reference,omitempty"`
 	Status           string     `json:"status,omitempty"`
 	CreatedAt        *time.Time `json:"created_at,omitempty"`
+	// Itinerary is set only for a multi-slice flight (round trip or
+	// multi-city) and is omitted otherwise, so one-way and hotel rows are
+	// written exactly as before. Requires the bookings.itinerary column
+	// (supabase/migrations/20261117_bookings_itinerary.sql).
+	Itinerary []ItineraryLeg `json:"itinerary,omitempty"`
+}
+
+// ItineraryLeg is one slice of a booked flight, taken from the Duffel offer.
+type ItineraryLeg struct {
+	FromCode   string `json:"from_code"`
+	ToCode     string `json:"to_code"`
+	DepartTime string `json:"depart_time"`
+	ArriveTime string `json:"arrive_time"`
+	Duration   string `json:"duration"`
+	Airline    string `json:"airline"`
+	Stops      int    `json:"stops"`
 }
 
 func Open(supabaseURL, apiKey string) (*DB, error) {

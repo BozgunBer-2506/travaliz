@@ -77,8 +77,8 @@ func TestSearchPages(t *testing.T) {
 	if calls != 1 || strings.Contains(hotel, `href="https://example.com/hotel"`) || !strings.Contains(hotel, `class="hotel-request-btn`) || !strings.Contains(hotel, `data-price="90.25"`) || !strings.Contains(hotel, `data-total="180.50"`) || !strings.Contains(hotel, "Test Real Hotel") {
 		t.Fatal("hotel search not wired correctly")
 	}
-	multi := get("GET", "/flights?tripType=multi&leg0from=BER&leg0to=LHR&leg0date="+start+"&leg1from=LHR&leg1to=JFK&leg1date="+end)
-	if calls != 1 || !strings.Contains(multi, "yalnızca tek yön") {
+	multi := get("GET", "/flights?tripType=multi&leg0from=BER&leg0to=LHR&leg0date="+end+"&leg1from=LHR&leg1to=JFK&leg1date="+start)
+	if calls != 1 || !strings.Contains(multi, "Flight dates must be in chronological order.") {
 		t.Fatal("unsupported flight search reached a provider")
 	}
 	get("HEAD", path)

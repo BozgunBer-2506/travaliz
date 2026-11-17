@@ -19,8 +19,8 @@ func TestExternalSearchWithoutAPI(t *testing.T) {
 		{"/?q=Berlin&checkin=2099-11-10&checkout=2099-11-12&adults=2&children=1&children_ages=8&rooms=1&guestNationality=DE", "Otel araması tamamlanamadı"},
 		{"/?q=Unknown+Town&checkin=2099-11-10&checkout=2099-11-12&guestNationality=DE", "Bu şehir henüz desteklenmiyor"},
 		{"/?category=beach&checkin=2099-11-10&checkout=2099-11-12&guestNationality=DE", "Otel araması tamamlanamadı"},
-		{"/flights?fromSky=BER&toSky=LHR&date=2099-11-10&returnDate=2099-11-12", "yalnızca tek yön"},
-		{"/flights?tripType=multi&leg0from=BER&leg0to=LHR&leg0date=2099-11-10&leg1from=LHR&leg1to=JFK&leg1date=2099-11-12", "yalnızca tek yön"},
+		{"/flights?tripType=round&fromSky=BER&toSky=LHR&date=2099-11-12&returnDate=2099-11-10", "The return date must be on or after the departure date."},
+		{"/flights?tripType=multi&leg0from=BER&leg0to=LHR&leg0date=2099-11-12&leg1from=LHR&leg1to=JFK&leg1date=2099-11-10", "Flight dates must be in chronological order."},
 		{"/?q=Berlin&checkin=2099-11-12&checkout=2099-11-10", "Check-out must be after check-in."},
 		{"/flights?fromSky=BADCODE&toSky=LHR&date=2099-11-10", "Enter valid three-letter airport codes"},
 	} {

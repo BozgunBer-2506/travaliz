@@ -233,7 +233,7 @@ func TestBookFlightRejectsPassengerCountMismatch(t *testing.T) {
 		if r.Method != http.MethodGet || r.URL.Host != "api.duffel.com" || r.URL.Path != "/air/offers/offer-group" {
 			t.Fatalf("group offer triggered an unexpected operation: %s %s", r.Method, r.URL)
 		}
-		return `{"data":{"id":"offer-group","total_amount":"200.00","total_currency":"EUR","passengers":[{"id":"pax-1"},{"id":"pax-2"}]}}`
+		return `{"data":{"id":"offer-group","total_amount":"200.00","total_currency":"EUR",` + fixtureSlices + `"passengers":[{"id":"pax-1"},{"id":"pax-2"}]}}`
 	})
 	t.Setenv("DUFFEL_API_TOKEN", "duffel_test_offline")
 	// Legacy single-passenger shape against a two-passenger offer.
@@ -252,7 +252,7 @@ func TestBookFlightRejectsChildAgeInconsistentWithSearch(t *testing.T) {
 		if r.Method != http.MethodGet || r.URL.Host != "api.duffel.com" || r.URL.Path != "/air/offers/offer-group" {
 			t.Fatalf("group offer triggered an unexpected operation: %s %s", r.Method, r.URL)
 		}
-		return `{"data":{"id":"offer-group","total_amount":"200.00","total_currency":"EUR","passengers":[{"id":"pax-1","type":"adult"},{"id":"pax-2","age":10}]}}`
+		return `{"data":{"id":"offer-group","total_amount":"200.00","total_currency":"EUR",` + fixtureSlices + `"passengers":[{"id":"pax-1","type":"adult"},{"id":"pax-2","age":10}]}}`
 	})
 	t.Setenv("DUFFEL_API_TOKEN", "duffel_test_offline")
 	r := httptest.NewRequest(http.MethodPost, "/book", strings.NewReader(`{"type":"flight","offerId":"offer-group",
@@ -273,7 +273,7 @@ func TestBookFlightBooksMultiplePassengers(t *testing.T) {
 	h, token := bookingTestHandler(t, func(r *http.Request) string {
 		switch r.Method + " " + r.URL.Host + r.URL.Path {
 		case "GET api.duffel.com/air/offers/offer-group":
-			return `{"data":{"id":"offer-group","total_amount":"320.00","total_currency":"EUR","passengers":[{"id":"pax-1","type":"adult"},{"id":"pax-2","age":10}]}}`
+			return `{"data":{"id":"offer-group","total_amount":"320.00","total_currency":"EUR",` + fixtureSlices + `"passengers":[{"id":"pax-1","type":"adult"},{"id":"pax-2","age":10}]}}`
 		case "POST api.duffel.com/air/orders":
 			var order struct {
 				Data struct {
@@ -331,7 +331,7 @@ func TestBookFlightBooksTwoAdults(t *testing.T) {
 	h, token := bookingTestHandler(t, func(r *http.Request) string {
 		switch r.Method + " " + r.URL.Host + r.URL.Path {
 		case "GET api.duffel.com/air/offers/offer-2adults":
-			return `{"data":{"id":"offer-2adults","total_amount":"400.00","total_currency":"EUR","passengers":[{"id":"pax-a","type":"adult"},{"id":"pax-b","type":"adult"}]}}`
+			return `{"data":{"id":"offer-2adults","total_amount":"400.00","total_currency":"EUR",` + fixtureSlices + `"passengers":[{"id":"pax-a","type":"adult"},{"id":"pax-b","type":"adult"}]}}`
 		case "POST api.duffel.com/air/orders":
 			var order struct {
 				Data struct {
@@ -396,7 +396,7 @@ func TestBookFlightDoesNotTrustOfferPassengerArrayOrder(t *testing.T) {
 		case "GET api.duffel.com/air/offers/offer-reversed":
 			// Child slot first, adult slot second: the opposite of the
 			// adults-then-children order the search request used.
-			return `{"data":{"id":"offer-reversed","total_amount":"250.00","total_currency":"EUR","passengers":[{"id":"pax-child","age":9},{"id":"pax-adult","type":"adult"}]}}`
+			return `{"data":{"id":"offer-reversed","total_amount":"250.00","total_currency":"EUR",` + fixtureSlices + `"passengers":[{"id":"pax-child","age":9},{"id":"pax-adult","type":"adult"}]}}`
 		case "POST api.duffel.com/air/orders":
 			var order struct {
 				Data struct {
@@ -505,7 +505,7 @@ func TestBookFlightRetryAfterTimeoutReconcilesViaReadOnlyOrderLookup(t *testing.
 	h, token := bookingTestHandlerErr(t, func(r *http.Request) (*http.Response, error) {
 		switch {
 		case r.Method == http.MethodGet && r.URL.Host == "api.duffel.com" && r.URL.Path == "/air/offers/offer-retry":
-			body := `{"data":{"id":"offer-retry","total_amount":"150.00","total_currency":"EUR","passengers":[{"id":"pax-1"}]}}`
+			body := `{"data":{"id":"offer-retry","total_amount":"150.00","total_currency":"EUR",` + fixtureSlices + `"passengers":[{"id":"pax-1"}]}}`
 			return &http.Response{StatusCode: 200, Header: make(http.Header), Body: io.NopCloser(strings.NewReader(body))}, nil
 		case r.Method == http.MethodPost && r.URL.Host == "api.duffel.com" && r.URL.Path == "/air/orders":
 			orderCalls++
@@ -564,7 +564,7 @@ func TestBookFlightUnresolvedTimeoutGoesToNeedsReviewNotANewOrder(t *testing.T) 
 	h, token := bookingTestHandlerErr(t, func(r *http.Request) (*http.Response, error) {
 		switch {
 		case r.Method == http.MethodGet && r.URL.Host == "api.duffel.com" && r.URL.Path == "/air/offers/offer-ambiguous":
-			body := `{"data":{"id":"offer-ambiguous","total_amount":"75.00","total_currency":"EUR","passengers":[{"id":"pax-1"}]}}`
+			body := `{"data":{"id":"offer-ambiguous","total_amount":"75.00","total_currency":"EUR",` + fixtureSlices + `"passengers":[{"id":"pax-1"}]}}`
 			return &http.Response{StatusCode: 200, Header: make(http.Header), Body: io.NopCloser(strings.NewReader(body))}, nil
 		case r.Method == http.MethodPost && r.URL.Host == "api.duffel.com" && r.URL.Path == "/air/orders":
 			orderCalls++
@@ -616,7 +616,7 @@ func TestBookFlightStaleOrderingLockReconciles(t *testing.T) {
 	h, token := bookingTestHandlerErr(t, func(r *http.Request) (*http.Response, error) {
 		switch {
 		case r.Method == http.MethodGet && r.URL.Host == "api.duffel.com" && r.URL.Path == "/air/offers/offer-stale":
-			body := `{"data":{"id":"offer-stale","total_amount":"310.00","total_currency":"EUR","passengers":[{"id":"pax-1"}]}}`
+			body := `{"data":{"id":"offer-stale","total_amount":"310.00","total_currency":"EUR",` + fixtureSlices + `"passengers":[{"id":"pax-1"}]}}`
 			return &http.Response{StatusCode: 200, Header: make(http.Header), Body: io.NopCloser(strings.NewReader(body))}, nil
 		case r.Method == http.MethodPost && r.URL.Host == "api.duffel.com" && r.URL.Path == "/air/orders":
 			orderCalls++
@@ -666,7 +666,7 @@ func TestBookFlightLocalDBWriteFailureAfterSuccessfulOrderRecoversWithoutReorder
 	h, token := bookingTestHandlerErr(t, func(r *http.Request) (*http.Response, error) {
 		switch {
 		case r.Method == http.MethodGet && r.URL.Host == "api.duffel.com" && r.URL.Path == "/air/offers/offer-dbfail":
-			body := `{"data":{"id":"offer-dbfail","total_amount":"140.00","total_currency":"EUR","passengers":[{"id":"pax-1"}]}}`
+			body := `{"data":{"id":"offer-dbfail","total_amount":"140.00","total_currency":"EUR",` + fixtureSlices + `"passengers":[{"id":"pax-1"}]}}`
 			return &http.Response{StatusCode: 200, Header: make(http.Header), Body: io.NopCloser(strings.NewReader(body))}, nil
 		case r.Method == http.MethodPost && r.URL.Host == "api.duffel.com" && r.URL.Path == "/air/orders":
 			orderCalls++
@@ -720,7 +720,7 @@ func TestBookFlightConcurrentRequestsForSameOfferCallCreateOrderOnce(t *testing.
 	h, token := bookingTestHandlerErr(t, func(r *http.Request) (*http.Response, error) {
 		switch r.Method + " " + r.URL.Host + r.URL.Path {
 		case "GET api.duffel.com/air/offers/offer-race":
-			body := `{"data":{"id":"offer-race","total_amount":"220.00","total_currency":"EUR","passengers":[{"id":"pax-1"}]}}`
+			body := `{"data":{"id":"offer-race","total_amount":"220.00","total_currency":"EUR",` + fixtureSlices + `"passengers":[{"id":"pax-1"}]}}`
 			return &http.Response{StatusCode: 200, Header: make(http.Header), Body: io.NopCloser(strings.NewReader(body))}, nil
 		case "POST api.duffel.com/air/orders":
 			atomic.AddInt32(&orderCalls, 1)
@@ -781,7 +781,7 @@ func TestBookFlightRepeatedRequestAfterSuccessDoesNotReorder(t *testing.T) {
 	h, token := bookingTestHandler(t, func(r *http.Request) string {
 		switch r.Method + " " + r.URL.Host + r.URL.Path {
 		case "GET api.duffel.com/air/offers/offer-dup":
-			return `{"data":{"id":"offer-dup","total_amount":"90.00","total_currency":"EUR","passengers":[{"id":"pax-1"}]}}`
+			return `{"data":{"id":"offer-dup","total_amount":"90.00","total_currency":"EUR",` + fixtureSlices + `"passengers":[{"id":"pax-1"}]}}`
 		case "POST api.duffel.com/air/orders":
 			orderCalls++
 			return `{"data":{"id":"order-dup","booking_reference":"PNRDUP"}}`
@@ -826,7 +826,7 @@ func TestBookFlightStillUsesSandboxProviderPrice(t *testing.T) {
 		operations = append(operations, r.Method+" "+r.URL.Host+r.URL.Path)
 		switch r.Method + " " + r.URL.Host + r.URL.Path {
 		case "GET api.duffel.com/air/offers/offer-test":
-			return `{"data":{"id":"offer-test","total_amount":"178.89","total_currency":"EUR","passengers":[{"id":"pax-test"}]}}`
+			return `{"data":{"id":"offer-test","total_amount":"178.89","total_currency":"EUR",` + fixtureSlices + `"passengers":[{"id":"pax-test"}]}}`
 		case "POST api.duffel.com/air/orders":
 			var order struct {
 				Data struct {
@@ -881,7 +881,7 @@ func TestBookFlightSurfacesInvalidPhoneNumberSafely(t *testing.T) {
 	h, token := bookingTestHandler(t, func(r *http.Request) string {
 		switch r.Method + " " + r.URL.Host + r.URL.Path {
 		case "GET api.duffel.com/air/offers/offer-test":
-			return `{"data":{"id":"offer-test","total_amount":"63.92","total_currency":"EUR","passengers":[{"id":"pax-test"}]}}`
+			return `{"data":{"id":"offer-test","total_amount":"63.92","total_currency":"EUR",` + fixtureSlices + `"passengers":[{"id":"pax-test"}]}}`
 		case "POST api.duffel.com/air/orders":
 			return `{"errors":[{"code":"invalid_phone_number","type":"validation_error"}]}`
 		default:
@@ -911,7 +911,7 @@ func TestBookFlightKeepsGenericMessageForOtherOrderErrors(t *testing.T) {
 	h, token := bookingTestHandler(t, func(r *http.Request) string {
 		switch r.Method + " " + r.URL.Host + r.URL.Path {
 		case "GET api.duffel.com/air/offers/offer-test":
-			return `{"data":{"id":"offer-test","total_amount":"63.92","total_currency":"EUR","passengers":[{"id":"pax-test"}]}}`
+			return `{"data":{"id":"offer-test","total_amount":"63.92","total_currency":"EUR",` + fixtureSlices + `"passengers":[{"id":"pax-test"}]}}`
 		case "POST api.duffel.com/air/orders":
 			return `{"errors":[{"code":"availability_change","type":"validation_error"}]}`
 		default:

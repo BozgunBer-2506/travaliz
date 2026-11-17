@@ -11,12 +11,17 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
 
 const apiBase = "https://api.duffel.com"
 const maxResponseBytes = 8 << 20
+
+// multiSliceOfferLimit is the single List Offers page read for a round-trip
+// or multi-city search; the page shows at most 20 of these after filtering.
+const multiSliceOfferLimit = 50
 
 var ErrTimeout = errors.New("duffel: request timed out; outcome may be unknown")
 
@@ -157,7 +162,31 @@ func (c *DuffelClient) CreateOfferRequest(slices []SearchSlice, passengers []Sea
 		CabinClass string            `json:"cabin_class"`
 	}{slices, passengers, cabinClass}
 	var data struct {
+		ID     string  `json:"id"`
 		Offers []Offer `json:"offers"`
+	}
+	if len(slices) > 1 {
+		// Multi-slice requests return far more offers: a sandbox LHR-JFK
+		// round trip returned 1,680 offers (about 21 MB) inline, beyond
+		// maxResponseBytes. Instead, create the request without offers and
+		// read only the cheapest page via List Offers (sort=total_amount),
+		// both live-verified against the sandbox. No pagination beyond the
+		// first page and no retries.
+		if err := c.do(http.MethodPost, "/air/offer_requests?return_offers=false", payload, "", &data); err != nil {
+			return nil, err
+		}
+		if data.ID == "" {
+			return nil, errors.New("duffel: offer request ID missing")
+		}
+		var offers []Offer
+		query := url.Values{"offer_request_id": {data.ID}, "sort": {"total_amount"}, "limit": {strconv.Itoa(multiSliceOfferLimit)}}
+		if err := c.do(http.MethodGet, "/air/offers?"+query.Encode(), nil, "", &offers); err != nil {
+			return nil, err
+		}
+		if offers == nil {
+			offers = []Offer{}
+		}
+		return offers, nil
 	}
 	// One request, flat offers, no retries or pagination. Supplier timeout defaults
 	// to 20 seconds at Duffel, below this client's 60-second HTTP timeout.

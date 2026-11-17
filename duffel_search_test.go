@@ -157,7 +157,7 @@ func TestDuffelFlightSearch(t *testing.T) {
 		expectedAdults, expectedAges = 1, nil
 		before := calls
 		for _, query := range []string{
-			"tripType=round", "tripType=multi", "returnDate=2099-11-11",
+			"tripType=round", "tripType=multi", "tripType=invalid",
 			"adults=0", "adults=10", "adults=invalid", "children=1", "children=7", "children=-1", "children_ages=8", "cabinClass=invalid",
 			"fromSky=BADCODE", "date=invalid",
 		} {

@@ -60,6 +60,87 @@ type BookingRequest struct {
 	Checkout   string                 `json:"checkout"`
 	Price      float64                `json:"price"`
 	Currency   string                 `json:"currency"`
+	// Slices is the itinerary the customer was shown, one entry per offer
+	// slice. It is compared against the offer from GetOffer before any
+	// order is created and is never used as booking data itself.
+	Slices []BookingSlice `json:"slices,omitempty"`
+}
+
+// BookingSlice identifies one displayed slice by its first departure airport,
+// final arrival airport and exact departing_at value from the search offer.
+type BookingSlice struct {
+	Origin      string `json:"origin"`
+	Destination string `json:"destination"`
+	DepartingAt string `json:"departingAt"`
+}
+
+// errItineraryMismatch means the offer no longer describes the itinerary the
+// customer saw, so no order may be created from it.
+var errItineraryMismatch = errors.New("itinerary mismatch")
+
+// verifyOfferItinerary checks every slice of the freshly loaded offer against
+// the itinerary the customer was shown. Each slice must be complete. A client
+// that sends no slices (a page rendered before multi-slice support) may only
+// book a single-slice offer, so a round-trip or multi-city order can never be
+// placed while the customer saw just one leg.
+func verifyOfferItinerary(offer duffel.Offer, shown []BookingSlice) error {
+	if len(shown) == 0 {
+		if len(offer.Slices) > 1 {
+			return errItineraryMismatch
+		}
+		return nil
+	}
+	if len(shown) != len(offer.Slices) {
+		return errItineraryMismatch
+	}
+	for i, slice := range offer.Slices {
+		if len(slice.Segments) == 0 {
+			return errItineraryMismatch
+		}
+		first, last := slice.Segments[0], slice.Segments[len(slice.Segments)-1]
+		if first.Origin.IATACode == "" || last.Destination.IATACode == "" || first.DepartingAt == "" || last.ArrivingAt == "" ||
+			!strings.EqualFold(first.Origin.IATACode, strings.TrimSpace(shown[i].Origin)) ||
+			!strings.EqualFold(last.Destination.IATACode, strings.TrimSpace(shown[i].Destination)) ||
+			first.DepartingAt != strings.TrimSpace(shown[i].DepartingAt) {
+			return errItineraryMismatch
+		}
+	}
+	return nil
+}
+
+// applyOfferItinerary overwrites a flight booking row's route fields with
+// the server-loaded offer when it has several slices, so My Bookings shows
+// the whole itinerary instead of whichever single leg the client sent.
+// Single-slice offers keep the existing one-way behaviour unchanged.
+func applyOfferItinerary(b *db.Booking, offer duffel.Offer) {
+	if len(offer.Slices) < 2 {
+		return
+	}
+	legs := make([]db.ItineraryLeg, 0, len(offer.Slices))
+	stops := 0
+	for _, slice := range offer.Slices {
+		if len(slice.Segments) == 0 {
+			continue
+		}
+		first, last := slice.Segments[0], slice.Segments[len(slice.Segments)-1]
+		duration := ""
+		if hours, minutes, err := parseFlightDuration(slice.Duration); err == nil {
+			duration = fmt.Sprintf("%dh %dm", hours, minutes)
+		}
+		legs = append(legs, db.ItineraryLeg{
+			FromCode: first.Origin.IATACode, ToCode: last.Destination.IATACode,
+			DepartTime: first.DepartingAt, ArriveTime: last.ArrivingAt,
+			Duration: duration, Airline: first.MarketingCarrier.Name, Stops: len(slice.Segments) - 1,
+		})
+		stops += len(slice.Segments) - 1
+	}
+	if len(legs) == 0 {
+		return
+	}
+	b.Itinerary = legs
+	b.FromCode, b.ToCode = legs[0].FromCode, legs[len(legs)-1].ToCode
+	b.DepartTime, b.ArriveTime = legs[0].DepartTime, legs[len(legs)-1].ArriveTime
+	b.Airline, b.Duration, b.Stops = legs[0].Airline, "", stops
 }
 
 type BookingResponse struct {
@@ -90,17 +171,25 @@ func ageAt(bornOn string, asOf time.Time) (int, error) {
 	return age, nil
 }
 
-// travelReferenceDate returns the offer's own departure date, straight from
-// Duffel's GetOffer response, never the client-supplied request fields. It
-// falls back to now only when the offer carries no usable slice/segment data
-// (e.g. a test double), matching this function's pre-existing behaviour.
-func travelReferenceDate(offer duffel.Offer) time.Time {
-	if len(offer.Slices) > 0 && len(offer.Slices[0].Segments) > 0 {
-		if d, err := time.Parse(time.RFC3339, offer.Slices[0].Segments[0].DepartingAt); err == nil {
-			return d.UTC()
+// travelReferenceDate returns the local departure date of the offer's first
+// slice, straight from Duffel's GetOffer response, never the client-supplied
+// request fields. Duffel sends departing_at as airport-local time without an
+// offset ("2006-01-02T15:04:05"); RFC3339 is accepted too. Only the calendar
+// date is used, so ages are assessed on the local departure day. It never
+// falls back to today: a missing or unreadable date is an error, because
+// assessing ages as of the booking date can mis-bracket a child whose
+// birthday falls before departure.
+func travelReferenceDate(offer duffel.Offer) (time.Time, error) {
+	if len(offer.Slices) == 0 || len(offer.Slices[0].Segments) == 0 {
+		return time.Time{}, errors.New("offer has no departure date")
+	}
+	raw := offer.Slices[0].Segments[0].DepartingAt
+	for _, layout := range []string{"2006-01-02T15:04:05", time.RFC3339} {
+		if d, err := time.Parse(layout, raw); err == nil {
+			return time.Date(d.Year(), d.Month(), d.Day(), 0, 0, 0, 0, time.UTC), nil
 		}
 	}
-	return time.Now().UTC()
+	return time.Time{}, fmt.Errorf("offer departure date %q is not readable", raw)
 }
 
 // matchPassengersToOffer pairs each submitted passenger with an offer
@@ -319,6 +408,11 @@ func (h *TravelHandler) bookFlightViaDuffel(w http.ResponseWriter, r *http.Reque
 		json.NewEncoder(w).Encode(BookingResponse{Error: "A flight offer is required"})
 		return
 	}
+	if len(req.Slices) > maxFlightSlices {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		json.NewEncoder(w).Encode(BookingResponse{Error: "Too many flights in this itinerary"})
+		return
+	}
 	user, authErr := auth.SubjectFromRequest(r)
 	if authErr != nil {
 		w.WriteHeader(http.StatusUnauthorized)
@@ -351,7 +445,7 @@ func (h *TravelHandler) bookFlightViaDuffel(w http.ResponseWriter, r *http.Reque
 				return
 			}
 			price, _ := strconv.ParseFloat(offer.TotalAmount, 64)
-			resp, code := h.finalizeFlightOrder(store, user, lock, passengers[0], req, phone, offer.TotalCurrency, price, lock.OrderID, lock.BookingReference)
+			resp, code := h.finalizeFlightOrder(offer, store, user, lock, passengers[0], req, phone, offer.TotalCurrency, price, lock.OrderID, lock.BookingReference)
 			w.WriteHeader(code)
 			json.NewEncoder(w).Encode(resp)
 			return
@@ -405,7 +499,7 @@ func (h *TravelHandler) bookFlightViaDuffel(w http.ResponseWriter, r *http.Reque
 			return
 		}
 		price, _ := strconv.ParseFloat(offer.TotalAmount, 64)
-		resp, code := h.finalizeFlightOrder(store, user, claimed, passengers[0], req, phone, offer.TotalCurrency, price, claimed.OrderID, claimed.BookingReference)
+		resp, code := h.finalizeFlightOrder(offer, store, user, claimed, passengers[0], req, phone, offer.TotalCurrency, price, claimed.OrderID, claimed.BookingReference)
 		w.WriteHeader(code)
 		json.NewEncoder(w).Encode(resp)
 		return
@@ -439,7 +533,20 @@ func (h *TravelHandler) bookFlightViaDuffel(w http.ResponseWriter, r *http.Reque
 		json.NewEncoder(w).Encode(BookingResponse{Error: "Fiyat güncellendi veya teklif doldu, tekrar arayın"})
 		return
 	}
-	orderPassengers, matchErr := matchPassengersToOffer(passengers, offer.Passengers, travelReferenceDate(offer))
+	if itineraryErr := verifyOfferItinerary(offer, req.Slices); itineraryErr != nil {
+		store.UpdateFlight(claimed.ID, user, "ordering", "pending", nil)
+		w.WriteHeader(http.StatusConflict)
+		json.NewEncoder(w).Encode(BookingResponse{Error: "This itinerary has changed or is no longer available. Please search again. No order was created."})
+		return
+	}
+	departure, dateErr := travelReferenceDate(offer)
+	if dateErr != nil {
+		store.UpdateFlight(claimed.ID, user, "ordering", "pending", nil)
+		w.WriteHeader(http.StatusConflict)
+		json.NewEncoder(w).Encode(BookingResponse{Error: "This offer's departure date could not be verified. Please search again. No order was created."})
+		return
+	}
+	orderPassengers, matchErr := matchPassengersToOffer(passengers, offer.Passengers, departure)
 	if matchErr != nil {
 		store.UpdateFlight(claimed.ID, user, "ordering", "pending", nil)
 		w.WriteHeader(http.StatusUnprocessableEntity)
@@ -481,6 +588,7 @@ func (h *TravelHandler) bookFlightViaDuffel(w http.ResponseWriter, r *http.Reque
 			DepartTime: req.DepartTime, ArriveTime: req.ArriveTime, Duration: req.Duration, Stops: req.Stops,
 			Price: price, Currency: offer.TotalCurrency, Status: "unknown",
 		}
+		applyOfferItinerary(booking, offer)
 		ref, dbErr := h.DB.CreateBooking(booking)
 		if dbErr != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -497,7 +605,7 @@ func (h *TravelHandler) bookFlightViaDuffel(w http.ResponseWriter, r *http.Reque
 		"order_id": order.ID, "booking_reference": order.BookingReference,
 	})
 	price, _ := strconv.ParseFloat(offer.TotalAmount, 64)
-	resp, code := h.finalizeFlightOrder(store, user, claimed, passengers[0], req, phone, offer.TotalCurrency, price, order.ID, order.BookingReference)
+	resp, code := h.finalizeFlightOrder(offer, store, user, claimed, passengers[0], req, phone, offer.TotalCurrency, price, order.ID, order.BookingReference)
 	w.WriteHeader(code)
 	json.NewEncoder(w).Encode(resp)
 }
@@ -509,7 +617,7 @@ func (h *TravelHandler) bookFlightViaDuffel(w http.ResponseWriter, r *http.Reque
 // Duffel. If the local write fails, the lock is left at "order_placed" so a
 // later request retries only this local step, with no further provider
 // risk either way.
-func (h *TravelHandler) finalizeFlightOrder(store db.FlightStore, user string, lock *db.FlightCheckout, lead FlightPassengerInput, req *BookingRequest, phone, currency string, price float64, orderID, bookingReference string) (BookingResponse, int) {
+func (h *TravelHandler) finalizeFlightOrder(offer duffel.Offer, store db.FlightStore, user string, lock *db.FlightCheckout, lead FlightPassengerInput, req *BookingRequest, phone, currency string, price float64, orderID, bookingReference string) (BookingResponse, int) {
 	booking := &db.Booking{
 		Type: "flight", FirstName: lead.FirstName, LastName: lead.LastName, Email: req.Email, Phone: phone,
 		FromCode: req.FromCode, ToCode: req.ToCode, Airline: req.Airline,
@@ -517,6 +625,7 @@ func (h *TravelHandler) finalizeFlightOrder(store db.FlightStore, user string, l
 		Price: price, Currency: currency, Status: "confirmed_sandbox",
 		DuffelOrderID: orderID, BookingReference: bookingReference,
 	}
+	applyOfferItinerary(booking, offer)
 	ref, err := h.DB.CreateBooking(booking)
 	if err != nil {
 		return BookingResponse{Error: "booking failed, please try again"}, http.StatusInternalServerError

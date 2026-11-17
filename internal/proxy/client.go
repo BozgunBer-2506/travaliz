@@ -67,6 +67,29 @@ type FlightData struct {
 	Price           float64 `json:"price"`
 	Currency        string  `json:"currency"`
 	Stops           int     `json:"stops"`
+	// Legs lists every slice of the offer, in order. For a multi-slice
+	// itinerary (round trip or multi-city) the top-level fields describe the
+	// whole itinerary: FromCode/DepartTime come from the first leg,
+	// ToCode/ArriveTime from the last leg, Stops and Duration are totals and
+	// Price is the single itinerary total. RouteLabel is display text only.
+	Legs       []FlightItineraryLeg `json:"legs,omitempty"`
+	RouteLabel string               `json:"route_label,omitempty"`
+	LegsJSON   string               `json:"-"`
+}
+
+// FlightItineraryLeg is one slice of a flight offer.
+type FlightItineraryLeg struct {
+	FromCode        string `json:"from_code"`
+	ToCode          string `json:"to_code"`
+	FromCity        string `json:"from_city"`
+	ToCity          string `json:"to_city"`
+	DepartTime      string `json:"depart_time"`
+	ArriveTime      string `json:"arrive_time"`
+	DurationHours   int    `json:"duration_hours"`
+	DurationMinutes int    `json:"duration_minutes"`
+	Airline         string `json:"airline"`
+	AirlineLogo     string `json:"airline_logo"`
+	Stops           int    `json:"stops"`
 }
 
 // DestSuggestion is returned by the /suggest endpoint (hotel city search).
