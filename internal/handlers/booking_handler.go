@@ -7,12 +7,14 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"log"
+	"math"
 	"net/http"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"travel-proxy-service/internal/auth"
 	"travel-proxy-service/internal/db"
@@ -113,6 +115,20 @@ func verifyOfferItinerary(offer duffel.Offer, shown []BookingSlice) error {
 // the whole itinerary instead of whichever single leg the client sent.
 // Single-slice offers keep the existing one-way behaviour unchanged.
 func applyOfferItinerary(b *db.Booking, offer duffel.Offer) {
+	if len(offer.Slices) == 1 && len(offer.Slices[0].Segments) > 0 {
+		// One-way: the route columns come from the verified offer too, never
+		// from the client. No itinerary is stored (the column holds 2-6 legs).
+		slice := offer.Slices[0]
+		first, last := slice.Segments[0], slice.Segments[len(slice.Segments)-1]
+		b.FromCode, b.ToCode = first.Origin.IATACode, last.Destination.IATACode
+		b.DepartTime, b.ArriveTime = first.DepartingAt, last.ArrivingAt
+		b.Airline, b.Stops = first.MarketingCarrier.Name, len(slice.Segments)-1
+		b.Duration = ""
+		if hours, minutes, err := parseFlightDuration(slice.Duration); err == nil {
+			b.Duration = fmt.Sprintf("%dh %dm", hours, minutes)
+		}
+		return
+	}
 	if len(offer.Slices) < 2 {
 		return
 	}
@@ -295,7 +311,20 @@ func (h *TravelHandler) BookHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Only the car request form still uses this unverified placeholder path;
+	// flights and hotels have their own provider-verified flows above. Any
+	// other type is rejected rather than stored with client-chosen data.
+	if req.Type != "car" {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		json.NewEncoder(w).Encode(BookingResponse{Error: "Unsupported booking type"})
+		return
+	}
 	if err := validateBooking(&req); err != nil {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		json.NewEncoder(w).Encode(BookingResponse{Error: err.Error()})
+		return
+	}
+	if err := validatePlaceholderFields(&req); err != nil {
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		json.NewEncoder(w).Encode(BookingResponse{Error: err.Error()})
 		return
@@ -714,7 +743,7 @@ func (h *TravelHandler) CancelBookingHandler(w http.ResponseWriter, r *http.Requ
 	var req struct {
 		Ref string `json:"ref"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Ref == "" {
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4<<10)).Decode(&req); err != nil || req.Ref == "" || len(req.Ref) > 64 {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(map[string]string{"error": "ref required"})
 		return
@@ -726,6 +755,21 @@ func (h *TravelHandler) CancelBookingHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	// Only unconfirmed placeholder requests may be removed. A row backed by a
+	// provider order (or whose outcome is still open) is the only local record
+	// of that order, so deleting it would lose track of a real booking.
+	existing, err := h.DB.GetBookingByRef(req.Ref)
+	if err != nil || existing == nil || !strings.EqualFold(existing.Email, email) {
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(map[string]string{"error": "booking not found"})
+		return
+	}
+	if !removablePlaceholder(existing) {
+		w.WriteHeader(http.StatusConflict)
+		json.NewEncoder(w).Encode(map[string]string{"error": "This booking is linked to a provider order and cannot be removed here. Please contact support."})
+		return
+	}
+
 	if err := h.DB.DeleteBooking(req.Ref, email); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(map[string]string{"error": "cancellation failed"})
@@ -733,6 +777,11 @@ func (h *TravelHandler) CancelBookingHandler(w http.ResponseWriter, r *http.Requ
 	}
 
 	json.NewEncoder(w).Encode(map[string]string{"status": "cancelled"})
+}
+
+func removablePlaceholder(b *db.Booking) bool {
+	return b.DuffelOrderID == "" && b.BookingReference == "" &&
+		(b.Status == "" || b.Status == "pending")
 }
 
 func sendB2BWebhook(b *db.Booking, ref string) {
@@ -806,6 +855,28 @@ func validateBooking(req *BookingRequest) error {
 		return fmt.Errorf("Valid phone number is required")
 	case req.Price <= 0:
 		return fmt.Errorf("Invalid price")
+	}
+	return nil
+}
+
+// validatePlaceholderFields bounds the free-form fields a placeholder request
+// may store, so the bookings table cannot be filled with oversized or
+// nonsensical client data.
+func validatePlaceholderFields(req *BookingRequest) error {
+	for _, field := range []string{req.FirstName, req.LastName, req.Phone, req.FromCode, req.ToCode, req.Airline,
+		req.DepartTime, req.ArriveTime, req.Duration, req.HotelName, req.Checkin, req.Checkout} {
+		if utf8.RuneCountInString(field) > 200 {
+			return fmt.Errorf("A field is too long")
+		}
+	}
+	if math.IsNaN(req.Price) || math.IsInf(req.Price, 0) || req.Price > 1_000_000 {
+		return fmt.Errorf("Invalid price")
+	}
+	if req.Currency != "" && !regexp.MustCompile(`^[A-Z]{3}$`).MatchString(req.Currency) {
+		return fmt.Errorf("Invalid currency")
+	}
+	if req.Stops < 0 || req.Stops > 10 {
+		return fmt.Errorf("Invalid stops")
 	}
 	return nil
 }

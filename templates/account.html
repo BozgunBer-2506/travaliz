@@ -383,10 +383,15 @@ function openBookingModal(ref) {
   document.getElementById('bmodal-name').textContent  = (b.first_name || '') + ' ' + (b.last_name || '');
   document.getElementById('bmodal-email').textContent = b.email || '';
   const sandboxHotel = isHotel && ['confirmed_sandbox', 'unknown', 'booking'].includes(b.status);
+  // Rows backed by a provider order (or with an open outcome) are the only
+  // record of that order; the server refuses to remove them, so hide the action.
+  const providerBooking = !!(b.duffel_order_id || b.booking_reference || (b.status && b.status !== 'pending'));
   document.getElementById('bmodal-card').textContent = sandboxHotel
     ? (b.status === 'confirmed_sandbox' ? 'Confirmed sandbox test — no real reservation or charge. Booking ID: ' + b.booking_reference : 'Outcome unknown — refresh status; do not place another reservation.')
-    : 'Pending — no payment collected; not confirmed';
-  document.getElementById('bmodal-remove').hidden = sandboxHotel;
+    : providerBooking
+      ? 'Sandbox test booking. No payment collected; not a real ticket. Contact support for changes.'
+      : 'Pending — no payment collected; not confirmed';
+  document.getElementById('bmodal-remove').hidden = sandboxHotel || providerBooking;
   document.getElementById('bmodal-status').hidden = !sandboxHotel;
   document.getElementById('bmodal-status').onclick = () => refreshSandboxHotelStatus(b.ref);
   document.getElementById('bmodal-rows').replaceChildren(...rows.map(([label, value]) => {
